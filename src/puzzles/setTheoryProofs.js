@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Set Theory Proof Puzzles
+ * 
+ * This module contains mathematical proof puzzles related to set theory operations
+ * and properties. These puzzles teach fundamental concepts in discrete mathematics
+ * including set operations, subset relations, and proof techniques for sets.
+ * 
+ * Puzzles included:
+ * - Distributive law for set intersection and union
+ * - De Morgan's law for set complements
+ * 
+ * @author Parson's Puzzle SUTD Team
+ */
+
+/**
+ * Proof of the distributive law: A ∩ (B ∪ C) = (A ∩ B) ∪ (A ∩ C)
+ * Demonstrates set equality proofs using subset relations
+ */
 export const DISTRIBUTIVE_LAW_SETS = {
   id: 'set1',
   title: '\\text{Prove: } A \\cap (B \\cup C) = (A \\cap B) \\cup (A \\cap C)',
@@ -23,6 +41,10 @@ export const DISTRIBUTIVE_LAW_SETS = {
   solutionOrder: ['set1-1', 'set1-2', 'set1-3', 'set1-4', 'set1-5', 'set1-6', 'set1-7', 'set1-8', 'set1-9', 'set1-10', 'set1-11', 'set1-12', 'set1-13', 'set1-14', 'set1-15']
 };
 
+/**
+ * Proof of De Morgan's law: (A ∪ B)ᶜ = Aᶜ ∩ Bᶜ
+ * Demonstrates complement operations and logical equivalences in set theory
+ */
 export const DE_MORGAN_LAW = {
   id: 'set2',
   title: '\\text{Prove: } \\overline{A \\cup B} = \\overline{A} \\cap \\overline{B}',

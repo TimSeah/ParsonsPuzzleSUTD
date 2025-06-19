@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Recursion and Recurrence Relation Proofs
+ * 
+ * This module contains mathematical proof puzzles related to recursive definitions
+ * and recurrence relations. These puzzles teach students about recursive thinking
+ * and how to work with recursively defined sequences and structures.
+ * 
+ * Puzzles included:
+ * - Fibonacci sequence recurrence relation
+ * - Factorial function recursive definition
+ * 
+ * @author Parson's Puzzle SUTD Team
+ */
+
+/**
+ * Proof of the Fibonacci recurrence relation F(n) = F(n-1) + F(n-2)
+ * Introduces students to recursive definitions and sequence generation
+ */
 export const FIBONACCI_RECURSION = {
   id: 'recursion1',
   title: '\\text{Prove the recurrence relation for Fibonacci numbers: } F(n) = F(n-1) + F(n-2)',
@@ -18,6 +36,10 @@ export const FIBONACCI_RECURSION = {
   solutionOrder: ['rec1-1', 'rec1-2', 'rec1-3', 'rec1-4', 'rec1-5', 'rec1-6', 'rec1-7', 'rec1-8', 'rec1-9', 'rec1-10']
 };
 
+/**
+ * Proof of the Towers of Hanoi recursive solution
+ * Demonstrates recursive problem solving and algorithmic thinking
+ */
 export const TOWERS_OF_HANOI = {
   id: 'recursion2',
   title: '\\text{Prove: Towers of Hanoi with } n \\text{ disks requires } 2^n - 1 \\text{ moves}',

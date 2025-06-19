@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Mathematical Induction Proof Puzzles
+ * 
+ * This module contains mathematical proof puzzles that demonstrate the principle of
+ * mathematical induction. These puzzles teach the structure and methodology of
+ * inductive proofs, including base cases and inductive steps.
+ * 
+ * Puzzles included:
+ * - Sum of first n integers formula
+ * - Sum of powers of 2 formula
+ * - Proof about divisibility by 3
+ * 
+ * @author Parson's Puzzle SUTD Team
+ */
+
+/**
+ * Proof by induction that the sum of first n integers equals n(n+1)/2
+ * Classic induction proof demonstrating algebraic manipulation
+ */
 export const SUM_OF_FIRST_N_INTEGERS = {
   id: 'induction1',
   title: '\\text{Prove by induction: } \\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}',
@@ -20,6 +39,10 @@ export const SUM_OF_FIRST_N_INTEGERS = {
   solutionOrder: ['ind1-1', 'ind1-2', 'ind1-3', 'ind1-4', 'ind1-5', 'ind1-6', 'ind1-7', 'ind1-8', 'ind1-9', 'ind1-10', 'ind1-11', 'ind1-12']
 };
 
+/**
+ * Proof by induction that the sum of powers of 2 equals 2^(n+1) - 1
+ * Demonstrates induction with geometric series
+ */
 export const SUM_OF_POWERS_OF_TWO = {
   id: 'induction2',
   title: '\\text{Prove by induction: } \\sum_{i=0}^{n} 2^i = 2^{n+1} - 1',
@@ -42,6 +65,10 @@ export const SUM_OF_POWERS_OF_TWO = {
   solutionOrder: ['ind2-1', 'ind2-2', 'ind2-3', 'ind2-4', 'ind2-5', 'ind2-6', 'ind2-7', 'ind2-8', 'ind2-9', 'ind2-10', 'ind2-11', 'ind2-12']
 };
 
+/**
+ * Proof by induction about divisibility properties
+ * Shows how induction applies to number theory and divisibility proofs
+ */
 export const DIVISIBILITY_BY_THREE = {
   id: 'induction3',
   title: '\\text{Prove by induction: } 4^n - 1 \\text{ is divisible by } 3 \\text{ for all } n \\ge 1',

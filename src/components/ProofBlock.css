@@ -11,6 +11,9 @@
   transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
   user-select: none;
   overflow: hidden;
+  
+  /* Ensure the block can't grow beyond its container */
+  box-sizing: border-box;
 }
 
 .proof-block::before {
@@ -101,6 +104,20 @@
   font-size: 1.1em;
   line-height: 1.4;
   color: var(--color-fg-default);
+  
+  /* Ensure KaTeX content wraps properly */
+  max-width: 100%;
+}
+
+.proof-block .katex-container {
+  max-width: 100%;
+}
+
+.proof-block .katex-fallback {
+  font-family: 'Courier New', monospace;
+  color: var(--color-danger-fg);
+  font-size: 0.9em;
+  max-width: 100%;
 }
 
 .proof-block .katex .mord {
@@ -120,6 +137,34 @@
 
 .proof-block .katex .mfrac {
   color: var(--color-fg-default);
+}
+
+/* Additional overflow protection for very long mathematical expressions */
+.proof-block .katex-display {
+  max-width: 100%;
+  margin: 0.5em 0;
+  padding: 0.25em 0;
+}
+
+/* Ensure inline math doesn't cause horizontal overflow */
+.proof-block .katex-html {
+  max-width: 100%;
+}
+
+/* Handle very long fractions and complex expressions */
+.proof-block .katex .frac-line {
+  max-width: 100%;
+}
+
+/* Responsive font sizing for very small screens */
+@media (max-width: 480px) {
+  .proof-block .katex {
+    font-size: 0.9em;
+  }
+  
+  .proof-block {
+    padding: 10px 14px;
+  }
 }
 
 /* Responsive design */

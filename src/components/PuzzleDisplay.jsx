@@ -1,3 +1,19 @@
+/**
+ * @fileoverview PuzzleDisplay component - Main interactive puzzle interface for Parson's Puzzles
+ * 
+ * This component provides the drag-and-drop interface for mathematical proof puzzles,
+ * allowing users to arrange proof blocks in the correct order. It uses @dnd-kit for
+ * drag and drop functionality and integrates with validation and navigation systems.
+ * 
+ * Features:
+ * - Drag and drop proof blocks between palette and workspace
+ * - Real-time proof validation
+ * - Reset and show solution functionality
+ * - Responsive layout with visual feedback
+ * 
+ * @author Parson's Puzzle SUTD Team
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   DndContext,
@@ -20,11 +36,24 @@ import ProofValidationDisplay from './ProofValidationDisplay';
 import KatexRenderer from './KatexRenderer';
 import './PuzzleDisplay.css';
 
-const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
+/**
+ * Main puzzle display component with drag-and-drop interface
+ * 
+ * @param {Object} props - Component properties
+ * @param {import('../types/index.js').Puzzle} props.puzzle - Current puzzle object
+ * @param {Function} props.onNextPuzzle - Callback to navigate to next puzzle
+ * @param {boolean} props.isLastPuzzle - Whether this is the last puzzle in the sequence
+ * @returns {JSX.Element} Rendered puzzle interface
+ */
+const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {  // State for managing puzzle blocks and drag operations
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [proofBlocks, setProofBlocks] = useState([]);
   const [activeId, setActiveId] = useState(null);
 
+  /**
+   * Initialize puzzle blocks when puzzle changes
+   * Shuffles available blocks and resets the workspace
+   */
   useEffect(() => {
     if (puzzle && puzzle.blocks) {
       // Shuffle the blocks for the puzzle
@@ -34,11 +63,17 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
     }
   }, [puzzle]);
 
+  // Configure drag and drop sensors for both mouse and keyboard interaction
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor)
   );
 
+  /**
+   * Determines which container (palette or workspace) contains a given block ID
+   * @param {string} id - The block ID to search for
+   * @returns {string|null} Container name ('palette' or 'workspace') or null if not found
+   */
   const findContainer = (id) => {
     if (availableBlocks.find(item => item.id === id)) {
       return 'palette';
@@ -49,15 +84,28 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
     return null;
   };
   
+  /**
+   * Retrieves a block object by its ID from either container
+   * @param {string} id - The block ID to find
+   * @returns {Object|undefined} The block object or undefined if not found
+   */
   const getBlockById = (id) => {
     return availableBlocks.find(b => b.id === id) || proofBlocks.find(b => b.id === id);
-  }
+  };
 
+  /**
+   * Handles the start of a drag operation
+   * @param {Object} event - Drag start event from @dnd-kit
+   */
   const handleDragStart = (event) => {
     const { active } = event;
     setActiveId(active.id);
   };
 
+  /**
+   * Handles the end of a drag operation, managing block movement between containers
+   * @param {Object} event - Drag end event from @dnd-kit
+   */
   const handleDragEnd = (event) => {
     const { active, over } = event;
     setActiveId(null);
@@ -115,11 +163,13 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
                 return [...prev.slice(0, overIndex), itemToMove, ...prev.slice(overIndex)];
             }
             return [...prev, itemToMove];
-        });
-      }
+        });      }
     }
   };
-  // Use useCallback to prevent re-creation on every render
+
+  /**
+   * Resets the puzzle to its initial state with shuffled blocks
+   */
   const handleReset = () => {
     if (puzzle && puzzle.blocks) {
       const shuffledBlocks = [...puzzle.blocks].sort(() => Math.random() - 0.5);
@@ -128,6 +178,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
     }
   };
 
+  /**
+   * Shows the correct solution by arranging blocks in the proper order
+   */
   const handleShowSolution = () => {
     if (puzzle && puzzle.blocks && puzzle.solutionOrder) {
       const solutionBlocks = puzzle.solutionOrder.map(id => 
@@ -139,7 +192,12 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
     }
   };
 
-  // Define reusable droppable wrappers
+  /**
+   * Droppable container for the palette (available blocks)
+   * @param {Object} props - Component props
+   * @param {React.ReactNode} props.children - Child components to render
+   * @returns {JSX.Element} Droppable palette container
+   */
   const PaletteDroppable = ({ children }) => {
     const { setNodeRef } = useDroppable({ id: 'palette' });
     return (
@@ -149,6 +207,12 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
     );
   };
 
+  /**
+   * Droppable container for the workspace (proof construction area)
+   * @param {Object} props - Component props
+   * @param {React.ReactNode} props.children - Child components to render
+   * @returns {JSX.Element} Droppable workspace container
+   */
   const WorkspaceDroppable = ({ children }) => {
     const { setNodeRef } = useDroppable({ id: 'workspace' });
     return (
@@ -156,12 +220,13 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
         {children}
       </div>
     );
-  };
-    
+  };    
+  // Get the currently dragged block for overlay display
   const activeBlock = activeId ? getBlockById(activeId) : null;
 
+  // Show loading state if puzzle is not available
   if (!puzzle) {
-    return <p>Loading puzzle...</p>;
+    return <div className="loading-message">Loading puzzle...</div>;
   }
 
   return (
@@ -171,7 +236,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="puzzle-container">        <div className="puzzle-header">
+      <div className="puzzle-container">
+        {/* Puzzle Header with title, statement, and controls */}
+        <div className="puzzle-header">
           <h2><KatexRenderer latex={puzzle.title} /></h2>
           <p><strong><KatexRenderer latex={puzzle.statement} /></strong></p>
           
@@ -193,7 +260,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
           </div>
         </div>
 
+        {/* Main drag-and-drop interface */}
         <div className="dnd-columns-container">
+          {/* Available blocks palette */}
           <div className="puzzle-palette-container">
             <h3>Available Steps:</h3>
             <SortableContext items={availableBlocks.map(b => b.id)} strategy={verticalListSortingStrategy} id="palette">
@@ -208,6 +277,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
             </SortableContext>
           </div>
 
+          {/* Proof construction workspace */}
           <div className="puzzle-workspace-container">
             <h3>Your Proof:</h3>
             <SortableContext items={proofBlocks.map(b => b.id)} strategy={verticalListSortingStrategy} id="workspace">
@@ -226,7 +296,8 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
           </div>
         </div>
 
-        {/* Validation Display */}        <ProofValidationDisplay 
+        {/* Validation and Navigation */}
+        <ProofValidationDisplay 
           puzzle={puzzle}
           proofBlocks={proofBlocks}
           onReset={handleReset}
@@ -235,7 +306,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle }) => {
         />
       </div>
 
-      {/* DragOverlay provides a smoother visual drag experience */}
+      {/* Drag overlay for smooth visual feedback during drag operations */}
       <DragOverlay dropAnimation={null}>
         {activeId && activeBlock ? (
           <ProofBlock id={activeBlock.id} latexContent={activeBlock.latex} isOverlay={true} />

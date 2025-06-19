@@ -4,7 +4,6 @@ import { N_SQUARED_PLUS_N_CUBED_THETA_N_CUBED } from '../puzzles/bigOProofs';
 
 const ValidatorDemo = () => {
   const [validator] = useState(() => new ProofValidator(N_SQUARED_PLUS_N_CUBED_THETA_N_CUBED));
-  const [testOrder, setTestOrder] = useState([]);
   const [result, setResult] = useState(null);
 
   const testSequences = [
@@ -29,9 +28,7 @@ const ValidatorDemo = () => {
       order: ['block1-1', 'block1-5', 'block1-11']
     }
   ];
-
   const runTest = (order) => {
-    setTestOrder(order);
     const validation = validator.validateProof(order);
     setResult(validation);
   };

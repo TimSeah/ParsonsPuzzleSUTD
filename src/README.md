@@ -6,33 +6,10 @@ A React-based interactive learning tool that helps students practice formal math
 
 This application implements Parson's Puzzles - a pedagogical technique where students arrange scrambled code/proof blocks in the correct order. The tool focuses on mathematical proofs across different domains:
 
-- **Big O Notation**: Asymptotic complexity proofs  
+- **Big O Notation**: Asymptotic complexity proofs
 - **Mathematical Induction**: Step-by-step inductive proofs
 - **Set Theory**: Set operations and relations
 - **Recursion**: Recurrence relations and recursive algorithms
-
-## ✨ Recent Improvements
-
-This project has been comprehensively refactored for maintainability and educational effectiveness:
-
-### 🏗️ Architecture Enhancements
-- **Modular component structure** with clear separation of concerns
-- **Comprehensive documentation** with JSDoc comments throughout
-- **Type definitions** for better code maintainability
-- **Improved error handling** and validation logic
-
-### 🎓 Educational Features
-- **11 mathematical proof puzzles** across multiple domains
-- **Real-time validation** with contextual hints
-- **Adaptive scoring system** (0-100%) based on correctness and completion
-- **Progressive difficulty** from basic proofs to advanced concepts
-
-### 🔧 Technical Improvements
-- **Modern React patterns** with hooks and functional components
-- **Robust drag-and-drop** interface using @dnd-kit
-- **Mathematical notation** rendering with KaTeX
-- **Responsive design** for desktop, tablet, and mobile
-- **Accessibility features** including keyboard navigation
 
 ## Architecture
 
@@ -41,25 +18,20 @@ This project has been comprehensively refactored for maintainability and educati
 ```
 src/
 ├── components/          # React UI components
-│   ├── KatexRenderer.jsx      # LaTeX math rendering with error handling
-│   ├── ProofBlock.jsx         # Draggable proof blocks with visual feedback
-│   ├── ProofValidationDisplay.jsx  # Real-time validation and hints
-│   ├── PuzzleDisplay.jsx      # Main drag-and-drop interface
+│   ├── KatexRenderer.jsx      # LaTeX math rendering
+│   ├── ProofBlock.jsx         # Individual draggable proof blocks
+│   ├── ProofValidationDisplay.jsx  # Validation feedback UI
+│   ├── PuzzleDisplay.jsx      # Main puzzle interface
 │   └── ValidatorDemo.jsx      # Development/testing component
-├── puzzles/            # Puzzle definitions and registry
-│   ├── bigOProofs.js         # Big O notation proofs (4 puzzles)
-│   ├── inductionProofs.js    # Mathematical induction proofs (3 puzzles)
-│   ├── recursionProofs.js    # Recursion and recurrence relations (2 puzzles)
-│   ├── setTheoryProofs.js    # Set theory proofs (2 puzzles)
-│   └── index.js              # Puzzle registry with utility functions
+├── puzzles/            # Puzzle definitions and data
+│   ├── bigOProofs.js         # Big O notation proofs
+│   ├── inductionProofs.js    # Mathematical induction proofs
+│   ├── recursionProofs.js    # Recursion and recurrence relations
+│   ├── setTheoryProofs.js    # Set theory proofs
+│   └── index.js              # Puzzle exports and collections
 ├── utils/              # Business logic and utilities
-│   ├── ProofValidator.js     # Advanced validation engine with hints
-│   └── README.md            # Utilities documentation
-├── types/              # Type definitions
-│   └── index.js              # JSDoc type definitions
-├── styles/             # Styling documentation
-│   └── README.md            # CSS architecture and design system
-├── App.jsx             # Root application with navigation
+│   └── ProofValidator.js     # Validation engine
+├── App.jsx             # Main application component
 └── main.jsx           # Application entry point
 ```
 
@@ -68,10 +40,14 @@ src/
 ```
 App
 └── PuzzleDisplay
-    ├── ProofBlock (multiple draggable instances)
+    ├── ProofBlock (multiple instances)
     └── ProofValidationDisplay
-        └── KatexRenderer (mathematical notation)
+        └── KatexRenderer (multiple instances)
 ```
+
+### Data Flow
+
+1. **Puzzle Selection**: User selects a puzzle from dropdown in `App.jsx`
 2. **Block Rendering**: `PuzzleDisplay.jsx` renders shuffled proof blocks
 3. **Drag & Drop**: User arranges blocks using `@dnd-kit` library
 4. **Validation**: `ProofValidator.js` checks correctness and provides feedback

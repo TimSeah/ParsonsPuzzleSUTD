@@ -1,10 +1,36 @@
+/**
+ * @fileoverview ProofBlock component - Individual draggable proof step blocks
+ * 
+ * This component represents a single mathematical proof step that can be dragged
+ * and dropped within the puzzle interface. It uses @dnd-kit for drag functionality
+ * and KaTeX for mathematical notation rendering.
+ * 
+ * Features:
+ * - Drag and drop functionality with visual feedback
+ * - Mathematical notation rendering via KaTeX
+ * - Responsive styling with hover and drag states
+ * - Overlay support for smooth drag previews
+ * 
+ * @author Parson's Puzzle SUTD Team
+ */
+
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import KatexRenderer from './KatexRenderer';
 import './ProofBlock.css';
 
-const ProofBlock = ({ id, latexContent, isOverlay }) => {
+/**
+ * A draggable proof block component representing a single step in a mathematical proof
+ * 
+ * @param {Object} props - Component properties
+ * @param {string} props.id - Unique identifier for the block (required for drag and drop)
+ * @param {string} props.latexContent - LaTeX mathematical content to render
+ * @param {boolean} [props.isOverlay=false] - Whether this block is being used as a drag overlay
+ * @returns {JSX.Element} Rendered proof block
+ */
+const ProofBlock = ({ id, latexContent, isOverlay = false }) => {
+  // Get drag and drop properties from @dnd-kit
   const {
     attributes,
     listeners,
@@ -14,19 +40,16 @@ const ProofBlock = ({ id, latexContent, isOverlay }) => {
     isDragging,
   } = useSortable({ id: id });
 
+  // Dynamic styling based on drag state
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    // Add a bit more shadow or lift when dragging, and ensure it's above others
+    // Enhanced visual feedback during drag operations
     boxShadow: isDragging ? '0 4px 12px rgba(0,0,0,0.25)' : '0 2px 4px rgba(0,0,0,0.1)',
-    zIndex: isDragging || isOverlay ? 100 : 'auto', // Ensure dragging item is on top
+    zIndex: isDragging || isOverlay ? 100 : 'auto', // Ensure dragging item appears on top
     cursor: isDragging ? 'grabbing' : 'grab',
     opacity: isDragging ? 0.8 : 1,
   };
-
-  // If it's an overlay (drag overlay), we might want slightly different styling or structure
-  // For now, we'll use the same rendering for simplicity.
-  // The 'isOverlay' prop can be passed if using <DragOverlay> for a custom drag preview.
 
   return (
     <div
@@ -34,8 +57,9 @@ const ProofBlock = ({ id, latexContent, isOverlay }) => {
       style={style}
       {...attributes}
       {...listeners}
-      className="proof-block" // Keep your existing .proof-block styles
+      className={`proof-block ${isOverlay ? 'proof-block--overlay' : ''}`}
       data-id={id}
+      title={`Proof step: ${id}`} // Accessibility tooltip
     >
       <KatexRenderer latex={latexContent} />
     </div>

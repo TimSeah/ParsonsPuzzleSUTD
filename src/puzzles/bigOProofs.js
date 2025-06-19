@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Big O Notation Proof Puzzles
+ * 
+ * This module contains mathematical proof puzzles related to Big O, Big Omega, and Big Theta
+ * notation. Each puzzle demonstrates fundamental concepts in algorithmic complexity analysis.
+ * 
+ * Puzzles included:
+ * - n² + n³ = Θ(n³) proof
+ * - log n = O(n) proof
+ * - n log n = O(n²) proof  
+ * - 2ⁿ ≠ O(n³) proof
+ * 
+ * @author Parson's Puzzle SUTD Team
+ */
+
+/**
+ * Proof that n² + n³ = Θ(n³)
+ * Demonstrates the definition and application of Big Theta notation
+ */
 export const N_SQUARED_PLUS_N_CUBED_THETA_N_CUBED = {
   id: 'proof1',
   title: '\\text{Prove } n^2 + n^3 = \\Theta(n^3)',
@@ -19,6 +38,10 @@ export const N_SQUARED_PLUS_N_CUBED_THETA_N_CUBED = {
   solutionOrder: ['block1-1', 'block1-2', 'block1-3', 'block1-4', 'block1-5', 'block1-6', 'block1-7', 'block1-8', 'block1-9', 'block1-10', 'block1-11']
 };
 
+/**
+ * Proof that log n = O(n)
+ * Shows that logarithmic functions are bounded by linear functions
+ */
 export const LOG_N_IS_O_N = {
   id: 'proof2',
   title: '\\text{Prove } \\log n = O(n)',
@@ -36,6 +59,10 @@ export const LOG_N_IS_O_N = {
   solutionOrder: ['block2-1', 'block2-2', 'block2-3', 'block2-4', 'block2-5', 'block2-6', 'block2-7']
 };
 
+/**
+ * Proof that n log n = O(n²)
+ * Demonstrates the relationship between linearithmic and quadratic functions
+ */
 export const N_LOG_N_IS_O_N_SQUARED = {
   id: 'proof3',
   title: '\\text{Prove } n \\log n = O(n^2)',
@@ -55,6 +82,10 @@ export const N_LOG_N_IS_O_N_SQUARED = {
   solutionOrder: ['block3-1', 'block3-2', 'block3-3', 'block3-4', 'block3-5', 'block3-6', 'block3-7', 'block3-8', 'block3-9']
 };
 
+/**
+ * Proof that 2ⁿ ≠ O(n³)
+ * Demonstrates proof by contradiction for exponential vs polynomial growth rates
+ */
 export const TWO_TO_N_IS_NOT_O_N_CUBED = {
   id: 'proof4',
   title: '\\text{Prove } 2^n \\neq O(n^3)',

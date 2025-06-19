@@ -4,6 +4,11 @@
   padding: 24px;
   font-family: inherit;
   animation: fadeIn 0.6s ease-out;
+  
+  /* Ensure the container doesn't overflow */
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .puzzle-header {
@@ -108,12 +113,22 @@
   gap: 32px;
   margin-bottom: 32px;
   align-items: start;
+  
+  /* Ensure proper overflow handling */
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .puzzle-palette-container,
 .puzzle-workspace-container {
   display: flex;
   flex-direction: column;
+  
+  /* Prevent overflow and ensure proper containment */
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .puzzle-palette-container h3,
@@ -136,8 +151,14 @@
   border-radius: 0 0 8px 8px;
   padding: 20px;
   min-height: 400px;
-  background: var(--color-canvas-default);
-  transition: all 0.3s cubic-bezier(0.3, 0, 0.5, 1);
+  background: var(--color-canvas-default);  transition: all 0.3s cubic-bezier(0.3, 0, 0.5, 1);
+  
+  /* Ensure proper overflow handling for long content */
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
   position: relative;
 }
 
@@ -275,10 +296,18 @@
     padding: 32px 16px;
     font-size: 0.875rem;
   }
-
   .droppable-area {
     min-height: 300px;
     padding: 16px;
+  }
+
+  /* Enhanced text wrapping for mobile */
+  .puzzle-header h2,
+  .puzzle-header p {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
   }
 }
 

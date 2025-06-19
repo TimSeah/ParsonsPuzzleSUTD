@@ -1,14 +1,45 @@
+/**
+ * @fileoverview ProofValidationDisplay component - Real-time validation and feedback for proof puzzles
+ * 
+ * This component provides validation feedback, scoring, hints, and navigation f            {isLastPuzzle ? '🔄 Start Over' : '🎉 Try Next Puzzle'}r proof puzzles.
+ * It integrates with the ProofValidator utility to assess user progress and provide meaningful
+ * feedback to guide learning.
+ * 
+ * Features:
+ * - Real-time proof validation with scoring
+ * - Contextual hints and feedback
+ * - Progress tracking and statistics
+ * - Navigation controls for puzzle progression
+ * - Visual feedback with color-coded scoring
+ * 
+ * @author Parson's Puzzle SUTD Team
+ */
+
 import React, { useState, useEffect } from 'react';
 import ProofValidator from '../utils/ProofValidator';
 import KatexRenderer from './KatexRenderer';
 import './ProofValidationDisplay.css';
 
+/**
+ * Displays validation results, hints, and navigation for proof puzzles
+ * 
+ * @param {Object} props - Component properties
+ * @param {import('../types/index.js').Puzzle} props.puzzle - Current puzzle object
+ * @param {Array} props.proofBlocks - Array of blocks in the current proof attempt
+ * @param {Function} props.onReset - Callback to reset the current puzzle
+ * @param {Function} props.onNextPuzzle - Callback to navigate to the next puzzle
+ * @param {boolean} props.isLastPuzzle - Whether this is the last puzzle in the sequence
+ * @returns {JSX.Element} Rendered validation display
+ */
 const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, isLastPuzzle }) => {
+  // State for validation system
   const [validator, setValidator] = useState(() => new ProofValidator(puzzle));
   const [validationResult, setValidationResult] = useState(null);
   const [showHints, setShowHints] = useState(false);
 
-  // Update validator when puzzle changes
+  /**
+   * Update validator when puzzle changes to ensure accurate validation
+   */
   useEffect(() => {
     setValidator(prevValidator => {
       // Only create new validator if puzzle actually changed
@@ -19,6 +50,9 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
     });
   }, [puzzle]);
 
+  /**
+   * Validate proof whenever blocks change
+   */
   useEffect(() => {
     if (proofBlocks && proofBlocks.length > 0) {
       const userOrder = proofBlocks.map(block => block.id);
@@ -29,6 +63,11 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
     }
   }, [proofBlocks, validator]);
 
+  /**
+   * Returns color based on score for visual feedback
+   * @param {number} score - Score percentage (0-100)
+   * @returns {string} CSS color value
+   */
   const getScoreColor = (score) => {
     if (score >= 90) return '#4CAF50'; // Green
     if (score >= 70) return '#FFC107'; // Amber
@@ -36,6 +75,11 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
     return '#F44336'; // Red
   };
 
+  /**
+   * Returns emoji based on score for visual feedback
+   * @param {number} score - Score percentage (0-100)
+   * @returns {string} Appropriate emoji
+   */
   const getScoreEmoji = (score) => {
     if (score >= 90) return '🌟';
     if (score >= 70) return '👍';
@@ -43,6 +87,7 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
     return '💪';
   };
 
+  // Show prompt when no validation result is available
   if (!validationResult) {
     return (
       <div className="validation-display empty">
@@ -139,9 +184,11 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      )}      {validationResult.isCorrect && (
+          )}        </div>
+      )}
+
+      {/* Success Actions (shown when puzzle is completed correctly) */}
+      {validationResult.isCorrect && (
         <div className="success-actions">
           <button 
             className="action-button primary" 
