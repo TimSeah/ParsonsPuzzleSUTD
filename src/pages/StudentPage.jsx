@@ -1,10 +1,13 @@
-import React from 'react';
-import { PuzzleDisplay, UnifiedControlPanel, LoadingState } from '../components';
-import { FloatingHelpButton, StatusIndicator } from '../components/ui';
-import { useAppState } from '../hooks/useAppState';
-import styles from './StudentPage.module.css';
+import React, { useEffect, useState } from "react";
+import { PuzzleDisplay, UnifiedControlPanel, LoadingState } from "../components";
+import { FloatingHelpButton, StatusIndicator } from "../components/ui";
+import { useAppState } from "../hooks/useAppState";
+import styles from "./StudentPage.module.css";
 
-function StudentPage() {
+const SUBMODE_KEY = "student_submode";
+const SUBMODES = { PRACTICE: "practice", CHALLENGE: "challenge" };
+
+export default function StudentPage() {
   const {
     currentPuzzle,
     useLocalData,
@@ -16,23 +19,27 @@ function StudentPage() {
     isLastPuzzle,
     handlePuzzleChange,
     handleNextPuzzle,
-    toggleDataSource
+    toggleDataSource,
   } = useAppState();
 
-  // Handle loading state
+  const [submode, setSubmode] = useState(SUBMODES.PRACTICE);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(SUBMODE_KEY);
+    if (saved === SUBMODES.PRACTICE || saved === SUBMODES.CHALLENGE) setSubmode(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(SUBMODE_KEY, submode);
+  }, [submode]);
+
   if (isLoading) {
-    return (
-      <LoadingState 
-        title="Loading puzzles..."
-        message="Connecting to database..."
-      />
-    );
+    return <LoadingState title="Loading puzzles..." message="Connecting to database..." />;
   }
 
-  // Handle case where no puzzle is selected yet
   if (!currentPuzzle) {
     return (
-      <LoadingState 
+      <LoadingState
         title="No puzzles available"
         message="Please check your connection or try refreshing the page."
       />
@@ -40,10 +47,45 @@ function StudentPage() {
   }
 
   return (
-    <div className={styles['student-page']}>
-      <header className={styles['page-header']}>
+    <div className={styles["student-page"]}>
+      <header className={styles["page-header"]}>
         <h1>Parsons Puzzles for Math Proofs</h1>
         <p>Practice formal mathematical proofs through interactive drag-and-drop puzzles</p>
+
+        {/* Submodes */}
+        <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => setSubmode(SUBMODES.PRACTICE)}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: submode === SUBMODES.PRACTICE ? "rgba(56,189,248,0.14)" : "rgba(255,255,255,0.06)",
+              color: submode === SUBMODES.PRACTICE ? "rgba(56,189,248,1)" : "rgba(255,255,255,0.9)",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Practice Mode
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSubmode(SUBMODES.CHALLENGE)}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: submode === SUBMODES.CHALLENGE ? "rgba(56,189,248,0.14)" : "rgba(255,255,255,0.06)",
+              color: submode === SUBMODES.CHALLENGE ? "rgba(56,189,248,1)" : "rgba(255,255,255,0.9)",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Challenge Mode
+          </button>
+        </div>
       </header>
 
       <UnifiedControlPanel
@@ -57,22 +99,22 @@ function StudentPage() {
         puzzlesError={puzzlesError}
       />
 
-      <main className={styles['main-content']}>
-        <PuzzleDisplay 
-          key={currentPuzzle.id} 
-          puzzle={currentPuzzle} 
+      <main className={styles["main-content"]}>
+        <PuzzleDisplay
+          key={`${currentPuzzle.id}:${submode}`}
+          puzzle={currentPuzzle}
           onNextPuzzle={handleNextPuzzle}
           isLastPuzzle={isLastPuzzle}
+          mode={submode} // <<< IMPORTANT
         />
       </main>
 
-      <StatusIndicator 
-        isUsingApi={isUsingApi} 
-        isLoading={isLoading || healthLoading}
-      />
+      <StatusIndicator isUsingApi={isUsingApi} isLoading={isLoading || healthLoading} />
       <FloatingHelpButton />
     </div>
   );
 }
 
-export default StudentPage;
+
+
+
