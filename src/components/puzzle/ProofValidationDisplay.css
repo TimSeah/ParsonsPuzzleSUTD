@@ -1,0 +1,333 @@
+.validation-display {
+  background: #2c2c2c;
+  border: var(--border-medium, 0.125rem) solid #444;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: var(--padding-xl, 1.125rem 1.5rem);
+  margin-top: var(--margin-xl, 1.5rem);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.validation-display.correct {
+  border-color: #4CAF50;
+  background: linear-gradient(135deg, #2c2c2c 0%, #1e4620 100%);
+}
+
+.validation-display.incorrect {
+  border-color: #f44336;
+}
+
+.validation-display.empty {
+  border-color: #666;
+  border-style: dashed;
+  text-align: center;
+  color: #aaa;
+}
+
+.validation-prompt {
+  margin: 0;
+  font-style: italic;
+}
+
+.validation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9375rem; /* ~15px */
+}
+
+.score-section {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem; /* ~10px */
+}
+
+.score-emoji {
+  font-size: 2em;
+}
+
+.score-value {
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.status-section {
+  display: flex;
+  align-items: center;
+}
+
+.status {
+  font-size: 1.2em;
+  font-weight: bold;
+  padding: var(--padding-md, 0.5rem 1rem);
+  border-radius: var(--radius-xl, 1.25rem);
+}
+
+.status.correct {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.status.incorrect {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.validation-feedback {
+  margin-bottom: 0.9375rem; /* ~15px */
+}
+
+.feedback-text {
+  margin: 0;
+  font-size: 1.1em;
+  line-height: 1.4;
+}
+
+.validation-details {
+  margin-bottom: 0.9375rem; /* ~15px */
+}
+
+.detail-stats {
+  display: flex;
+  gap: 1.25rem; /* ~20px */
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem; /* ~4px */
+}
+
+.stat-label {
+  font-size: 0.9em;
+  color: #aaa;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.stat-value.correct {
+  color: #4CAF50;
+}
+
+.stat-value.incorrect {
+  color: #f44336;
+}
+
+.hints-section {
+  margin-bottom: 0.9375rem; /* ~15px */
+}
+
+.hints-toggle {
+  background: #444;
+  color: #fff;
+  border: var(--border-thin, 0.0625rem) solid #666;
+  border-radius: var(--radius-sm, 0.375rem);
+  padding: var(--padding-sm, 0.5rem 0.75rem);
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.2s ease;
+}
+
+.hints-toggle:hover {
+  background: #555;
+}
+
+.hints-list {
+  margin-top: 0.625rem; /* ~10px */
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* ~12px */
+}
+
+.hint {
+  background: rgba(255, 255, 255, 0.05);
+  padding: var(--padding-lg, 0.75rem 1rem);
+  border-radius: var(--radius-md, 0.5rem);
+  border-left: var(--border-thick, 0.25rem) solid #666;
+}
+
+.hint-position {
+  border-left-color: #FF9800;
+}
+
+.hint-missing {
+  border-left-color: #2196F3;
+}
+
+.hint-next {
+  border-left-color: #4CAF50;
+}
+
+.hint-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem; /* ~10px */
+  margin-bottom: 0.625rem; /* ~10px */
+}
+
+.hint-icon {
+  font-size: 1.2em;
+  flex-shrink: 0;
+}
+
+.hint-message {
+  font-size: 0.95em;
+  line-height: 1.4;
+  color: #ddd;
+  font-weight: 500;
+}
+
+.hint-latex {
+  background: rgba(0, 0, 0, 0.3);
+  border: 0.0625rem solid #555; /* ~1px */
+  border-radius: 0.375rem; /* ~6px */
+  padding: 0.75rem 0.9375rem; /* ~12px 15px */
+  margin-top: 0.5rem; /* ~8px */
+  
+  /* Ensure KaTeX renders properly */
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* Make KaTeX text more readable in hints */
+.hint-latex .katex {
+  color: #fff !important;
+  font-size: 1.1em;
+}
+
+.hint-latex .katex .mord {
+  color: #fff !important;
+}
+
+.hint-latex .katex .mrel {
+  color: #81C784 !important; /* Light green for relations */
+}
+
+.hint-latex .katex .mop {
+  color: #FFB74D !important; /* Light orange for operators */
+}
+
+.hint-latex .katex .mopen,
+.hint-latex .katex .mclose {
+  color: #FFCC02 !important; /* Yellow for brackets */
+}
+
+.success-actions {
+  display: flex;
+  gap: 0.625rem; /* ~10px */
+  justify-content: center;
+  margin-top: 1.25rem; /* ~20px */
+  padding-top: 1.25rem; /* ~20px */
+  border-top: 0.0625rem solid #444; /* ~1px */
+}
+
+.action-button {
+  padding: 0.75rem 1.5rem; /* ~12px 24px */
+  border: none;
+  border-radius: 0.375rem; /* ~6px */
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-button.primary {
+  background: #4CAF50;
+  color: white;
+}
+
+.action-button.primary:hover {
+  background: #45a049;
+  transform: translateY(-0.125rem); /* ~-2px */
+}
+
+.action-button.secondary {
+  background: transparent;
+  color: #aaa;
+  border: 0.0625rem solid #666; /* ~1px */
+}
+
+.action-button.secondary:hover {
+  background: #444;
+  color: #fff;
+}
+
+/* Responsive design */
+@media (max-width: 48rem) { /* ~768px */
+  .validation-header {
+    flex-direction: column;
+    gap: 0.9375rem; /* ~15px */
+    text-align: center;
+  }
+
+  .detail-stats {
+    justify-content: center;
+  }
+
+  .success-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .action-button {
+    width: 100%;
+    max-width: 15.625rem; /* ~250px */
+  }
+
+  .hint-header {
+    flex-direction: column;
+    gap: 0.5rem; /* ~8px */
+  }
+
+  .hint-latex {
+    font-size: 0.9em;
+  }
+}
+
+/* Animation for hint expansion */
+.hints-list {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.625rem); /* ~-10px */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollable hint content for very long LaTeX */
+.hint-latex {
+  max-height: 12.5rem; /* ~200px */
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for hint latex */
+.hint-latex::-webkit-scrollbar {
+  width: 0.375rem; /* ~6px */
+}
+
+.hint-latex::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.1875rem; /* ~3px */
+}
+
+.hint-latex::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 0.1875rem; /* ~3px */
+}
+
+.hint-latex::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

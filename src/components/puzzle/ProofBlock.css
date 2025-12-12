@@ -1,0 +1,413 @@
+.proof-block {
+  position: relative;
+  border: 0.0625rem solid var(--color-border-default); /* ~1px */
+  padding: 1rem 1.25rem; /* ~16px 20px */
+  margin-bottom: 0.5rem; /* ~8px */
+  border-radius: 0.5rem; /* ~8px */
+  background: linear-gradient(135deg, var(--color-canvas-subtle) 0%, var(--color-canvas-default) 100%);
+  box-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.12), 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.24); /* ~1px 3px, 1px 2px */
+  cursor: grab;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+  user-select: none;
+  overflow: hidden; /* Keep content within block boundaries */
+  overflow-wrap: break-word; /* Less aggressive wrapping - only break at word boundaries when necessary */
+  word-wrap: break-word; /* Legacy support for word wrapping */
+  word-break: normal; /* Only break words at normal boundaries, not anywhere */
+  hyphens: auto; /* Add hyphenation for better breaking */
+  min-height: fit-content; /* Ensure minimum height accommodates content */
+  width: 100%; /* Ensure consistent width */
+  box-sizing: border-box; /* Include padding in width calculation */
+  white-space: normal; /* Allow normal text flow */
+  line-height: 1.5; /* Better line spacing for mixed content */
+}
+
+/* Emergency fallback for extremely long content that still doesn't wrap */
+.proof-block * {
+  max-width: 100%;
+  overflow-wrap: break-word; /* Less aggressive - only break at word boundaries */
+}
+
+/* Specific handling for KaTeX text elements - preserve readability */
+.proof-block .katex .base .mord.text .mord,
+.proof-block .katex .katex-html .base .mord.text .mord,
+.proof-block span[class*="mord text"] span[class*="mord"] {
+  white-space: normal !important;
+  word-break: normal !important; /* Don't break words in the middle */
+  overflow-wrap: break-word !important; /* Only break at word boundaries when necessary */
+  word-spacing: normal !important;
+  font-size: inherit !important;
+  display: inline !important;
+  max-width: 100% !important;
+}
+
+/* Ensure KaTeX content fits within container without breaking words unnecessarily */
+.proof-block .katex * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  word-break: normal !important; /* Preserve word integrity */
+}
+
+.proof-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0.25rem; /* ~4px */
+  height: 100%;
+  background: linear-gradient(180deg, var(--color-accent-fg) 0%, var(--color-success-fg) 100%);
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+}
+
+.proof-block:hover {
+  border-color: var(--color-border-subtle);
+  background: linear-gradient(135deg, var(--color-canvas-default) 0%, var(--color-canvas-subtle) 100%);
+  transform: translateY(-0.125rem); /* ~-2px */
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15), 0 0.125rem 0.375rem rgba(0, 0, 0, 0.20); /* ~4px 12px, 2px 6px */
+}
+
+.proof-block:hover::before {
+  opacity: 1;
+}
+
+.proof-block:active {
+  cursor: grabbing;
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.1s;
+}
+
+.proof-block:focus {
+  outline: 0.125rem solid var(--color-accent-fg); /* ~2px */
+  outline-offset: 0.125rem; /* ~2px */
+  border-color: var(--color-accent-fg);
+}
+
+/* Special styling for dragging state */
+.proof-block[data-dragging="true"] {
+  opacity: 0.8;
+  transform: rotate(3deg) scale(1.05);
+  box-shadow: 0 0.5rem 1.5625rem rgba(0, 0, 0, 0.25), 0 0.25rem 0.75rem rgba(0, 0, 0, 0.30); /* ~8px 25px, 4px 12px */
+  z-index: 1000;
+  cursor: grabbing;
+}
+
+.proof-block[data-dragging="true"]::before {
+  opacity: 1;
+  background: linear-gradient(180deg, var(--color-accent-emphasis) 0%, var(--color-success-emphasis) 100%);
+}
+
+/* Overlay styling for drag preview */
+.proof-block[data-overlay="true"] {
+  opacity: 0.95;
+  transform: rotate(2deg) scale(1.02);
+  box-shadow: 0 0.75rem 2.5rem rgba(0, 0, 0, 0.3), 0 0.375rem 1.25rem rgba(0, 0, 0, 0.35); /* ~12px 40px, 6px 20px */
+  border-color: var(--color-accent-fg);
+  background: linear-gradient(135deg, var(--color-accent-subtle) 0%, var(--color-canvas-subtle) 100%);
+}
+
+.proof-block[data-overlay="true"]::before {
+  opacity: 1;
+  background: var(--color-accent-emphasis);
+}
+
+/* Pulse animation for new blocks */
+@keyframes block-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(1.25rem) scale(0.9); /* ~20px */
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(-0.3125rem) scale(1.02); /* ~-5px */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.proof-block.entering {
+  animation: block-enter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* KaTeX content styling */
+.proof-block .katex {
+  font-size: 1.1em;
+  line-height: 1.6; /* Increased line height for better readability */
+  color: var(--color-fg-default);
+  max-width: 100%; /* Ensure KaTeX doesn't exceed container width */
+  overflow-wrap: break-word; /* Break at word boundaries when necessary */
+  word-break: normal; /* Preserve word integrity */
+  white-space: normal; /* Allow normal text wrapping */
+  display: inline; /* Changed from inline-block to inline for better flow */
+  width: auto; /* Let content determine width naturally */
+}
+
+/* Specific handling for KaTeX text elements with non-breaking spaces */
+.proof-block .katex .mord.text,
+.proof-block .katex .mord.text .mord {
+  white-space: normal !important; /* Override non-breaking spaces */
+  word-break: normal !important; /* Don't break words in the middle */
+  overflow-wrap: break-word !important; /* Only break at word boundaries when necessary */
+  word-spacing: normal !important; /* Allow normal word spacing */
+}
+
+/* Prevent excessive wrapping of inline elements */
+.proof-block .katex select,
+.proof-block select {
+  white-space: nowrap !important;
+  display: inline-block !important;
+  word-break: keep-all !important;
+}
+
+/* Force wrapping of long mathematical expressions */
+.proof-block .katex-display,
+.proof-block .katex-html {
+  overflow-wrap: break-word !important; /* Break at word boundaries when needed */
+  word-break: normal !important; /* Preserve word integrity */
+  white-space: normal !important;
+}
+
+/* Specific handling for mathematical content that tends to overflow */
+.proof-block .katex .mord.mathdefault,
+.proof-block .katex .mord.mathnormal,
+.proof-block .katex .mord.mathit {
+  word-break: normal !important; /* Don't break mathematical symbols in the middle */
+  overflow-wrap: break-word !important; /* Only break at natural boundaries */
+}
+
+/* Critical fix for the specific case with long text descriptions */
+.proof-block .katex-html .base .mord.text .mord,
+.proof-block .katex-html .mord.text,
+.proof-block .katex .mtext {
+  white-space: pre-wrap !important; /* Allow wrapping while preserving some formatting */
+  word-break: normal !important; /* Don't break words in the middle */
+  overflow-wrap: break-word !important; /* Only break at word boundaries */
+  max-width: 100% !important;
+  display: inline !important;
+}
+
+/* Handle the katex-html container specifically */
+.proof-block .katex-html {
+  white-space: normal !important;
+  overflow-wrap: break-word !important; /* Break at word boundaries when needed */
+  word-break: normal !important; /* Don't break words arbitrarily */
+  display: inline !important;
+  max-width: 100% !important;
+}
+
+.proof-block .katex .mord {
+  color: var(--color-fg-default);
+  word-break: normal; /* Allow normal breaking for math ordinaries */
+}
+
+.proof-block .katex .mbin,
+.proof-block .katex .mrel {
+  color: var(--color-accent-fg);
+  white-space: nowrap; /* Keep binary operators together */
+}
+
+.proof-block .katex .mopen,
+.proof-block .katex .mclose,
+.proof-block .katex .mpunct {
+  color: var(--color-fg-muted);
+}
+
+.proof-block .katex .mfrac {
+  color: var(--color-fg-default);
+}
+
+/* Ensure KaTeX base elements can wrap properly but preserve inline elements */
+.proof-block .katex .base {
+  display: inline;
+  max-width: 100%;
+  overflow-wrap: break-word; /* Break at word boundaries when needed */
+  word-break: normal; /* Don't break words arbitrarily */
+}
+
+/* Allow KaTeX spans to wrap but keep inline elements together */
+.proof-block .katex .katex-html {
+  white-space: normal;
+  overflow-wrap: break-word; /* Break at word boundaries when needed */
+  word-break: normal; /* Don't break words arbitrarily */
+  display: inline;
+}
+
+/* Keep mathematical operators together but allow breaking around them */
+.proof-block .katex .mbin,
+.proof-block .katex .mrel,
+.proof-block .katex .mop {
+  white-space: nowrap !important; /* Keep individual operators intact */
+}
+
+.dropdown-wrapper {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  width: 100%; /* Ensure wrapper takes full width */
+  overflow: visible; /* Ensure dropdown menus can appear */
+}
+
+.dropdown-wrapper select {
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.25rem; /* ~2px 4px */
+}
+
+/* Dropdown styling - Base styles for all dropdowns */
+.proof-block select,
+select.dropdown-op,
+select.dropdown-quantifier,
+select.dropdown-set,
+select.dropdown-setop,
+select.dropdown-logic,
+select.dropdown-complexity {
+  margin: 0 0.25rem; /* ~4px */
+  padding: 0.25rem 0.5rem; /* ~4px 8px */
+  border-radius: 0.375rem; /* ~6px */
+  font-size: 0.75rem; /* ~12px */
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+  display: inline-block; /* Prevent wrapping of dropdowns */
+  white-space: nowrap; /* Prevent text wrapping inside dropdowns */
+  vertical-align: middle; /* Align with surrounding text */
+  min-width: auto; /* Allow natural sizing */
+  max-width: none; /* Don't constrain width */
+  
+  /* Dark theme base styling */
+  background-color: var(--color-canvas-subtle);
+  color: var(--color-fg-default);
+  border: 0.0625rem solid var(--color-border-default); /* ~1px */
+  box-shadow: var(--color-primer-shadow-inset);
+}
+
+/* Hover and focus states */
+.proof-block select:hover,
+select.dropdown-op:hover,
+select.dropdown-quantifier:hover,
+select.dropdown-set:hover,
+select.dropdown-setop:hover,
+select.dropdown-logic:hover,
+select.dropdown-complexity:hover {
+  background-color: var(--color-canvas-default);
+  border-color: var(--color-border-subtle);
+}
+
+.proof-block select:focus,
+select.dropdown-op:focus,
+select.dropdown-quantifier:focus,
+select.dropdown-set:focus,
+select.dropdown-setop:focus,
+select.dropdown-logic:focus,
+select.dropdown-complexity:focus {
+  outline: 0.125rem solid var(--color-accent-fg); /* ~2px */
+  outline-offset: -0.125rem; /* ~-2px */
+  border-color: var(--color-accent-fg);
+  background-color: var(--color-canvas-default);
+}
+
+/* Type-specific accent colors */
+.dropdown-op {
+  border-color: var(--color-accent-fg);
+  background-color: var(--color-accent-subtle);
+}
+
+.dropdown-quantifier {
+  border-color: var(--color-success-fg);
+  background-color: var(--color-success-emphasis);
+  background-color: rgba(63, 185, 80, 0.15);
+}
+
+.dropdown-set,
+.dropdown-setop {
+  border-color: var(--color-attention-fg);
+  background-color: rgba(210, 153, 34, 0.15);
+}
+
+.dropdown-logic {
+  border-color: #a855f7;
+  background-color: rgba(168, 85, 247, 0.15);
+}
+
+.dropdown-complexity {
+  border-color: var(--color-danger-fg);
+  background-color: rgba(248, 81, 73, 0.15);
+}
+
+/* Option styling for better contrast */
+.proof-block select option,
+select.dropdown-op option,
+select.dropdown-quantifier option,
+select.dropdown-set option,
+select.dropdown-setop option,
+select.dropdown-logic option,
+select.dropdown-complexity option {
+  background-color: var(--color-canvas-subtle);
+  color: var(--color-fg-default);
+  padding: 4px 8px;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .proof-block {
+    padding: 12px 16px;
+    margin-bottom: 6px;
+  }
+  
+  .proof-block .katex {
+    font-size: 1em;
+  }
+  
+  /* Make dropdowns more touch-friendly on mobile */
+  .proof-block select,
+  select.dropdown-op,
+  select.dropdown-quantifier,
+  select.dropdown-set,
+  select.dropdown-setop,
+  select.dropdown-logic,
+  select.dropdown-complexity {
+    padding: 6px 10px;
+    font-size: 14px;
+    min-height: 32px; /* Better touch targets */
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .proof-block {
+    transition: none;
+  }
+  
+  .proof-block:hover {
+    transform: none;
+  }
+  
+  .proof-block:active {
+    transform: none;
+  }
+  
+  .proof-block[data-dragging="true"] {
+    transform: none;
+  }
+  
+  .proof-block.entering {
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .proof-block {
+    border-width: 2px;
+    border-color: var(--color-fg-default);
+  }
+  
+  .proof-block:hover {
+    border-color: var(--color-accent-emphasis);
+  }
+  
+  .proof-block:focus {
+    outline-width: 3px;
+  }
+}

@@ -1,0 +1,66 @@
+.custom-tag-input {
+  background: var(--color-canvas-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.custom-tag-input h4 {
+  color: var(--color-fg-default);
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem 0;
+  font-weight: 500;
+}
+
+.input-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tag-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: 0.25rem;
+  background: var(--color-canvas-default);
+  color: var(--color-fg-default);
+  font-size: 0.9rem;
+}
+
+.tag-input:focus {
+  outline: none;
+  border-color: var(--color-accent-fg);
+  box-shadow: 0 0 0 2px var(--color-accent-subtle);
+}
+
+.add-tag-btn {
+  background: var(--color-success-emphasis);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.add-tag-btn:hover:not(:disabled) {
+  background: var(--color-success-fg);
+  transform: translateY(-1px);
+}
+
+.add-tag-btn:disabled {
+  background: var(--color-canvas-subtle);
+  color: var(--color-fg-muted);
+  cursor: not-allowed;
+}
+
+.duplicate-warning {
+  color: var(--color-danger-fg);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+}

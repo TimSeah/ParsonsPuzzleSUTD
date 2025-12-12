@@ -1,0 +1,342 @@
+/* Import shared CSS variables and utilities */
+@import './styles/shared.css';
+
+:root {
+  /* GitHub Dark Theme Color Palette */
+  --color-canvas-default: #0d1117;
+  --color-canvas-subtle: #161b22;
+  --color-canvas-inset: #010409;
+  --color-border-default: #30363d;
+  --color-border-muted: #21262d;
+  --color-border-subtle: #21262d;
+  --color-fg-default: #e6edf3;
+  --color-fg-muted: #7d8590;
+  --color-fg-subtle: #656d76;
+  --color-accent-fg: #2f81f7;
+  --color-accent-emphasis: #1f6feb;
+  --color-accent-muted: rgba(56, 139, 253, 0.4);
+  --color-accent-subtle: rgba(56, 139, 253, 0.15);
+  --color-success-fg: #3fb950;
+  --color-success-emphasis: #238636;
+  --color-attention-fg: #d29922;
+  --color-attention-emphasis: #9e6a03;
+  --color-danger-fg: #f85149;
+  --color-danger-emphasis: #da3633;
+  --color-neutral-muted: rgba(110, 118, 129, 0.4);
+  --color-primer-shadow-inset: inset 0 0.0625rem 0 rgba(208, 215, 222, 0.2); /* ~1px */
+  --color-scale-gray-7: #21262d;
+  --color-scale-blue-8: #0969da;
+  
+  /* Typography */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.5;
+  font-weight: 400;
+  font-size: var(--text-md, 0.875rem);
+
+  /* Color scheme */
+  color-scheme: dark;
+  color: var(--color-fg-default);
+  background-color: var(--color-canvas-default);
+
+  /* Font rendering */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-canvas-default);
+  color: var(--color-fg-default);
+  overflow-x: hidden;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: var(--margin-xl, 1.5rem);
+  margin-bottom: var(--margin-lg, 1rem);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-fg-default);
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: var(--margin-sm, 0.5rem);
+}
+
+/* Links */
+a {
+  color: var(--color-accent-fg);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+}
+
+a:hover {
+  color: var(--color-accent-emphasis);
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: 0.125rem solid var(--color-accent-fg); /* ~2px */
+  outline-offset: -0.125rem; /* ~-2px */
+}
+
+/* Buttons */
+button {
+  position: relative;
+  display: inline-block;
+  padding: var(--padding-xs, 0.375rem 0.5rem);
+  font-size: var(--text-md, 0.875rem);
+  font-weight: 500;
+  line-height: var(--button-height, 2rem);
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  border: var(--border-thin, 0.0625rem) solid;
+  border-radius: var(--radius-sm, 0.375rem);
+  appearance: none;
+  text-decoration: none;
+  text-align: center;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+  
+  /* Default button styling */
+  color: var(--color-fg-default);
+  background-color: var(--color-canvas-subtle);
+  border-color: var(--color-border-default);
+  box-shadow: var(--color-primer-shadow-inset), 0 0.0625rem 0 rgba(208, 215, 222, 0.1); /* ~1px */
+}
+
+button:hover {
+  background-color: var(--color-canvas-default);
+  border-color: var(--color-border-subtle);
+  transition-duration: 0.1s;
+}
+
+button:active {
+  background-color: var(--color-canvas-inset);
+  border-color: var(--color-border-default);
+  transition: none;
+}
+
+button:focus {
+  outline: 0.125rem solid var(--color-accent-fg); /* ~2px */
+  outline-offset: -0.125rem; /* ~-2px */
+  box-shadow: none;
+}
+
+button:disabled {
+  color: var(--color-primer-fg-disabled);
+  background-color: var(--color-canvas-subtle);
+  border-color: var(--color-border-default);
+  cursor: default;
+}
+
+/* Form elements */
+input, textarea, select {
+  font-family: inherit;
+  font-size: var(--text-md, 0.875rem);
+  line-height: var(--input-height, 2rem);
+  color: var(--color-fg-default);
+  vertical-align: middle;
+  background-color: var(--color-canvas-default);
+  background-repeat: no-repeat;
+  background-position: right var(--gap-sm, 0.5rem) center;
+  border: var(--border-thin, 0.0625rem) solid var(--color-border-default);
+  border-radius: var(--radius-sm, 0.375rem);
+  outline: none;
+  box-shadow: var(--color-primer-shadow-inset);
+  transition: border-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-accent-fg);
+  outline: 0.125rem solid var(--color-accent-fg); /* ~2px */
+  outline-offset: -0.125rem; /* ~-2px */
+}
+
+/* Scrollbars for webkit browsers */
+::-webkit-scrollbar {
+  width: 0.75rem; /* ~12px */
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-canvas-default);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-default);
+  border-radius: 0.375rem; /* ~6px */
+  border: 0.1875rem solid var(--color-canvas-default); /* ~3px */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-border-muted);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--color-accent-muted);
+  color: var(--color-fg-default);
+}
+
+/* Focus visible for better accessibility */
+:focus-visible {
+  outline: 0.125rem solid var(--color-accent-fg); /* ~2px */
+  outline-offset: -0.125rem; /* ~-2px */
+}
+
+/* KaTeX overrides for dark theme */
+.katex {
+  color: var(--color-fg-default) !important;
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important; /* More aggressive wrapping */
+  word-wrap: break-word !important;
+  word-break: break-all !important; /* Break anywhere if needed */
+  display: inline !important; /* Changed from default to prevent excessive wrapping */
+}
+
+.katex .mord {
+  color: var(--color-fg-default) !important;
+}
+
+.katex .mbin, .katex .mrel {
+  color: var(--color-accent-fg) !important;
+  white-space: nowrap !important; /* Keep operators together */
+}
+
+.katex .mopen, .katex .mclose {
+  color: var(--color-fg-muted) !important;
+  white-space: nowrap !important; /* Keep brackets together */
+}
+
+/* Ensure KaTeX content can wrap properly but preserve operators */
+.katex .katex-html {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-all !important;
+  display: inline !important;
+}
+
+.katex .base {
+  display: inline !important;
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-all !important;
+}
+
+/* Prevent dropdowns from breaking unnecessarily */
+.katex select,
+select.dropdown-op,
+select.dropdown-quantifier,
+select.dropdown-set,
+select.dropdown-setop,
+select.dropdown-logic,
+select.dropdown-complexity {
+  white-space: nowrap !important;
+  display: inline-block !important;
+}
+
+/* Force wrapping for any overly long content */
+* {
+  word-wrap: break-word;
+}
+
+/* Special handling for mathematical content */
+.katex .mord,
+.katex .mrel,
+.katex .mbin {
+  word-break: break-all !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Critical fix for KaTeX text elements with non-breaking spaces */
+.katex .mord.text,
+.katex .mord.text .mord,
+.katex .mtext {
+  white-space: normal !important; /* Override non-breaking spaces */
+  word-break: break-all !important;
+  overflow-wrap: anywhere !important;
+  word-spacing: normal !important;
+  max-width: 100% !important;
+}
+
+/* Handle the specific nested structure that causes issues */
+.katex .katex-html .base .mord.text .mord {
+  white-space: pre-wrap !important; /* Allow wrapping while preserving some spacing */
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  max-width: 100% !important;
+  display: inline !important;
+}
+
+/* CSS to convert non-breaking spaces to regular spaces for wrapping */
+.katex .mord.text .mord::before {
+  white-space: normal !important;
+}
+
+/* Force all KaTeX text to be breakable */
+.katex * {
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  white-space: normal !important;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.625rem); /* ~10px */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}

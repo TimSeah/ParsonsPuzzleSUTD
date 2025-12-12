@@ -1,0 +1,41 @@
+.student-page {
+  min-height: calc(100vh - 120px);
+  padding: 1rem;
+  max-width: 87.5rem;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border-default);
+  margin-bottom: 1rem;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-accent-fg);
+  font-weight: 700;
+}
+
+.page-header p {
+  font-size: 1.1rem;
+  color: var(--color-fg-muted);
+  margin: 0;
+}
+
+.main-content {
+  flex: 1;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .student-page {
+    padding: 0.5rem;
+  }
+  
+  .page-header h1 {
+    font-size: 2rem;
+  }
+}
