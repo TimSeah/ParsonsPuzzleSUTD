@@ -20,34 +20,47 @@ import ProofValidationDisplay from './ProofValidationDisplay';
 import { KatexRenderer } from '../renderers';
 import './PuzzleDisplay.css';
 
-// Challenge rules
+// Lockout challenge rules
 const MAX_CONSEC_WRONG = 5;
 const LOCK_SECONDS = 10;
 
+// Timed challenge duration (10s now, later 5 * 60)
+const TIMED_SECONDS = 10;
+
 const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }) => {
   const isChallenge = mode === 'challenge';
+
+  // internal sub-mode selector in challenge
+  const [challengeModeType, setChallengeModeType] = useState('lockout');
+  const isLockoutMode = isChallenge && challengeModeType === 'lockout';
+  const isTimedMode = isChallenge && challengeModeType === 'timed';
 
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [proofBlocks, setProofBlocks] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [blockSelections, setBlockSelections] = useState({});
 
-  // Challenge-only state
+  // challenge-only state
   const [revealResults, setRevealResults] = useState(!isChallenge);
   const [wrongStreak, setWrongStreak] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(null);
   const [now, setNow] = useState(Date.now());
 
-  const isLocked = !!lockedUntil && now < lockedUntil;
-  const secondsLeft = isLocked ? Math.ceil((lockedUntil - now) / 1000) : 0;
+  const isLocked = isLockoutMode && !!lockedUntil && now < lockedUntil;
+  const secondsLeftLockout = isLocked ? Math.ceil((lockedUntil - now) / 1000) : 0;
 
-  // Persist challenge lockout per puzzle (prevents refresh bypass)
+  // timed-mode state
+  const [timeLeft, setTimeLeft] = useState(TIMED_SECONDS);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerFinished, setTimerFinished] = useState(false);
+
+  // persist lockout per puzzle
   const challengeStorageKey = useMemo(() => {
     const id = puzzle?.id ?? 'no-puzzle';
     return `challenge_lockout:${id}`;
   }, [puzzle?.id]);
 
-  // Basic scoring based on correct positions vs solutionOrder
+  // evaluation
   const evaluation = useMemo(() => {
     if (!puzzle || !puzzle.solutionOrder) {
       return {
@@ -75,27 +88,36 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     return { canEvaluate: true, total, correct, percent, isFullyCorrect, missing };
   }, [puzzle, proofBlocks]);
 
+  // reset whenever puzzle or challenge sub-mode changes
   useEffect(() => {
     if (puzzle && puzzle.blocks) {
-      // Shuffle the blocks for the puzzle
       const shuffledBlocks = [...puzzle.blocks].sort(() => Math.random() - 0.5);
       setAvailableBlocks(shuffledBlocks);
       setProofBlocks([]);
       setBlockSelections({});
       setActiveId(null);
 
-      // Reset challenge UI for new puzzle / mode
       setRevealResults(!isChallenge);
       setWrongStreak(0);
+      setLockedUntil(null);
 
-      // Load persisted lockout state
-      if (isChallenge) {
+      // reset timed state
+      setTimeLeft(TIMED_SECONDS);
+      setTimerRunning(false);
+      setTimerFinished(false);
+
+      // restore lockout state only in lockout mode
+      if (isLockoutMode) {
         try {
           const saved = localStorage.getItem(challengeStorageKey);
           if (saved) {
             const parsed = JSON.parse(saved);
-            setLockedUntil(typeof parsed.lockedUntil === 'number' ? parsed.lockedUntil : null);
-            setWrongStreak(typeof parsed.wrongStreak === 'number' ? parsed.wrongStreak : 0);
+            setLockedUntil(
+              typeof parsed.lockedUntil === 'number' ? parsed.lockedUntil : null
+            );
+            setWrongStreak(
+              typeof parsed.wrongStreak === 'number' ? parsed.wrongStreak : 0
+            );
           } else {
             setLockedUntil(null);
           }
@@ -107,12 +129,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         setLockedUntil(null);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [puzzle, isChallenge, challengeStorageKey]);
+  }, [puzzle, isChallenge, isLockoutMode, challengeStorageKey]);
 
-  // Persist lockout state
+  // persist lockout state
   useEffect(() => {
-    if (!isChallenge) return;
+    if (!isLockoutMode) return;
     try {
       localStorage.setItem(
         challengeStorageKey,
@@ -121,24 +142,46 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     } catch {
       // ignore
     }
-  }, [isChallenge, challengeStorageKey, lockedUntil, wrongStreak]);
+  }, [isLockoutMode, challengeStorageKey, lockedUntil, wrongStreak]);
 
-  // Tick countdown while locked
+  // lockout countdown
   useEffect(() => {
     if (!isLocked) return;
-    const id = setInterval(() => setNow(Date.now()), 10000); //changed 250 to 10000, but now the lockout time display changes 
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [isLocked]);
 
-  // When lock ends, allow them to try again
+  // lockout end
   useEffect(() => {
     if (!lockedUntil) return;
     if (isLocked) return;
 
     setLockedUntil(null);
     setWrongStreak(0);
-    setRevealResults(false); // make them Submit again to see results
+    setRevealResults(false);
   }, [isLocked, lockedUntil]);
+
+  // timed-mode countdown
+  useEffect(() => {
+    if (!isTimedMode) return;
+    if (!timerRunning) return;
+    if (timerFinished) return;
+
+    const id = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(id);
+          setTimerRunning(false);
+          setTimerFinished(true);
+          setRevealResults(true); // auto-show result
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [isTimedMode, timerRunning, timerFinished]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -152,17 +195,31 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   };
 
   const getBlockById = (id) => {
-    return availableBlocks.find(b => b.id === id) || proofBlocks.find(b => b.id === id);
+    return (
+      availableBlocks.find(b => b.id === id) ||
+      proofBlocks.find(b => b.id === id)
+    );
   };
 
   const handleDragStart = (event) => {
-    if (isChallenge && isLocked) return; // disable during lockout
+    if (isLockoutMode && isLocked) return;
+    if (isTimedMode && timerFinished) return;
+
+    // auto-start timer on first interaction
+    if (isTimedMode && !timerRunning && timeLeft > 0) {
+      setTimerRunning(true);
+    }
+
     const { active } = event;
     setActiveId(active.id);
   };
 
   const handleDragEnd = (event) => {
-    if (isChallenge && isLocked) {
+    if (isLockoutMode && isLocked) {
+      setActiveId(null);
+      return;
+    }
+    if (isTimedMode && timerFinished) {
       setActiveId(null);
       return;
     }
@@ -181,10 +238,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     if (!activeContainer || !overContainer) return;
 
     if (activeContainer === overContainer) {
-      // Reordering within the same list
       if (activeContainer === 'palette') {
         if (activeId !== overId) {
-          setAvailableBlocks((items) => {
+          setAvailableBlocks(items => {
             const oldIndex = items.findIndex(item => item.id === activeId);
             const newIndex = items.findIndex(item => item.id === overId);
             return arrayMove(items, oldIndex, newIndex);
@@ -192,7 +248,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         }
       } else if (activeContainer === 'workspace') {
         if (activeId !== overId) {
-          setProofBlocks((items) => {
+          setProofBlocks(items => {
             const oldIndex = items.findIndex(item => item.id === activeId);
             const newIndex = items.findIndex(item => item.id === overId);
             return arrayMove(items, oldIndex, newIndex);
@@ -200,7 +256,6 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         }
       }
     } else {
-      // Moving from one list to another
       let itemToMove;
       if (activeContainer === 'palette') {
         itemToMove = availableBlocks.find(item => item.id === activeId);
@@ -210,7 +265,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         setProofBlocks(prev => {
           const overIndex = prev.findIndex(item => item.id === overId);
           if (overIndex !== -1) {
-            return [...prev.slice(0, overIndex), itemToMove, ...prev.slice(overIndex)];
+            return [
+              ...prev.slice(0, overIndex),
+              itemToMove,
+              ...prev.slice(overIndex),
+            ];
           }
           return [...prev, itemToMove];
         });
@@ -222,7 +281,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         setAvailableBlocks(prev => {
           const overIndex = prev.findIndex(item => item.id === overId);
           if (overIndex !== -1) {
-            return [...prev.slice(0, overIndex), itemToMove, ...prev.slice(overIndex)];
+            return [
+              ...prev.slice(0, overIndex),
+              itemToMove,
+              ...prev.slice(overIndex),
+            ];
           }
           return [...prev, itemToMove];
         });
@@ -235,13 +298,14 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       ...prev,
       [blockId]: {
         ...prev[blockId],
-        [varType]: value
-      }
+        [varType]: value,
+      },
     }));
   };
 
   const handleReset = () => {
-    if (isChallenge && isLocked) return;
+    if (isLockoutMode && isLocked) return;
+    if (isTimedMode && timerFinished) return;
 
     if (puzzle && puzzle.blocks) {
       const shuffledBlocks = [...puzzle.blocks].sort(() => Math.random() - 0.5);
@@ -250,13 +314,20 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       setBlockSelections({});
       setActiveId(null);
 
-      // Challenge: hide results after reset
       if (isChallenge) setRevealResults(false);
+
+      if (isTimedMode) {
+        setTimeLeft(TIMED_SECONDS);
+        setTimerRunning(false);
+        setTimerFinished(false);
+      }
     }
   };
 
   const handleShowSolution = () => {
-    if (isChallenge && isLocked) return;
+    if (isLockoutMode && isLocked) return;
+    // only allow solution after time is up in timed mode
+    if (isTimedMode && !timerFinished) return;
 
     if (puzzle && puzzle.blocks && puzzle.solutionOrder) {
       const solutionBlocks = puzzle.solutionOrder
@@ -266,43 +337,43 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       setProofBlocks(solutionBlocks);
       setAvailableBlocks([]);
 
-      // In challenge, showing solution basically reveals results
       if (isChallenge) setRevealResults(true);
     }
   };
 
   const handleSubmit = () => {
     if (!isChallenge) return;
-    if (isLocked) return;
 
-    // Reveal results only on submit
+    // no manual submit in timed mode
+    if (isTimedMode) return;
+
+    if (isLockoutMode && isLocked) return;
+
     setRevealResults(true);
 
-    // We evaluate correctness right here (based on solutionOrder)
     if (!evaluation.canEvaluate) return;
 
     if (evaluation.isFullyCorrect) {
-      // Correct attempt resets wrong streak
       setWrongStreak(0);
       return;
     }
 
-    // Wrong attempt increases streak; lock at 5 consecutive wrong submits
-    setWrongStreak(prev => {
-      const next = prev + 1;
+    if (isLockoutMode) {
+      setWrongStreak(prev => {
+        const next = prev + 1;
 
-      if (next >= MAX_CONSEC_WRONG) {
-        const until = Date.now() + LOCK_SECONDS * 1000;
-        setLockedUntil(until);
-        setRevealResults(false);
-        return 0;
-      }
+        if (next >= MAX_CONSEC_WRONG) {
+          const until = Date.now() + LOCK_SECONDS * 1000;
+          setLockedUntil(until);
+          setRevealResults(false);
+          return 0;
+        }
 
-      return next;
-    });
+        return next;
+      });
+    }
   };
 
-  // Droppable wrappers
   const PaletteDroppable = ({ children }) => {
     const { setNodeRef } = useDroppable({ id: 'palette' });
     return (
@@ -327,6 +398,12 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     return <p>Loading puzzle...</p>;
   }
 
+  const formatTime = (secs) => {
+    const m = String(Math.floor(secs / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -339,14 +416,54 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
           <h2><KatexRenderer latex={puzzle.title} /></h2>
           <p><strong><KatexRenderer latex={puzzle.statement} /></strong></p>
 
-          {/* Controls */}
+          {/* challenge sub-mode selector */}
+          {isChallenge && (
+            <div style={{ marginBottom: 8 }}>
+              <button
+                onClick={() => setChallengeModeType('lockout')}
+                className="control-button"
+                style={{
+                  marginRight: 8,
+                  fontWeight: challengeModeType === 'lockout' ? 700 : 400,
+                  background:
+                    challengeModeType === 'lockout'
+                      ? 'rgba(56,189,248,0.25)'
+                      : 'rgba(255,255,255,0.06)',
+                }}
+              >
+                🔒 Lockout mode
+              </button>
+              <button
+                onClick={() => setChallengeModeType('timed')}
+                className="control-button"
+                style={{
+                  fontWeight: challengeModeType === 'timed' ? 700 : 400,
+                  background:
+                    challengeModeType === 'timed'
+                      ? 'rgba(56,189,248,0.25)'
+                      : 'rgba(255,255,255,0.06)',
+                }}
+              >
+                ⏱ Timed mode
+              </button>
+            </div>
+          )}
+
+          {/* controls */}
           <div className="puzzle-controls">
             <button
               className="control-button reset"
               onClick={handleReset}
-              title="Shuffle blocks and start over"
-              disabled={isChallenge && isLocked}
-              style={isChallenge && isLocked ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+              disabled={
+                (isLockoutMode && isLocked) ||
+                (isTimedMode && timerFinished)
+              }
+              style={
+                (isLockoutMode && isLocked) ||
+                (isTimedMode && timerFinished)
+                  ? { opacity: 0.5, cursor: 'not-allowed' }
+                  : undefined
+              }
             >
               🔄 Reset
             </button>
@@ -354,26 +471,36 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
             <button
               className="control-button solution"
               onClick={handleShowSolution}
-              title="Show the correct solution"
-              disabled={isChallenge && isLocked}
-              style={isChallenge && isLocked ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+              disabled={
+                (isLockoutMode && isLocked) ||
+                (isTimedMode && !timerFinished)
+              }
+              style={
+                (isLockoutMode && isLocked) ||
+                (isTimedMode && !timerFinished)
+                  ? { opacity: 0.5, cursor: 'not-allowed' }
+                  : undefined
+              }
             >
               💡 Show Solution
             </button>
 
-            {/* Challenge-only Submit */}
-            {isChallenge && (
+            {/* Submit only in practice or lockout challenge */}
+            {(!isChallenge || isLockoutMode) && (
               <button
                 className="control-button"
                 onClick={handleSubmit}
-                title="Submit to check correctness"
-                disabled={isLocked}
+                disabled={isLockoutMode && isLocked}
                 style={{
                   marginLeft: 8,
-                  background: isLocked ? 'rgba(255,255,255,0.05)' : 'rgba(34,197,94,0.18)',
+                  background: isLockoutMode && isLocked
+                    ? 'rgba(255,255,255,0.05)'
+                    : 'rgba(34,197,94,0.18)',
                   border: '1px solid rgba(255,255,255,0.14)',
-                  color: isLocked ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.92)',
-                  cursor: isLocked ? 'not-allowed' : 'pointer',
+                  color: isLockoutMode && isLocked
+                    ? 'rgba(255,255,255,0.45)'
+                    : 'rgba(255,255,255,0.92)',
+                  cursor: isLockoutMode && isLocked ? 'not-allowed' : 'pointer',
                   fontWeight: 700,
                 }}
               >
@@ -382,34 +509,50 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
             )}
           </div>
 
-          {/* Challenge banner */}
+          {/* challenge banner */}
           {isChallenge && (
             <div
               style={{
                 marginTop: 10,
                 padding: '10px 12px',
                 borderRadius: 10,
-                border: isLocked ? '1px solid rgba(248,113,113,0.55)' : '1px solid rgba(56,189,248,0.35)',
-                background: isLocked ? 'rgba(248,113,113,0.10)' : 'rgba(56,189,248,0.08)',
+                border: isLockoutMode && isLocked
+                  ? '1px solid rgba(248,113,113,0.55)'
+                  : '1px solid rgba(56,189,248,0.35)',
+                background: isLockoutMode && isLocked
+                  ? 'rgba(248,113,113,0.10)'
+                  : 'rgba(56,189,248,0.08)',
                 color: 'rgba(255,255,255,0.9)',
                 fontSize: 14,
                 lineHeight: 1.35,
               }}
             >
-              {isLocked ? (
-                <>
-                  <strong>Locked:</strong> Try again in <strong>{secondsLeft}s</strong>.
-                </>
+              {isLockoutMode ? (
+                isLocked ? (
+                  <>
+                    <strong>Lockout Mode:</strong> Locked. Try again in{' '}
+                    <strong>{secondsLeftLockout}s</strong>.
+                  </>
+                ) : (
+                  <>
+                    <strong>Lockout Mode:</strong> No progress shown until you press{' '}
+                    <strong>Submit</strong>. Consecutive wrong submits:{' '}
+                    {wrongStreak}/{MAX_CONSEC_WRONG}.
+                  </>
+                )
               ) : (
                 <>
-                  <strong>Challenge Mode:</strong> No progress shown until you press <strong>Submit</strong>.
-                  <span style={{ opacity: 0.85 }}> (Consecutive wrong submits: {wrongStreak}/{MAX_CONSEC_WRONG})</span>
+                  <strong>Timed Mode:</strong> Time left{' '}
+                  <strong>{formatTime(timeLeft)}</strong>.{' '}
+                  {timerFinished
+                    ? 'Time is up. Your last attempt has been graded automatically.'
+                    : 'Build your proof before the timer reaches zero.'}
                 </>
               )}
             </div>
           )}
 
-          {/* Challenge results (simple percent) - only after Submit */}
+          {/* results */}
           {isChallenge && revealResults && evaluation.canEvaluate && (
             <div
               style={{
@@ -423,8 +566,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                 lineHeight: 1.35,
               }}
             >
-              <strong>Result:</strong> {evaluation.percent}% correct ({evaluation.correct}/{evaluation.total} steps in correct position)
-              {evaluation.missing > 0 ? ` • Missing ${evaluation.missing} step(s)` : ''}
+              <strong>Result:</strong> {evaluation.percent}% correct (
+              {evaluation.correct}/{evaluation.total} steps in correct position)
+              {evaluation.missing > 0
+                ? ` • Missing ${evaluation.missing} step(s)`
+                : ''}
               {evaluation.isFullyCorrect ? ' • ✅ Fully correct!' : ''}
             </div>
           )}
@@ -433,7 +579,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         <div className="dnd-columns-container">
           <div className="puzzle-palette-container">
             <h3>Available Steps:</h3>
-            <SortableContext items={availableBlocks.map(b => b.id)} strategy={verticalListSortingStrategy} id="palette">
+            <SortableContext
+              items={availableBlocks.map(b => b.id)}
+              strategy={verticalListSortingStrategy}
+              id="palette"
+            >
               <PaletteDroppable>
                 {availableBlocks.map(block => (
                   <ProofBlock
@@ -443,7 +593,10 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                     isInWorkspace={false}
                     blockSelections={blockSelections[block.id] || {}}
                     onSelectionChange={handleSelectionChange}
-                    disabled={isChallenge && isLocked}
+                    disabled={
+                      (isLockoutMode && isLocked) ||
+                      (isTimedMode && timerFinished)
+                    }
                   />
                 ))}
                 {availableBlocks.length === 0 && (
@@ -455,7 +608,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
           <div className="puzzle-workspace-container">
             <h3>Your Proof:</h3>
-            <SortableContext items={proofBlocks.map(b => b.id)} strategy={verticalListSortingStrategy} id="workspace">
+            <SortableContext
+              items={proofBlocks.map(b => b.id)}
+              strategy={verticalListSortingStrategy}
+              id="workspace"
+            >
               <WorkspaceDroppable>
                 {proofBlocks.map((block, index) => (
                   <div key={block.id} className="proof-step">
@@ -466,20 +623,23 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                       isInWorkspace={true}
                       blockSelections={blockSelections[block.id] || {}}
                       onSelectionChange={handleSelectionChange}
-                      disabled={isChallenge && isLocked}
+                      disabled={
+                        (isLockoutMode && isLocked) ||
+                        (isTimedMode && timerFinished)
+                      }
                     />
                   </div>
                 ))}
                 {proofBlocks.length === 0 && (
-                  <div className="empty-message">Drag steps here to build your proof</div>
+                  <div className="empty-message">
+                    Drag steps here to build your proof
+                  </div>
                 )}
               </WorkspaceDroppable>
             </SortableContext>
           </div>
         </div>
 
-        {/* ✅ Practice: show the original % progress box
-            ✅ Challenge: HIDE it completely (students shouldn't see it) */}
         {!isChallenge && (
           <ProofValidationDisplay
             puzzle={puzzle}
@@ -493,7 +653,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
       <DragOverlay dropAnimation={null}>
         {activeId && activeBlock ? (
-          <ProofBlock id={activeBlock.id} latexContent={activeBlock.latex} isOverlay={true} />
+          <ProofBlock
+            id={activeBlock.id}
+            latexContent={activeBlock.latex}
+            isOverlay={true}
+          />
         ) : null}
       </DragOverlay>
     </DndContext>
@@ -501,5 +665,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 };
 
 export default PuzzleDisplay;
+
+
 
 
