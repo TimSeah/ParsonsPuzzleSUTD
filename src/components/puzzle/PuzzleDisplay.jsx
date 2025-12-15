@@ -27,6 +27,9 @@ const LOCK_SECONDS = 10;
 // Timed challenge duration (10s now, later 5 * 60)
 const TIMED_SECONDS = 10;
 
+// ✅ NEW: Limited-moves rule
+const MAX_MOVES = 20;
+
 const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }) => {
   const isChallenge = mode === 'challenge';
 
@@ -34,6 +37,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   const [challengeModeType, setChallengeModeType] = useState('lockout');
   const isLockoutMode = isChallenge && challengeModeType === 'lockout';
   const isTimedMode = isChallenge && challengeModeType === 'timed';
+  const isLimitedMovesMode = isChallenge && challengeModeType === 'limited'; // ✅ NEW
 
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [proofBlocks, setProofBlocks] = useState([]);
@@ -42,10 +46,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
   // challenge-only state
   const [revealResults, setRevealResults] = useState(!isChallenge);
+
+  // lockout-only state
   const [wrongStreak, setWrongStreak] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(null);
   const [now, setNow] = useState(Date.now());
-
   const isLocked = isLockoutMode && !!lockedUntil && now < lockedUntil;
   const secondsLeftLockout = isLocked ? Math.ceil((lockedUntil - now) / 1000) : 0;
 
@@ -53,6 +58,10 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   const [timeLeft, setTimeLeft] = useState(TIMED_SECONDS);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerFinished, setTimerFinished] = useState(false);
+
+  // ✅ NEW: limited-moves state
+  const [movesLeft, setMovesLeft] = useState(MAX_MOVES);
+  const [movesFinished, setMovesFinished] = useState(false);
 
   // persist lockout per puzzle
   const challengeStorageKey = useMemo(() => {
@@ -98,6 +107,8 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       setActiveId(null);
 
       setRevealResults(!isChallenge);
+
+      // reset lockout state
       setWrongStreak(0);
       setLockedUntil(null);
 
@@ -105,6 +116,10 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       setTimeLeft(TIMED_SECONDS);
       setTimerRunning(false);
       setTimerFinished(false);
+
+      // ✅ reset limited-moves state
+      setMovesLeft(MAX_MOVES);
+      setMovesFinished(false);
 
       // restore lockout state only in lockout mode
       if (isLockoutMode) {
@@ -129,7 +144,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         setLockedUntil(null);
       }
     }
-  }, [puzzle, isChallenge, isLockoutMode, challengeStorageKey]);
+  }, [puzzle, isChallenge, isLockoutMode, challengeStorageKey, challengeModeType]);
 
   // persist lockout state
   useEffect(() => {
@@ -188,6 +203,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     useSensor(KeyboardSensor)
   );
 
+  const interactionDisabled =
+    (isLockoutMode && isLocked) ||
+    (isTimedMode && timerFinished) ||
+    (isLimitedMovesMode && movesFinished);
+
   const findContainer = (id) => {
     if (availableBlocks.find(item => item.id === id)) return 'palette';
     if (proofBlocks.find(item => item.id === id)) return 'workspace';
@@ -202,8 +222,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   };
 
   const handleDragStart = (event) => {
-    if (isLockoutMode && isLocked) return;
-    if (isTimedMode && timerFinished) return;
+    if (interactionDisabled) return;
 
     // auto-start timer on first interaction
     if (isTimedMode && !timerRunning && timeLeft > 0) {
@@ -215,11 +234,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   };
 
   const handleDragEnd = (event) => {
-    if (isLockoutMode && isLocked) {
-      setActiveId(null);
-      return;
-    }
-    if (isTimedMode && timerFinished) {
+    if (interactionDisabled) {
       setActiveId(null);
       return;
     }
@@ -237,9 +252,13 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
     if (!activeContainer || !overContainer) return;
 
+    // ✅ track whether a real move happened (for Limited Moves Mode)
+    let didMove = false;
+
     if (activeContainer === overContainer) {
       if (activeContainer === 'palette') {
         if (activeId !== overId) {
+          didMove = true;
           setAvailableBlocks(items => {
             const oldIndex = items.findIndex(item => item.id === activeId);
             const newIndex = items.findIndex(item => item.id === overId);
@@ -248,6 +267,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         }
       } else if (activeContainer === 'workspace') {
         if (activeId !== overId) {
+          didMove = true;
           setProofBlocks(items => {
             const oldIndex = items.findIndex(item => item.id === activeId);
             const newIndex = items.findIndex(item => item.id === overId);
@@ -261,6 +281,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         itemToMove = availableBlocks.find(item => item.id === activeId);
         if (!itemToMove) return;
 
+        didMove = true;
         setAvailableBlocks(prev => prev.filter(item => item.id !== activeId));
         setProofBlocks(prev => {
           const overIndex = prev.findIndex(item => item.id === overId);
@@ -277,6 +298,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         itemToMove = proofBlocks.find(item => item.id === activeId);
         if (!itemToMove) return;
 
+        didMove = true;
         setProofBlocks(prev => prev.filter(item => item.id !== activeId));
         setAvailableBlocks(prev => {
           const overIndex = prev.findIndex(item => item.id === overId);
@@ -291,6 +313,19 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         });
       }
     }
+
+    // ✅ Limited Moves deduction (only if a real move happened)
+    if (isLimitedMovesMode && didMove) {
+      setMovesLeft(prev => {
+        const next = prev - 1;
+        if (next <= 0) {
+          setMovesFinished(true);
+          setRevealResults(true); // auto-grade when moves are used up
+          return 0;
+        }
+        return next;
+      });
+    }
   };
 
   const handleSelectionChange = (blockId, varType, value) => {
@@ -304,8 +339,8 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   };
 
   const handleReset = () => {
+    // keep lockout restriction (don’t allow bypass)
     if (isLockoutMode && isLocked) return;
-    if (isTimedMode && timerFinished) return;
 
     if (puzzle && puzzle.blocks) {
       const shuffledBlocks = [...puzzle.blocks].sort(() => Math.random() - 0.5);
@@ -321,6 +356,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
         setTimerRunning(false);
         setTimerFinished(false);
       }
+
+      if (isLimitedMovesMode) {
+        setMovesLeft(MAX_MOVES);
+        setMovesFinished(false);
+      }
     }
   };
 
@@ -328,6 +368,8 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     if (isLockoutMode && isLocked) return;
     // only allow solution after time is up in timed mode
     if (isTimedMode && !timerFinished) return;
+    // only allow solution after moves end (or after submit) in limited mode
+    if (isLimitedMovesMode && !movesFinished && !revealResults) return;
 
     if (puzzle && puzzle.blocks && puzzle.solutionOrder) {
       const solutionBlocks = puzzle.solutionOrder
@@ -348,6 +390,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     if (isTimedMode) return;
 
     if (isLockoutMode && isLocked) return;
+    if (isLimitedMovesMode && movesFinished) return;
 
     setRevealResults(true);
 
@@ -358,6 +401,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       return;
     }
 
+    // lockout punishments only apply in lockout mode
     if (isLockoutMode) {
       setWrongStreak(prev => {
         const next = prev + 1;
@@ -406,7 +450,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
   return (
     <DndContext
-      sensors={sensors}
+      sensors={interactionDisabled ? [] : sensors}
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -433,10 +477,12 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
               >
                 🔒 Lockout mode
               </button>
+
               <button
                 onClick={() => setChallengeModeType('timed')}
                 className="control-button"
                 style={{
+                  marginRight: 8,
                   fontWeight: challengeModeType === 'timed' ? 700 : 400,
                   background:
                     challengeModeType === 'timed'
@@ -446,6 +492,21 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
               >
                 ⏱ Timed mode
               </button>
+
+              {/* ✅ NEW: Limited moves */}
+              <button
+                onClick={() => setChallengeModeType('limited')}
+                className="control-button"
+                style={{
+                  fontWeight: challengeModeType === 'limited' ? 700 : 400,
+                  background:
+                    challengeModeType === 'limited'
+                      ? 'rgba(56,189,248,0.25)'
+                      : 'rgba(255,255,255,0.06)',
+                }}
+              >
+                🎯 Limited moves
+              </button>
             </div>
           )}
 
@@ -454,16 +515,8 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
             <button
               className="control-button reset"
               onClick={handleReset}
-              disabled={
-                (isLockoutMode && isLocked) ||
-                (isTimedMode && timerFinished)
-              }
-              style={
-                (isLockoutMode && isLocked) ||
-                (isTimedMode && timerFinished)
-                  ? { opacity: 0.5, cursor: 'not-allowed' }
-                  : undefined
-              }
+              disabled={isLockoutMode && isLocked}
+              style={(isLockoutMode && isLocked) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             >
               🔄 Reset
             </button>
@@ -473,11 +526,13 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
               onClick={handleShowSolution}
               disabled={
                 (isLockoutMode && isLocked) ||
-                (isTimedMode && !timerFinished)
+                (isTimedMode && !timerFinished) ||
+                (isLimitedMovesMode && !movesFinished && !revealResults)
               }
               style={
                 (isLockoutMode && isLocked) ||
-                (isTimedMode && !timerFinished)
+                (isTimedMode && !timerFinished) ||
+                (isLimitedMovesMode && !movesFinished && !revealResults)
                   ? { opacity: 0.5, cursor: 'not-allowed' }
                   : undefined
               }
@@ -485,22 +540,27 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
               💡 Show Solution
             </button>
 
-            {/* Submit only in practice or lockout challenge */}
-            {(!isChallenge || isLockoutMode) && (
+            {/* Submit in practice OR lockout OR limited-moves (NOT timed) */}
+            {(!isChallenge || isLockoutMode || isLimitedMovesMode) && (
               <button
                 className="control-button"
                 onClick={handleSubmit}
-                disabled={isLockoutMode && isLocked}
+                disabled={(isLockoutMode && isLocked) || (isLimitedMovesMode && movesFinished)}
                 style={{
                   marginLeft: 8,
-                  background: isLockoutMode && isLocked
-                    ? 'rgba(255,255,255,0.05)'
-                    : 'rgba(34,197,94,0.18)',
+                  background:
+                    (isLockoutMode && isLocked) || (isLimitedMovesMode && movesFinished)
+                      ? 'rgba(255,255,255,0.05)'
+                      : 'rgba(34,197,94,0.18)',
                   border: '1px solid rgba(255,255,255,0.14)',
-                  color: isLockoutMode && isLocked
-                    ? 'rgba(255,255,255,0.45)'
-                    : 'rgba(255,255,255,0.92)',
-                  cursor: isLockoutMode && isLocked ? 'not-allowed' : 'pointer',
+                  color:
+                    (isLockoutMode && isLocked) || (isLimitedMovesMode && movesFinished)
+                      ? 'rgba(255,255,255,0.45)'
+                      : 'rgba(255,255,255,0.92)',
+                  cursor:
+                    (isLockoutMode && isLocked) || (isLimitedMovesMode && movesFinished)
+                      ? 'not-allowed'
+                      : 'pointer',
                   fontWeight: 700,
                 }}
               >
@@ -516,10 +576,10 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                 marginTop: 10,
                 padding: '10px 12px',
                 borderRadius: 10,
-                border: isLockoutMode && isLocked
+                border: (isLockoutMode && isLocked)
                   ? '1px solid rgba(248,113,113,0.55)'
                   : '1px solid rgba(56,189,248,0.35)',
-                background: isLockoutMode && isLocked
+                background: (isLockoutMode && isLocked)
                   ? 'rgba(248,113,113,0.10)'
                   : 'rgba(56,189,248,0.08)',
                 color: 'rgba(255,255,255,0.9)',
@@ -540,13 +600,21 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                     {wrongStreak}/{MAX_CONSEC_WRONG}.
                   </>
                 )
-              ) : (
+              ) : isTimedMode ? (
                 <>
                   <strong>Timed Mode:</strong> Time left{' '}
                   <strong>{formatTime(timeLeft)}</strong>.{' '}
                   {timerFinished
                     ? 'Time is up. Your last attempt has been graded automatically.'
                     : 'Build your proof before the timer reaches zero.'}
+                </>
+              ) : (
+                <>
+                  <strong>Limited Moves Mode:</strong> You have{' '}
+                  <strong>{movesLeft}</strong> move(s) left.{' '}
+                  {movesFinished
+                    ? 'Moves are over. Your attempt has been graded automatically.'
+                    : 'Plan before dragging to avoid wasting moves.'}
                 </>
               )}
             </div>
@@ -593,10 +661,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                     isInWorkspace={false}
                     blockSelections={blockSelections[block.id] || {}}
                     onSelectionChange={handleSelectionChange}
-                    disabled={
-                      (isLockoutMode && isLocked) ||
-                      (isTimedMode && timerFinished)
-                    }
+                    disabled={interactionDisabled}
                   />
                 ))}
                 {availableBlocks.length === 0 && (
@@ -623,10 +688,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                       isInWorkspace={true}
                       blockSelections={blockSelections[block.id] || {}}
                       onSelectionChange={handleSelectionChange}
-                      disabled={
-                        (isLockoutMode && isLocked) ||
-                        (isTimedMode && timerFinished)
-                      }
+                      disabled={interactionDisabled}
                     />
                   </div>
                 ))}
@@ -666,6 +728,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
 export default PuzzleDisplay;
 
+//Challenge mode introduces structured constraints to encourage deeper reasoning and disciplined problem-solving. Lockout mode limits repeated incorrect submissions, prompting students to pause and reflect between attempts rather than relying on rapid trial-and-error. Timed mode imposes a time constraint that promotes fluency and retrieval of proof structure under pressure, similar to assessment conditions. Limited moves mode restricts the number of allowed actions, encouraging students to plan their proof carefully before manipulating steps, thereby shifting focus from exploratory dragging to deliberate, expert-like reasoning. Together, these modes assess complementary skills while discouraging brute-force strategies.
+
+  //Lockout mode discourages repeated incorrect submissions by limiting how often students can retry, while limited moves mode discourages trial-and-error construction by restricting how many actions students can take. Together, they target different forms of unproductive problem-solving behavior.
 
 
 
