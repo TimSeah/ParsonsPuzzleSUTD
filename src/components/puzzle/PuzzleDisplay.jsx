@@ -47,6 +47,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   // challenge-only state
   const [revealResults, setRevealResults] = useState(!isChallenge);
 
+  // ✅ NEW: submit confirmation (Lockout mode only)
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
   // lockout-only state
   const [wrongStreak, setWrongStreak] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(null);
@@ -107,6 +110,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       setActiveId(null);
 
       setRevealResults(!isChallenge);
+
+      // ✅ close submit confirm on new puzzle / mode reset
+      setShowSubmitConfirm(false);
 
       // reset lockout state
       setWrongStreak(0);
@@ -175,6 +181,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     setWrongStreak(0);
     setRevealResults(false);
   }, [isLocked, lockedUntil]);
+
+  // ✅ close confirm when lockout begins (avoid stale confirm popup)
+  useEffect(() => {
+    if (isLocked) setShowSubmitConfirm(false);
+  }, [isLocked]);
 
   // timed-mode countdown
   useEffect(() => {
@@ -342,6 +353,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     // keep lockout restriction (don’t allow bypass)
     if (isLockoutMode && isLocked) return;
 
+    // ✅ close confirm on reset
+    setShowSubmitConfirm(false);
+
     if (puzzle && puzzle.blocks) {
       const shuffledBlocks = [...puzzle.blocks].sort(() => Math.random() - 0.5);
       setAvailableBlocks(shuffledBlocks);
@@ -371,6 +385,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     // only allow solution after moves end (or after submit) in limited mode
     if (isLimitedMovesMode && !movesFinished && !revealResults) return;
 
+    // ✅ close confirm if they show solution
+    setShowSubmitConfirm(false);
+
     if (puzzle && puzzle.blocks && puzzle.solutionOrder) {
       const solutionBlocks = puzzle.solutionOrder
         .map(id => puzzle.blocks.find(block => block.id === id))
@@ -392,6 +409,14 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
     if (isLockoutMode && isLocked) return;
     if (isLimitedMovesMode && movesFinished) return;
 
+    // ✅ Lockout mode requires confirmation first
+    if (isLockoutMode && !showSubmitConfirm) {
+      setShowSubmitConfirm(true);
+      return;
+    }
+
+    // confirmed submit (or non-lockout modes)
+    setShowSubmitConfirm(false);
     setRevealResults(true);
 
     if (!evaluation.canEvaluate) return;
@@ -545,7 +570,10 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
               <button
                 className="control-button"
                 onClick={handleSubmit}
-                disabled={(isLockoutMode && isLocked) || (isLimitedMovesMode && movesFinished)}
+                disabled={
+                  (isLockoutMode && (isLocked || showSubmitConfirm)) ||(isLimitedMovesMode && movesFinished)
+                }
+
                 style={{
                   marginLeft: 8,
                   background:
@@ -568,6 +596,53 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
               </button>
             )}
           </div>
+
+          {/* ✅ NEW: Lockout-only Submit confirmation prompt */}
+          {isLockoutMode && showSubmitConfirm && !isLocked && (
+            <div
+              style={{
+                marginTop: 10,
+                padding: '12px 12px',
+                borderRadius: 10,
+                border: '1px solid rgba(248,113,113,0.55)',
+                background: 'rgba(248,113,113,0.12)',
+                color: 'rgba(255,255,255,0.95)',
+                fontSize: 14,
+                lineHeight: 1.35,
+              }}
+            >
+              <strong>Are you sure you want to submit?</strong>
+              <div style={{ marginTop: 6, opacity: 0.9 }}>
+                Submitting an incorrect answer counts toward lockout.
+              </div>
+
+              <div style={{ marginTop: 10 }}>
+                <button
+                  className="control-button"
+                  style={{
+                    marginRight: 8,
+                    background: 'rgba(34,197,94,0.22)',
+                    border: '1px solid rgba(255,255,255,0.14)',
+                    fontWeight: 800,
+                  }}
+                  onClick={() => handleSubmit()}
+                >
+                  ✅ Yes, submit
+                </button>
+
+                <button
+                  className="control-button"
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.14)',
+                  }}
+                  onClick={() => setShowSubmitConfirm(false)}
+                >
+                  ❌ Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* challenge banner */}
           {isChallenge && (
@@ -732,5 +807,5 @@ export default PuzzleDisplay;
 
   //Lockout mode discourages repeated incorrect submissions by limiting how often students can retry, while limited moves mode discourages trial-and-error construction by restricting how many actions students can take. Together, they target different forms of unproductive problem-solving behavior.
 
-
+    //Confirm submission ("Are you sure you want to submit?") in Lockout Mode to encourage reflection and avoid accidental lockouts
 
