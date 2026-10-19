@@ -37,10 +37,10 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
   }, [proofBlocks, validator, completionReported, onPuzzleTried, puzzle.id]);
 
   const getScoreColor = (score) => {
-    if (score >= 90) return '#4CAF50'; // Green
-    if (score >= 70) return '#FFC107'; // Amber
-    if (score >= 50) return '#FF9800'; // Orange
-    return '#F44336'; // Red
+    if (score >= 90) return 'var(--color-success-fg)';
+    if (score >= 70) return 'var(--color-attention-fg)';
+    if (score >= 50) return 'var(--color-attention-emphasis)';
+    return 'var(--color-danger-fg)';
   };
 
   const getScoreEmoji = (score) => {

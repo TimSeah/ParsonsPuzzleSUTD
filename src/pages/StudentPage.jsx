@@ -19,9 +19,9 @@ function submodeButtonStyle(active) {
   return {
     padding: '10px 14px',
     borderRadius: 10,
-    border: active ? '1px solid rgba(56,189,248,0.5)' : '1px solid var(--color-border-default)',
-    background: active ? 'rgba(56,189,248,0.14)' : 'var(--color-canvas-subtle)',
-    color: active ? 'rgba(56,189,248,1)' : 'var(--color-fg-default)',
+    border: active ? '1px solid var(--color-accent-muted)' : '1px solid var(--color-border-default)',
+    background: active ? 'var(--color-accent-subtle)' : 'var(--color-canvas-subtle)',
+    color: active ? 'var(--color-accent-fg)' : 'var(--color-fg-default)',
     cursor: 'pointer',
     fontWeight: 700,
   };

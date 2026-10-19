@@ -43,17 +43,15 @@ const NavigationHeader = () => {
               marginLeft: 12,
               padding: "8px 12px",
               borderRadius: 999,
-              border: "1px solid var(--border)",
-              background: "var(--panel)",
-              color: "var(--text)",
+              border: "1px solid var(--color-border-default)",
+              background: "var(--color-canvas-subtle)",
+              color: "var(--color-fg-default)",
               cursor: "pointer",
             }}
           >
             💬 Feedback
           </button>
-
-
-      </div>
+        </div>
       </nav>
     </>
   );

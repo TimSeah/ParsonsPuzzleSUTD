@@ -14,6 +14,9 @@ This README describes the current source checkout. The configured GitHub reposit
 - Open the built-in dictionary and help panel for mathematical terminology.
 - Select Easy, Medium, or Hard difficulty and multiple proof-topic filters.
 - Choose **Local Database** for bundled JSON puzzles or **Astra (MongoDB + OpenAI)** for verified-puzzle retrieval and generation.
+- Switch between **Practice** mode (live feedback while arranging) and **Challenge** mode with three variants: **Lockout** (results only on Submit; five wrong submissions in a row lock the puzzle for 10 seconds), **Timed** (5 minutes, graded automatically) and **Limited moves** (20 moves). Showing the solution disables Submit for that puzzle. Challenge state is kept in the browser, so it is a practice aid rather than an enforced assessment.
+- Toggle between light and dark themes (remembered per browser; defaults to the system preference).
+- Send feedback to the course team from the **Feedback** page.
 
 The current student topic controls offer Induction, Set Theory, Recursion, Logic, Combinatorics, Graph Theory, and Data Structures. The backend additionally accepts `big-o`; the bundled collection and educator form include Big O puzzles. Bundled content covers four categories: Big O, Induction, Recursion, and Set Theory. Local filters match puzzle tags, so some topic/difficulty combinations have no results.
 
@@ -287,6 +290,9 @@ The active Student Astra flow calls the backend's `/api/generate`; proof verific
 | `DELETE /api/puzzles/:id` | Mark a puzzle inactive |
 | `POST /api/generate` | Retrieve an unseen verified puzzle or generate one |
 | `POST /api/generate/:puzzleId/tried` | Record an attempt or completion |
+| `POST /api/feedback` | Store student feedback: `rating` (1–5), `comment` (≤ 2000 chars), optional `email`, `page`, `userId`. Limited to 5 per 15 minutes per IP (`FEEDBACK_RATE_LIMIT_MAX`, `FEEDBACK_RATE_LIMIT_WINDOW_MS`) |
+
+Feedback is stored in the MongoDB `feedbacks` collection. There is no admin screen yet; export it with `npm --prefix server run feedback:export > feedback.json`.
 
 Generation requests contain `userId`, `requestId`, `difficulty`, and a `topics` array. Accepted category keys are `big-o`, `induction`, `set-theory`, `recursion`, `logic`, `combinatorics`, `graph-theory`, and `data-structures`.
 
