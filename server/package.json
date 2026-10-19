@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "nodemon --exitcrash server.js",
     "migrate": "node scripts/migratePuzzles.js",
+    "feedback:export": "node scripts/exportFeedback.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {

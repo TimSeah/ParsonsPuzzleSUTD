@@ -30,6 +30,12 @@ const TIMED_SECONDS = 5 * 60;
 // ✅ NEW: Limited-moves rule
 const MAX_MOVES = 20;
 
+const CHALLENGE_SUBMODES = [
+  { type: 'lockout', label: '🔒 Lockout mode' },
+  { type: 'timed', label: '⏱ Timed mode' },
+  { type: 'limited', label: '🎯 Limited moves' },
+];
+
 const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode = 'practice' }) => {
   const isChallenge = mode === 'challenge';
 
@@ -511,51 +517,27 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
 
           {/* challenge sub-mode selector */}
           {isChallenge && (
-            <div style={{ marginBottom: 8 }}>
-              <button
-                onClick={() => setChallengeModeType('lockout')}
-                className="control-button"
-                style={{
-                  marginRight: 8,
-                  fontWeight: challengeModeType === 'lockout' ? 700 : 400,
-                  background:
-                    challengeModeType === 'lockout'
-                      ? 'rgba(56,189,248,0.25)'
-                      : 'rgba(255,255,255,0.06)',
-                }}
-              >
-                🔒 Lockout mode
-              </button>
-
-              <button
-                onClick={() => setChallengeModeType('timed')}
-                className="control-button"
-                style={{
-                  marginRight: 8,
-                  fontWeight: challengeModeType === 'timed' ? 700 : 400,
-                  background:
-                    challengeModeType === 'timed'
-                      ? 'rgba(56,189,248,0.25)'
-                      : 'rgba(255,255,255,0.06)',
-                }}
-              >
-                ⏱ Timed mode
-              </button>
-
-              {/* ✅ NEW: Limited moves */}
-              <button
-                onClick={() => setChallengeModeType('limited')}
-                className="control-button"
-                style={{
-                  fontWeight: challengeModeType === 'limited' ? 700 : 400,
-                  background:
-                    challengeModeType === 'limited'
-                      ? 'rgba(56,189,248,0.25)'
-                      : 'rgba(255,255,255,0.06)',
-                }}
-              >
-                🎯 Limited moves
-              </button>
+            <div style={{ marginBottom: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {CHALLENGE_SUBMODES.map(({ type, label }) => {
+                const active = challengeModeType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setChallengeModeType(type)}
+                    className="control-button"
+                    aria-pressed={active}
+                    style={{
+                      fontWeight: active ? 700 : 400,
+                      color: active ? 'var(--color-accent-fg)' : 'var(--color-fg-default)',
+                      background: active ? 'var(--color-accent-subtle)' : 'var(--color-canvas-subtle)',
+                      border: `1px solid ${active ? 'var(--color-accent-muted)' : 'var(--color-border-default)'}`,
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -598,9 +580,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
 
                 style={{
                   marginLeft: 8,
-                  background: submitBlocked ? 'var(--color-canvas-subtle)' : '#15803d',
+                  background: submitBlocked ? 'var(--color-canvas-subtle)' : 'var(--color-success-emphasis)',
                   border: '1px solid var(--color-border-default)',
-                  color: submitBlocked ? 'var(--color-fg-muted)' : '#ffffff',
+                  color: submitBlocked ? 'var(--color-fg-muted)' : 'var(--color-fg-on-emphasis)',
                   cursor: submitBlocked ? 'not-allowed' : 'pointer',
                   fontWeight: 700,
                 }}
@@ -617,8 +599,8 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
                 marginTop: 10,
                 padding: '12px 12px',
                 borderRadius: 10,
-                border: '1px solid rgba(248,113,113,0.55)',
-                background: 'rgba(248,113,113,0.12)',
+                border: '1px solid var(--color-danger-fg)',
+                background: 'var(--color-danger-subtle)',
                 color: 'var(--color-fg-default)',
                 fontSize: 14,
                 lineHeight: 1.35,
@@ -634,8 +616,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
                   className="control-button"
                   style={{
                     marginRight: 8,
-                    background: 'rgba(34,197,94,0.22)',
-                    border: '1px solid rgba(255,255,255,0.14)',
+                    color: 'var(--color-fg-default)',
+                    background: 'var(--color-success-subtle)',
+                    border: '1px solid var(--color-success-fg)',
                     fontWeight: 800,
                   }}
                   onClick={() => handleSubmit()}
@@ -646,8 +629,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
                 <button
                   className="control-button"
                   style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.14)',
+                    color: 'var(--color-fg-default)',
+                    background: 'var(--color-canvas-subtle)',
+                    border: '1px solid var(--color-border-default)',
                   }}
                   onClick={() => setShowSubmitConfirm(false)}
                 >
@@ -665,11 +649,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
                 padding: '10px 12px',
                 borderRadius: 10,
                 border: (isLockoutMode && isLocked)
-                  ? '1px solid rgba(248,113,113,0.55)'
-                  : '1px solid rgba(56,189,248,0.35)',
+                  ? '1px solid var(--color-danger-fg)'
+                  : '1px solid var(--color-accent-muted)',
                 background: (isLockoutMode && isLocked)
-                  ? 'rgba(248,113,113,0.10)'
-                  : 'rgba(56,189,248,0.08)',
+                  ? 'var(--color-danger-subtle)'
+                  : 'var(--color-accent-subtle)',
                 color: 'var(--color-fg-default)',
                 fontSize: 14,
                 lineHeight: 1.35,

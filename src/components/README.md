@@ -54,3 +54,7 @@ Each component that uses CSS modules has its styles co-located in the same folde
 - Styles: `ComponentName.module.css`
 
 Legacy CSS files (`.css`) are also maintained for components that haven't been migrated to CSS modules yet.
+
+## Theming
+
+Light and dark themes are driven by the `--color-*` tokens defined in `src/index.css` (`:root[data-theme="light"]` / `:root[data-theme="dark"]`); `useTheme` sets `data-theme` on `<html>`. Use these tokens, for example `var(--color-fg-default)`, `var(--color-canvas-subtle)`, `var(--color-accent-subtle)` or `var(--color-danger-fg)`, instead of hard-coded colours so components stay readable in both themes.

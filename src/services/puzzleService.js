@@ -67,6 +67,13 @@ class PuzzleService {
     });
   }
 
+  async submitFeedback({ rating, comment, email, page, userId }) {
+    return this.fetchWithError('/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ rating, comment, email, page, userId })
+    });
+  }
+
   // Get a specific puzzle by ID
   async getPuzzleById(id) {
     return this.fetchWithError(`/puzzles/${id}`);

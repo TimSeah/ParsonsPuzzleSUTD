@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import puzzleRoutes from './routes/puzzles.js';
 import generationRoutes from './routes/generation.js';
+import feedbackRoutes from './routes/feedback.js';
 import {
   connectDatabase,
   databaseState,
@@ -65,6 +66,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Routes
 app.use('/api/puzzles', puzzleRoutes);
 app.use('/api/generate', generationRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

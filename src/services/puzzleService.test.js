@@ -25,6 +25,16 @@ describe('PuzzleService', () => {
     expect(JSON.parse(options.body)).toEqual({ userId: 'u1', requestId: 'r1', difficulty: 'easy', topics: ['logic'] });
   });
 
+  it('posts feedback to the feedback endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: 'f1' }, 201));
+    vi.stubGlobal('fetch', fetchMock);
+    const service = new PuzzleService();
+    await expect(service.submitFeedback({ rating: 4, comment: 'ok', page: '/student', userId: 'u1' })).resolves.toEqual({ id: 'f1' });
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${service.baseURL}/feedback`);
+    expect(JSON.parse(options.body)).toEqual({ rating: 4, comment: 'ok', page: '/student', userId: 'u1' });
+  });
+
   it('handles 204 No Content responses from the history endpoint', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
     const service = new PuzzleService();
