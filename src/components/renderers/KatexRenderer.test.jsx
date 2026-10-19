@@ -18,6 +18,20 @@ describe('KatexRenderer', () => {
     expect(visibleText(el)).toContain('Consider');
   });
 
+  it('uses normal spaces in rendered text so lines wrap between words', () => {
+    const el = renderLatex({ latex: '\\text{Therefore, by mathematical induction, the claim holds for all } n.' });
+    const html = el.querySelector('.katex-html');
+    expect(html.textContent).not.toContain('\u00a0');
+    expect(html.textContent).toContain('by mathematical induction');
+  });
+
+  it('keeps explicit math spaces such as \\  and ~ non-breaking so they keep their width', () => {
+    const el = renderLatex({ latex: 'a\\ b~c' });
+    const spaces = [...el.querySelectorAll('.katex-html .mspace')];
+    expect(spaces.length).toBeGreaterThan(0);
+    for (const space of spaces) expect(space.textContent).toBe('\u00a0');
+  });
+
   it('treats \\textbf and other text commands as legacy LaTeX', () => {
     const el = renderLatex({ latex: '\\textbf{Base case: } n = 0' });
     expect(visibleText(el)).not.toMatch(RAW_LATEX_PATTERN);

@@ -8,12 +8,11 @@ This README describes the current source checkout. The configured GitHub reposit
 
 ### Student practice
 
-- Drag proof blocks between the available-block panel and proof workspace, reorder them, and reset the puzzle.
+- Build a proof by dragging steps between **Available steps** and **Your proof**, or by tapping **+** on a step and using the ↑ / ↓ / ✕ buttons to reorder or remove it (designed for phones; on touch screens a drag starts after a short press so swiping still scrolls). Reset the puzzle at any time.
 - Receive automatic order-based feedback, scores, hints, and completion feedback against the stored solution order.
 - Render mathematical notation with KaTeX and use interactive placeholders in puzzles that include them.
 - Open the built-in dictionary of mathematical terminology from the book icon in the header.
-- Select Easy, Medium, or Hard difficulty and multiple proof-topic filters.
-- Choose **Local Database** for bundled JSON puzzles or **Astra (MongoDB + OpenAI)** for verified-puzzle retrieval and generation.
+- Choose puzzle settings: **Bundled** puzzles or **AI generated** (Lean-verified retrieval and generation through Astra, MongoDB and OpenAI), Easy / Medium / Hard, and any number of topics. On desktop the settings sit in a side panel; on phones they open in a bottom sheet from the summary button (for example "Bundled · Medium · All topics"). **New puzzle** applies them.
 - Switch between **Practice** mode (live feedback while arranging) and **Challenge** mode with three variants: **Lockout** (results only on Submit; five wrong submissions in a row lock the puzzle for 10 seconds), **Timed** (5 minutes, graded automatically) and **Limited moves** (20 moves). Showing the solution disables Submit for that puzzle. Challenge state is kept in the browser, so it is a practice aid rather than an enforced assessment.
 - Toggle between light and dark themes (remembered per browser; defaults to the system preference).
 - Send feedback to the course team from the **Feedback** page.
@@ -197,7 +196,7 @@ The backend health check returns HTTP 200 with `database: "connected"` when read
 
 1. Check both health endpoints.
 2. On a fresh empty database, publish a simple puzzle through Educator mode first, then reload Student mode. The current student page can otherwise stop at “No puzzles available” when the API is healthy but returns no puzzles.
-3. In Student mode, select **Astra (MongoDB + OpenAI)**, choose a difficulty/topic, and click **Generate Puzzle**. Generation requires the key, database, and worker; it can take several minutes.
+3. In Student mode, choose **AI generated** in the puzzle settings, pick a difficulty/topic, and click **New puzzle**. Generation requires the key, database, and worker; it can take several minutes.
 4. Arrange blocks and check the automatic feedback. Request another puzzle to exercise history-aware retrieval/generation.
 
 For a direct compiler check, run from `lean-worker` in a Bash-compatible terminal:
@@ -214,7 +213,7 @@ A successful check exits without errors. In PowerShell, pipe the same source usi
 
 ### Local-only practice
 
-After installing the frontend dependencies, run `npm run dev` without the backend. Once the connection check falls back to bundled puzzles, choose **Local Database** and click **Generate Puzzle**. This selects a bundled puzzle; it does not call OpenAI. MongoDB, an API key, and Lean are not required for this mode. Broaden the filters if no local puzzle matches.
+After installing the frontend dependencies, run `npm run dev` without the backend. Once the connection check falls back to bundled puzzles, choose **Bundled** in the puzzle settings and click **New puzzle**. This selects a bundled puzzle; it does not call OpenAI. MongoDB, an API key, and Lean are not required for this mode. Broaden the filters if no local puzzle matches.
 
 ## Optional bundled-puzzle import
 

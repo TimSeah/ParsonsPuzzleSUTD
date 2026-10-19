@@ -40,8 +40,20 @@ describe('ProofBlock', () => {
     expect(visibleText(block).startsWith('Hence')).toBe(true);
   });
 
-  it('marks the block as non-draggable when disabled', () => {
-    expect(renderBlock({ id: 'b1', latexContent: 'x' })).toHaveAttribute('aria-disabled', 'false');
-    expect(renderBlock({ id: 'b2', latexContent: 'x', disabled: true })).toHaveAttribute('aria-disabled', 'true');
+  it('marks the drag handle as disabled when the block is disabled', () => {
+    const grip = (block) => block.querySelector('.proof-block__grip');
+    expect(grip(renderBlock({ id: 'b1', latexContent: 'x' }))).toHaveAttribute('aria-disabled', 'false');
+    expect(grip(renderBlock({ id: 'b2', latexContent: 'x', disabled: true }))).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('keeps the action buttons outside the drag handle so they are not nested interactive controls', () => {
+    const block = renderBlock({ id: 'b1', latexContent: 'x', stepNumber: 2, onRemove: () => {}, onMoveUp: () => {}, canMoveUp: true });
+    const grip = block.querySelector('.proof-block__grip');
+    expect(grip).toHaveAttribute('role', 'button');
+    expect(grip).toHaveAccessibleName('Drag step 2');
+    for (const button of block.querySelectorAll('.proof-block__actions button')) {
+      expect(button.closest('[role="button"]')).toBeNull();
+    }
+    expect(block).not.toHaveAttribute('role');
   });
 });

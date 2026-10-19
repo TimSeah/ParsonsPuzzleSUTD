@@ -15,13 +15,13 @@ Basic UI components that can be reused across the application (shared classes su
 
 ### `/puzzle`
 Components specifically related to puzzle functionality:
-- `PuzzleDisplay` - Main puzzle display with drag-and-drop, practice mode and challenge modes
+- `PuzzleDisplay` - Puzzle board (drag and drop plus tap-to-place), practice mode and challenge modes
 - `ProofBlock` - Individual proof statement blocks
 - `ProofValidationDisplay` - Shows validation results and feedback (practice mode)
 
 ### `/layout`
 Components that handle page layout and structure:
-- `LeftControlPanel` - Student control panel: generate button, data source, difficulty and proof-type filters
+- `PuzzleSettings` - Puzzle source, difficulty and topic settings (desktop side panel / mobile bottom sheet)
 
 ### `/navigation`
 - `NavigationHeader` - App header (brand, Student/Educator links, Feedback, dictionary, theme) and the mobile bottom tab bar

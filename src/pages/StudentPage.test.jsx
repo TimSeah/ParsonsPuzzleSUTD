@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StudentPage from './StudentPage.jsx';
 import puzzleService from '../services/puzzleService.js';
@@ -43,7 +43,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-const heading = () => screen.getByRole('heading', { level: 2 });
+const heading = () => document.getElementById('puzzle-title');
 
 describe('StudentPage', () => {
   beforeEach(() => {
@@ -59,7 +59,7 @@ describe('StudentPage', () => {
     render(<StudentPage />);
     expect(screen.getByText(/Can't load puzzles from the server/)).toHaveTextContent('Cannot reach the API');
 
-    await user.click(screen.getByRole('radio', { name: 'Local Database' }));
+    await user.click(screen.getByRole('radio', { name: 'Bundled' }));
     expect(screen.queryByText(/Can't load puzzles from the server/)).toBeNull();
   });
 
@@ -68,7 +68,7 @@ describe('StudentPage', () => {
     const { unmount } = render(<StudentPage />);
     expect(screen.queryByText(/Lockout Mode/)).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Challenge Mode' }));
+    await user.click(screen.getByRole('radio', { name: 'Challenge' }));
     expect(screen.getByText(/Lockout Mode/)).toBeInTheDocument();
     expect(localStorage.getItem('student_submode')).toBe('challenge');
 
@@ -82,7 +82,7 @@ describe('StudentPage', () => {
     vi.mocked(puzzleService.generatePuzzle).mockResolvedValue(generatedPuzzle);
     render(<StudentPage />);
 
-    await user.click(screen.getByRole('button', { name: 'Generate Puzzle' }));
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
 
     await waitFor(() => expect(heading()).toHaveTextContent('Generated puzzle about'));
     const request = vi.mocked(puzzleService.generatePuzzle).mock.calls[0][0];
@@ -97,12 +97,12 @@ describe('StudentPage', () => {
     vi.mocked(puzzleService.generatePuzzle).mockReturnValue(pending.promise);
     render(<StudentPage />);
 
-    await user.click(screen.getByRole('button', { name: 'Generate Puzzle' }));
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
     expect(screen.getByRole('button', { name: /Generating/ })).toBeDisabled();
     expect(puzzleService.generatePuzzle).toHaveBeenCalledTimes(1);
 
     pending.resolve(generatedPuzzle);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Generate Puzzle' })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'New puzzle' })).toBeEnabled());
   });
 
   it('ignores a generation response that arrives after switching to local data', async () => {
@@ -112,10 +112,10 @@ describe('StudentPage', () => {
     render(<StudentPage />);
     const originalTitle = heading().textContent;
 
-    await user.click(screen.getByRole('button', { name: 'Generate Puzzle' }));
-    await user.click(screen.getByRole('radio', { name: 'Local Database' }));
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
+    await user.click(screen.getByRole('radio', { name: 'Bundled' }));
     expect(toggleDataSource).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Generate Puzzle' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'New puzzle' })).toBeEnabled();
 
     pending.resolve(generatedPuzzle);
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -127,7 +127,7 @@ describe('StudentPage', () => {
     vi.mocked(puzzleService.generatePuzzle).mockRejectedValue(new Error('OpenAI rate limit reached'));
     render(<StudentPage />);
 
-    await user.click(screen.getByRole('button', { name: 'Generate Puzzle' }));
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
     expect(await screen.findByText('OpenAI rate limit reached')).toBeInTheDocument();
   });
 
@@ -136,11 +136,66 @@ describe('StudentPage', () => {
     render(<StudentPage />);
     const originalTitle = heading().textContent;
 
-    await user.click(screen.getByRole('radio', { name: 'Local Database' }));
+    await user.click(screen.getByRole('radio', { name: 'Bundled' }));
     await user.click(screen.getByRole('radio', { name: 'Medium' }));
-    await user.click(screen.getByRole('button', { name: 'Generate Puzzle' }));
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
 
     expect(puzzleService.generatePuzzle).not.toHaveBeenCalled();
     expect(heading().textContent).not.toBe(originalTitle);
+  });
+it('shows puzzle settings in a sidebar on desktop and filters by topic chips', async () => {
+    const user = userEvent.setup();
+    render(<StudentPage />);
+    const sidebar = screen.getByRole('complementary', { name: 'Puzzle settings' });
+    expect(within(sidebar).getByRole('radio', { name: 'AI generated' })).toHaveAttribute('aria-checked', 'true');
+
+    await user.click(within(sidebar).getByRole('radio', { name: 'Bundled' }));
+    await user.click(within(sidebar).getByRole('button', { name: 'Set Theory' }));
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
+    expect(heading()).toHaveTextContent(/A∪B|A∩\(B∪C\)/);
+
+    await user.click(within(sidebar).getByRole('button', { name: 'Clear' }));
+    expect(within(sidebar).getByRole('button', { name: 'Set Theory' })).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+describe('StudentPage on mobile', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  beforeEach(() => {
+    vi.mocked(puzzleService.generatePuzzle).mockReset();
+    toggleDataSource.mockReset();
+    appState.puzzlesError = null;
+    window.matchMedia = (query) => ({
+      matches: query.includes('max-width'),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
+  it('keeps settings in a sheet behind a summary button instead of a sidebar', async () => {
+    const user = userEvent.setup();
+    render(<StudentPage />);
+    expect(screen.queryByRole('complementary')).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'Difficulty' })).toBeNull();
+
+    const settings = screen.getByRole('button', { name: /AI generated · Medium · All topics/ });
+    await user.click(settings);
+    const sheet = screen.getByRole('dialog', { name: 'Puzzle settings' });
+
+    await user.click(within(sheet).getByRole('radio', { name: 'Bundled' }));
+    await user.click(within(sheet).getByRole('radio', { name: 'Easy' }));
+    await user.click(within(sheet).getByRole('button', { name: 'Induction' }));
+    expect(within(sheet).getByRole('button', { name: 'Induction' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(sheet).getByRole('button', { name: /Get a new puzzle/ }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: /Bundled · Easy · Induction/ })).toBeInTheDocument();
+    expect(puzzleService.generatePuzzle).not.toHaveBeenCalled();
   });
 });
