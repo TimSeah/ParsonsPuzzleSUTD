@@ -1,103 +1,91 @@
-import React, { useState, useCallback } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
-  useSensors
+  useSensors,
 } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable';
-import {
-  useSortable
+  useSortable,
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { AlertCircle, ArrowDown, ArrowLeft, ArrowUp, GripVertical, Plus, Send, Trash2, X } from 'lucide-react';
 import { KatexRenderer } from '../renderers';
-import { LoadingState, ErrorTooltip } from '../ui';
+import { LoadingState } from '../ui';
+import PuzzleDisplay from '../puzzle/PuzzleDisplay';
 import CustomTagInput from './CustomTagInput';
+import { CATEGORIES } from './educatorCategories';
 import styles from './PuzzleCreator.module.css';
-
-// Available categories based on existing JSON files
-const CATEGORIES = {
-  'big-o': {
-    name: 'Big O Notation',
-    description: 'Proofs involving Big O, Omega, and Theta notation',
-    file: 'big-o-proofs.json',
-    suggestedTags: ['big-o', 'omega', 'theta', 'asymptotic-analysis', 'logarithm', 'polynomial', 'exponential', 'proof-by-contradiction', 'negation']
-  },
-  'induction': {
-    name: 'Mathematical Induction',
-    description: 'Proofs using mathematical induction',
-    file: 'induction-proofs.json',
-    suggestedTags: ['induction', 'summation', 'arithmetic-series', 'geometric-series', 'powers', 'divisibility', 'modular-arithmetic']
-  },
-  'recursion': {
-    name: 'Recursion',
-    description: 'Proofs involving recursive relations and algorithms',
-    file: 'recursion-proofs.json',
-    suggestedTags: ['recursion', 'fibonacci', 'sequences', 'towers-of-hanoi', 'algorithms', 'recurrence-relations']
-  },
-  'set-theory': {
-    name: 'Set Theory',
-    description: 'Proofs involving set operations and properties',
-    file: 'set-theory-proofs.json',
-    suggestedTags: ['set-theory', 'distributive-law', 'de-morgan-law', 'intersection', 'union', 'complement']
-  }
-};
 
 const DIFFICULTY_LEVELS = ['easy', 'medium', 'hard'];
 
-// Sortable Block Item Component
-function SortableBlockItem({ block, index, onRemove }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: block.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
+function FieldError({ id, message }) {
+  if (!message) return null;
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`${styles['block-item']} ${isDragging ? styles['dragging'] : ''}`}
-    >
-      <div
-        {...attributes}
-        {...listeners}
-        className={styles['drag-handle']}
-      >
-        ⋮⋮
-      </div>
-      <div className={styles['block-content']}>
-        <div className={styles['block-number']}>
-          Step {index + 1}:
-        </div>
-        <KatexRenderer latex={block.latex} />
-      </div>
-      <button
-        className={styles['remove-block']}
-        onClick={() => onRemove(block.id)}
-      >
-        🗑
-      </button>
+    <p id={id} className="field__error">
+      <AlertCircle size={14} aria-hidden="true" /> {message}
+    </p>
+  );
+}
+
+function LatexPreview({ latex }) {
+  if (!latex.trim()) return null;
+  return (
+    <div className={styles.preview} aria-label="Preview">
+      <span className={styles.previewLabel}>Preview</span>
+      <KatexRenderer latex={latex} />
     </div>
   );
 }
 
+function SortableBlockItem({ block, index, total, onRemove, onMove }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  const step = `step ${index + 1}`;
+  const upRef = useRef(null);
+  const downRef = useRef(null);
+
+  // A button that becomes disabled at the top/bottom drops focus; move it to the other arrow.
+  const move = (delta) => {
+    flushSync(() => onMove(index, delta));
+    const pressed = delta < 0 ? upRef.current : downRef.current;
+    if (pressed?.disabled) (delta < 0 ? downRef.current : upRef.current)?.focus();
+  };
+
+  return (
+    <li ref={setNodeRef} style={style} className={`${styles.block} ${isDragging ? styles.blockDragging : ''}`}>
+      <span ref={setActivatorNodeRef} className={styles.grip} {...attributes} {...listeners} aria-label={`Drag ${step}`}>
+        <GripVertical size={16} aria-hidden="true" />
+      </span>
+      <span className={styles.blockNumber} aria-hidden="true">{index + 1}</span>
+      <div className={styles.blockContent}><KatexRenderer latex={block.latex} /></div>
+      <div className={styles.blockActions}>
+        <button ref={upRef} type="button" className="icon-btn" onClick={() => move(-1)} disabled={index === 0} aria-label={`Move ${step} up`}>
+          <ArrowUp size={16} aria-hidden="true" />
+        </button>
+        <button ref={downRef} type="button" className="icon-btn" onClick={() => move(1)} disabled={index === total - 1} aria-label={`Move ${step} down`}>
+          <ArrowDown size={16} aria-hidden="true" />
+        </button>
+        <button type="button" className="icon-btn btn--danger" data-delete-step onClick={() => onRemove(block.id)} aria-label={`Delete ${step}`}>
+          <Trash2 size={16} aria-hidden="true" />
+        </button>
+      </div>
+    </li>
+  );
+}
+
 function PuzzleCreator({ onSave, onCancel, initialPuzzle = null }) {
+  const idPrefix = useId();
+  const fieldId = (name) => `${idPrefix}-${name}`;
+
   const [puzzleData, setPuzzleData] = useState({
     category: initialPuzzle?.category || 'big-o',
     title: initialPuzzle?.title || '',
@@ -112,14 +100,20 @@ function PuzzleCreator({ onSave, onCancel, initialPuzzle = null }) {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const blockListRef = useRef(null);
+  const newStepRef = useRef(null);
 
-  // DnD Kit sensors
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  const update = (field) => (event) => {
+    const { value } = event.target;
+    setPuzzleData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
+  };
 
   // Generate unique ID for blocks
   const generateBlockId = useCallback(() => {
@@ -128,367 +122,327 @@ function PuzzleCreator({ onSave, onCancel, initialPuzzle = null }) {
     return `block-${timestamp}-${random}`;
   }, []);
 
-  // Add a new block
   const addBlock = useCallback(() => {
     if (!currentBlock.trim()) return;
-
-    const newBlock = {
-      id: generateBlockId(),
-      latex: currentBlock.trim()
-    };
-
-    setPuzzleData(prev => ({
-      ...prev,
-      blocks: [...prev.blocks, newBlock]
-    }));
-
+    const newBlock = { id: generateBlockId(), latex: currentBlock.trim() };
+    setPuzzleData(prev => ({ ...prev, blocks: [...prev.blocks, newBlock] }));
+    setErrors(prev => ({ ...prev, blocks: undefined }));
     setCurrentBlock('');
   }, [currentBlock, generateBlockId]);
 
-  // Remove a block
+  // Deleting unmounts the focused button, so focus the next (or previous) step's delete button,
+  // or the new-step box once the list is empty.
   const removeBlock = useCallback((blockId) => {
-    setPuzzleData(prev => ({
-      ...prev,
-      blocks: prev.blocks.filter(block => block.id !== blockId)
-    }));
+    const index = puzzleData.blocks.findIndex(block => block.id === blockId);
+    flushSync(() => {
+      setPuzzleData(prev => ({ ...prev, blocks: prev.blocks.filter(block => block.id !== blockId) }));
+    });
+    const remaining = blockListRef.current?.querySelectorAll('[data-delete-step]') || [];
+    const target = remaining[Math.min(index, remaining.length - 1)] || newStepRef.current;
+    target?.focus();
+  }, [puzzleData.blocks]);
+
+  const moveBlock = useCallback((index, delta) => {
+    setPuzzleData(prev => {
+      const target = index + delta;
+      if (target < 0 || target >= prev.blocks.length) return prev;
+      return { ...prev, blocks: arrayMove(prev.blocks, index, target) };
+    });
   }, []);
 
-  // Handle drag end for reordering blocks
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
-
-    if (active.id !== over?.id) {
-      setPuzzleData(prev => {
-        const oldIndex = prev.blocks.findIndex(block => block.id === active.id);
-        const newIndex = prev.blocks.findIndex(block => block.id === over.id);
-
-        return {
-          ...prev,
-          blocks: arrayMove(prev.blocks, oldIndex, newIndex)
-        };
-      });
-    }
+    if (!over || active.id === over.id) return;
+    setPuzzleData(prev => {
+      const oldIndex = prev.blocks.findIndex(block => block.id === active.id);
+      const newIndex = prev.blocks.findIndex(block => block.id === over.id);
+      return { ...prev, blocks: arrayMove(prev.blocks, oldIndex, newIndex) };
+    });
   }, []);
 
-  // Toggle tag selection
   const toggleTag = useCallback((tag) => {
     setPuzzleData(prev => ({
       ...prev,
-      tags: prev.tags.includes(tag)
-        ? prev.tags.filter(t => t !== tag)
-        : [...prev.tags, tag]
+      tags: prev.tags.includes(tag) ? prev.tags.filter(t => t !== tag) : [...prev.tags, tag]
     }));
+    setErrors(prev => ({ ...prev, tags: undefined }));
   }, []);
 
-  // Add custom tag (for future implementation)
   const addCustomTag = useCallback((tag) => {
-    if (tag && !puzzleData.tags.includes(tag)) {
-      setPuzzleData(prev => ({
-        ...prev,
-        tags: [...prev.tags, tag]
-      }));
-    }
-  }, [puzzleData.tags]);
+    if (!tag) return;
+    setPuzzleData(prev => (prev.tags.includes(tag) ? prev : { ...prev, tags: [...prev.tags, tag] }));
+    setErrors(prev => ({ ...prev, tags: undefined }));
+  }, []);
 
-  // Validate puzzle data
   const validatePuzzle = useCallback(() => {
     const newErrors = {};
-
-    if (!puzzleData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-
-    if (!puzzleData.displayTitle.trim()) {
-      newErrors.displayTitle = 'Display title is required';
-    }
-
-    if (!puzzleData.statement.trim()) {
-      newErrors.statement = 'Statement is required';
-    }
-
-    if (puzzleData.blocks.length < 2) {
-      newErrors.blocks = 'At least 2 blocks are required';
-    }
-
-    if (puzzleData.tags.length === 0) {
-      newErrors.tags = 'At least one tag is required';
-    }
-
+    if (!puzzleData.title.trim()) newErrors.title = 'Title is required';
+    if (!puzzleData.displayTitle.trim()) newErrors.displayTitle = 'Display title is required';
+    if (!puzzleData.statement.trim()) newErrors.statement = 'Statement is required';
+    if (puzzleData.blocks.length < 2) newErrors.blocks = 'Add at least 2 proof steps';
+    if (puzzleData.tags.length === 0) newErrors.tags = 'At least one tag is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [puzzleData]);
 
-  // Save puzzle
   const handleSave = useCallback(async () => {
-    if (!validatePuzzle()) return;
+    if (!validatePuzzle()) {
+      setIsPreviewMode(false);
+      return;
+    }
 
     setIsSaving(true);
-    
     try {
-      // Generate puzzle ID
-      const puzzleId = `puzzle-${Date.now()}`;
-      
-      // Create the complete puzzle object
       const completePuzzle = {
-        id: puzzleId,
+        id: `puzzle-${Date.now()}`,
         ...puzzleData,
         solutionOrder: puzzleData.blocks.map(block => block.id)
       };
-
       await onSave(completePuzzle);
     } catch (error) {
       console.error('Error saving puzzle:', error);
-      setErrors({ save: 'Failed to save puzzle. Please try again.' });
+      setErrors({ save: error?.message || 'Failed to save puzzle. Please try again.' });
     } finally {
       setIsSaving(false);
     }
   }, [puzzleData, validatePuzzle, onSave]);
 
   const selectedCategory = CATEGORIES[puzzleData.category];
+  const errorCount = Object.entries(errors).filter(([key, value]) => key !== 'save' && value).length;
+  const invalidProps = (name) => (errors[name]
+    ? { 'aria-invalid': true, 'aria-describedby': fieldId(`${name}-error`) }
+    : {});
+
+  const previewPuzzle = {
+    id: 'educator-preview',
+    title: puzzleData.title || puzzleData.displayTitle || '\\text{Untitled puzzle}',
+    statement: puzzleData.statement,
+    blocks: puzzleData.blocks,
+    solutionOrder: puzzleData.blocks.map(block => block.id),
+  };
 
   return (
-    <div className={styles['puzzle-creator']}>
-      <div className={styles['creator-header']}>
-        <h2>🎯 Create New Puzzle</h2>
-        <div className={styles['header-actions']}>
-          <button 
-            className={styles['preview-toggle']}
-            onClick={() => setIsPreviewMode(!isPreviewMode)}
-          >
-            {isPreviewMode ? '📝 Edit' : '👁 Preview'}
+    <div className={styles.creator}>
+      <div className="page-header">
+        <div>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel}>
+            <ArrowLeft size={16} aria-hidden="true" /> Dashboard
+          </button>
+          <h1 className={`page-title ${styles.title}`}>Create a puzzle</h1>
+        </div>
+        <div className="segmented" role="radiogroup" aria-label="View">
+          <button type="button" role="radio" aria-checked={!isPreviewMode} className="segmented__option" onClick={() => setIsPreviewMode(false)}>
+            Edit
+          </button>
+          <button type="button" role="radio" aria-checked={isPreviewMode} className="segmented__option" onClick={() => setIsPreviewMode(true)}>
+            Preview
           </button>
         </div>
       </div>
 
+      {errorCount > 0 && (
+        <div className="notice notice--danger" role="alert">
+          <AlertCircle size={16} aria-hidden="true" />
+          <span>Please fix {errorCount === 1 ? 'the highlighted field' : `the ${errorCount} highlighted fields`} before publishing.</span>
+        </div>
+      )}
+
       {!isPreviewMode ? (
-        <div className={styles['creator-content']}>
-          {/* Basic Information */}
-          <div className={styles['section']}>
-            <h3>📋 Basic Information</h3>
-            
-            <div className={styles['form-group']}>
-              <label htmlFor="category">Category</label>
-              <select
-                id="category"
-                value={puzzleData.category}
-                onChange={(e) => setPuzzleData(prev => ({ ...prev, category: e.target.value }))}
-              >
-                {Object.entries(CATEGORIES).map(([key, cat]) => (
-                  <option key={key} value={key}>{cat.name}</option>
-                ))}
-              </select>
-              <span className={styles['category-desc']}>{selectedCategory.description}</span>
-            </div>
+        <div className={styles.sections}>
+          <section className="card" aria-labelledby={fieldId('details-heading')}>
+            <h2 id={fieldId('details-heading')} className="card-title">Details</h2>
+            <div className={styles.grid}>
+              <div className="field">
+                <label className="field__label" htmlFor={fieldId('category')}>Category</label>
+                <select id={fieldId('category')} className="input" value={puzzleData.category} onChange={update('category')}>
+                  {Object.entries(CATEGORIES).map(([key, cat]) => (
+                    <option key={key} value={key}>{cat.name}</option>
+                  ))}
+                </select>
+                <span className="field__hint">{selectedCategory.description}</span>
+              </div>
 
-            <div className={styles['form-group']}>
-              <label htmlFor="title">LaTeX Title</label>
-              <textarea
-                id="title"
-                value={puzzleData.title}
-                onChange={(e) => setPuzzleData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g., \\text{Prove } n^2 + n^3 = \\Theta(n^3)"
-                className={errors.title ? styles['error'] : ''}
-              />
-              {errors.title && <ErrorTooltip message={errors.title} />}
-            </div>
-
-            <div className={styles['form-group']}>
-              <label htmlFor="displayTitle">Display Title (Plain Text)</label>
-              <input
-                type="text"
-                id="displayTitle"
-                value={puzzleData.displayTitle}
-                onChange={(e) => setPuzzleData(prev => ({ ...prev, displayTitle: e.target.value }))}
-                placeholder="e.g., Prove n² + n³ = Θ(n³)"
-                className={errors.displayTitle ? styles['error'] : ''}
-              />
-              {errors.displayTitle && <ErrorTooltip message={errors.displayTitle} />}
-            </div>
-
-            <div className={styles['form-group']}>
-              <label htmlFor="statement">Statement (LaTeX)</label>
-              <textarea
-                id="statement"
-                value={puzzleData.statement}
-                onChange={(e) => setPuzzleData(prev => ({ ...prev, statement: e.target.value }))}
-                placeholder="e.g., n^2 + n^3 = \\Theta(n^3)"
-                className={errors.statement ? styles['error'] : ''}
-              />
-              {errors.statement && <ErrorTooltip message={errors.statement} />}
-            </div>
-
-            <div className={styles['form-group']}>
-              <label htmlFor="difficulty">Difficulty</label>
-              <select
-                id="difficulty"
-                value={puzzleData.difficulty}
-                onChange={(e) => setPuzzleData(prev => ({ ...prev, difficulty: e.target.value }))}
-              >
-                {DIFFICULTY_LEVELS.map(level => (
-                  <option key={level} value={level}>
-                    {level.charAt(0).toUpperCase() + level.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Tags Section */}
-          <div className={styles['section']}>
-            <h3>🏷 Tags</h3>
-            <div className={styles['tags-container']}>
-              <div className={styles['suggested-tags']}>
-                <h4>Suggested Tags for {selectedCategory.name}:</h4>
-                <div className={styles['tag-grid']}>
-                  {selectedCategory.suggestedTags.map(tag => (
+              <div className="field">
+                <span className="field__label" id={fieldId('difficulty')}>Difficulty</span>
+                <div className="segmented segmented--block" role="radiogroup" aria-labelledby={fieldId('difficulty')}>
+                  {DIFFICULTY_LEVELS.map(level => (
                     <button
-                      key={tag}
-                      className={`${styles['tag-button']} ${
-                        puzzleData.tags.includes(tag) ? styles['selected'] : ''
-                      }`}
-                      onClick={() => toggleTag(tag)}
+                      key={level}
+                      type="button"
+                      role="radio"
+                      aria-checked={puzzleData.difficulty === level}
+                      className="segmented__option"
+                      onClick={() => setPuzzleData(prev => ({ ...prev, difficulty: level }))}
                     >
-                      {tag}
+                      {level.charAt(0).toUpperCase() + level.slice(1)}
                     </button>
                   ))}
                 </div>
               </div>
+            </div>
 
-              <div className={styles['custom-tags']}>
-                <h4>Selected Tags:</h4>
-                <div className={styles['selected-tags']}>
-                  {puzzleData.tags.map(tag => (
-                    <span key={tag} className={styles['selected-tag']}>
-                      {tag}
-                      <button onClick={() => toggleTag(tag)}>×</button>
-                    </span>
-                  ))}
-                </div>
-                {errors.tags && <ErrorTooltip message={errors.tags} />}
+            <div className="field">
+              <label className="field__label" htmlFor={fieldId('title')}>Title (LaTeX)</label>
+              <textarea
+                id={fieldId('title')}
+                className="input input--mono"
+                rows={2}
+                value={puzzleData.title}
+                onChange={update('title')}
+                placeholder="e.g. \text{Prove } n^2 + n^3 = \Theta(n^3)"
+                {...invalidProps('title')}
+              />
+              <FieldError id={fieldId('title-error')} message={errors.title} />
+              <LatexPreview latex={puzzleData.title} />
+            </div>
 
-                <CustomTagInput
-                  onAddTag={addCustomTag}
-                  existingTags={puzzleData.tags}
-                />
+            <div className="field">
+              <label className="field__label" htmlFor={fieldId('displayTitle')}>Display title (plain text)</label>
+              <input
+                type="text"
+                id={fieldId('displayTitle')}
+                className="input"
+                value={puzzleData.displayTitle}
+                onChange={update('displayTitle')}
+                placeholder="e.g. Prove n² + n³ = Θ(n³)"
+                {...invalidProps('displayTitle')}
+              />
+              <span className="field__hint">Shown in lists and exports where LaTeX isn&apos;t rendered.</span>
+              <FieldError id={fieldId('displayTitle-error')} message={errors.displayTitle} />
+            </div>
+
+            <div className="field">
+              <label className="field__label" htmlFor={fieldId('statement')}>Statement (LaTeX)</label>
+              <textarea
+                id={fieldId('statement')}
+                className="input input--mono"
+                rows={2}
+                value={puzzleData.statement}
+                onChange={update('statement')}
+                placeholder="e.g. n^2 + n^3 = \Theta(n^3)"
+                {...invalidProps('statement')}
+              />
+              <FieldError id={fieldId('statement-error')} message={errors.statement} />
+              <LatexPreview latex={puzzleData.statement} />
+            </div>
+          </section>
+
+          <section className="card" aria-labelledby={fieldId('tags-heading')}>
+            <h2 id={fieldId('tags-heading')} className="card-title">Tags</h2>
+            <div className="field">
+              <span className="field__label" id={fieldId('suggested')}>Suggested for {selectedCategory.name}</span>
+              <div className={styles.chips} role="group" aria-labelledby={fieldId('suggested')}>
+                {selectedCategory.suggestedTags.map(tag => (
+                  <button key={tag} type="button" className="chip" aria-pressed={puzzleData.tags.includes(tag)} onClick={() => toggleTag(tag)}>
+                    {tag}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Blocks Section */}
-          <div className={styles['section']}>
-            <h3>🧩 Proof Blocks</h3>
-            
-            <div className={styles['block-input']}>
-              <label htmlFor="currentBlock">Add New Block (LaTeX)</label>
+            <div className="field">
+              <span className="field__label" id={fieldId('selected')}>Selected tags</span>
+              {puzzleData.tags.length > 0 ? (
+                <ul className={styles.selectedTags} aria-labelledby={fieldId('selected')}>
+                  {puzzleData.tags.map(tag => (
+                    <li key={tag} className="badge">
+                      {tag}
+                      <button type="button" className={styles.removeTag} onClick={() => toggleTag(tag)} aria-label={`Remove tag ${tag}`}>
+                        <X size={12} aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="field__hint">No tags selected yet.</span>
+              )}
+              <FieldError id={fieldId('tags-error')} message={errors.tags} />
+            </div>
+
+            <CustomTagInput onAddTag={addCustomTag} existingTags={puzzleData.tags} />
+          </section>
+
+          <section className="card" aria-labelledby={fieldId('blocks-heading')}>
+            <h2 id={fieldId('blocks-heading')} className="card-title">Proof steps</h2>
+            <p className="field__hint">Add the steps in the correct order. Students receive them shuffled.</p>
+
+            <div className="field">
+              <label className="field__label" htmlFor={fieldId('currentBlock')}>New step (LaTeX)</label>
               <textarea
-                id="currentBlock"
+                ref={newStepRef}
+                id={fieldId('currentBlock')}
+                className="input input--mono"
+                rows={2}
                 value={currentBlock}
                 onChange={(e) => setCurrentBlock(e.target.value)}
-                placeholder="Enter LaTeX for the proof step..."
+                placeholder="e.g. \text{Base case: } n = 1"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
                     addBlock();
                   }
                 }}
               />
-              <div className={styles['block-preview']}>
-                {currentBlock && (
-                  <div className={styles['preview-label']}>Preview:</div>
-                )}
-                <KatexRenderer latex={currentBlock} />
+              <LatexPreview latex={currentBlock} />
+              <div>
+                <button type="button" className="btn btn--sm" onClick={addBlock} disabled={!currentBlock.trim()}>
+                  <Plus size={16} aria-hidden="true" /> Add step <kbd className={styles.kbd}>Ctrl+Enter</kbd>
+                </button>
               </div>
-              <button
-                onClick={addBlock}
-                disabled={!currentBlock.trim()}
-                className={styles['add-block-btn']}
-              >
-                ➕ Add Block (Ctrl+Enter)
-              </button>
             </div>
 
-            {/* Blocks List - Drag and Drop */}
-            <div className={styles['blocks-list']}>
-              <h4>Proof Steps (Drag to Reorder):</h4>
-              {puzzleData.blocks.length === 0 ? (
-                <div className={styles['empty-blocks']}>
-                  No blocks added yet. Add blocks above to build your proof.
-                </div>
-              ) : (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={puzzleData.blocks.map(block => block.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className={styles['draggable-list']}>
-                      {puzzleData.blocks.map((block, index) => (
-                        <SortableBlockItem
-                          key={block.id}
-                          block={block}
-                          index={index}
-                          onRemove={removeBlock}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              )}
-              {errors.blocks && <ErrorTooltip message={errors.blocks} />}
-            </div>
-          </div>
+            {puzzleData.blocks.length === 0 ? (
+              <p className={styles.emptyBlocks}>No steps yet. Add the first step of the proof above.</p>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={puzzleData.blocks.map(block => block.id)} strategy={verticalListSortingStrategy}>
+                  <ol ref={blockListRef} className={styles.blockList} aria-label="Proof steps in order">
+                    {puzzleData.blocks.map((block, index) => (
+                      <SortableBlockItem
+                        key={block.id}
+                        block={block}
+                        index={index}
+                        total={puzzleData.blocks.length}
+                        onRemove={removeBlock}
+                        onMove={moveBlock}
+                      />
+                    ))}
+                  </ol>
+                </SortableContext>
+              </DndContext>
+            )}
+            <FieldError id={fieldId('blocks-error')} message={errors.blocks} />
+          </section>
         </div>
       ) : (
-        <div className={styles['preview-content']}>
-          <h3>🔍 Puzzle Preview</h3>
-          <div className={styles['preview-puzzle']}>
-            <div className={styles['puzzle-header']}>
-              <h4><KatexRenderer latex={puzzleData.title} /></h4>
-              <div className={styles['puzzle-meta']}>
-                <span className={styles['difficulty']}>{puzzleData.difficulty}</span>
-                <span className={styles['category']}>{selectedCategory.name}</span>
-              </div>
-            </div>
-            <div className={styles['puzzle-statement']}>
-              <KatexRenderer latex={puzzleData.statement} />
-            </div>
-            <div className={styles['puzzle-tags']}>
-              {puzzleData.tags.map(tag => (
-                <span key={tag} className={styles['tag']}>{tag}</span>
-              ))}
-            </div>
-            <div className={styles['puzzle-blocks']}>
-              <h5>Proof Steps ({puzzleData.blocks.length}):</h5>
-              {puzzleData.blocks.map((block, index) => (
-                <div key={block.id} className={styles['preview-block']}>
-                  <span className={styles['step-num']}>#{index + 1}</span>
-                  <KatexRenderer latex={block.latex} />
-                </div>
-              ))}
-            </div>
+        <div className={styles.sections}>
+          <div className="cluster">
+            <span className="badge">{selectedCategory.name}</span>
+            <span className="badge">{puzzleData.difficulty}</span>
+            {puzzleData.tags.map(tag => <span key={tag} className="badge">{tag}</span>)}
           </div>
+          <p className="field__hint">This is how students will see the puzzle. Try solving it to check the steps.</p>
+          {puzzleData.blocks.length > 0 ? (
+            <PuzzleDisplay key={previewPuzzle.solutionOrder.join('|')} puzzle={previewPuzzle} isLastPuzzle mode="practice" />
+          ) : (
+            <p className={styles.emptyBlocks}>Add proof steps to preview the puzzle.</p>
+          )}
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className={styles['creator-actions']}>
-        {errors.save && <ErrorTooltip message={errors.save} />}
-        <button
-          className={styles['cancel-btn']}
-          onClick={onCancel}
-          disabled={isSaving}
-        >
-          ❌ Cancel
-        </button>
-        <button
-          className={styles['save-btn']}
-          onClick={handleSave}
-          disabled={isSaving}
-        >
-          {isSaving ? <LoadingState size="small" /> : '🚀 Publish Puzzle'}
-        </button>
+      <div className={styles.footer}>
+        {errors.save && (
+          <div className="notice notice--danger" role="alert">
+            <AlertCircle size={16} aria-hidden="true" />
+            <span>{errors.save}</span>
+          </div>
+        )}
+        <div className={styles.footerActions}>
+          <button type="button" className="btn" onClick={onCancel} disabled={isSaving}>Cancel</button>
+          <button type="button" className="btn btn--success" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? <><LoadingState size="small" title="Publishing" /> Publishing…</> : <><Send size={16} aria-hidden="true" /> Publish puzzle</>}
+          </button>
+        </div>
       </div>
     </div>
   );

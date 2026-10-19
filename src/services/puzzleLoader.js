@@ -41,23 +41,6 @@ const inductionProofs = transformCategoryData(inductionProofsData);
 const setTheoryProofs = transformCategoryData(setTheoryProofsData);
 const recursionProofs = transformCategoryData(recursionProofsData);
 
-// Export individual puzzles for backward compatibility
-export const N_SQUARED_PLUS_N_CUBED_THETA_N_CUBED = bigOProofs.puzzles[0];
-export const LOG_N_IS_O_N = bigOProofs.puzzles[1];
-export const N_LOG_N_IS_O_N_SQUARED = bigOProofs.puzzles[2];
-export const TWO_TO_N_IS_NOT_O_N_CUBED = bigOProofs.puzzles[3];
-
-export const SUM_OF_FIRST_N_INTEGERS = inductionProofs.puzzles[0];
-export const SUM_OF_POWERS_OF_TWO = inductionProofs.puzzles[1];
-export const DIVISIBILITY_BY_THREE = inductionProofs.puzzles[2];
-
-export const DISTRIBUTIVE_LAW_SETS = setTheoryProofs.puzzles[0];
-export const DE_MORGAN_LAW = setTheoryProofs.puzzles[1];
-
-export const FIBONACCI_RECURSION = recursionProofs.puzzles[0];
-export const TOWERS_OF_HANOI = recursionProofs.puzzles[1];
-
-// Export all puzzles collection
 export const ALL_PUZZLES = [
   ...bigOProofs.puzzles,
   ...inductionProofs.puzzles,
@@ -65,8 +48,7 @@ export const ALL_PUZZLES = [
   ...recursionProofs.puzzles
 ];
 
-// Export puzzles by category
-export const PUZZLES_BY_CATEGORY = {
+const PUZZLES_BY_CATEGORY = {
   [bigOProofs.category]: bigOProofs.puzzles,
   [inductionProofs.category]: inductionProofs.puzzles,
   [setTheoryProofs.category]: setTheoryProofs.puzzles,

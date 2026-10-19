@@ -1,5 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { CheckCircle2, MessageSquare } from "lucide-react";
+import puzzleService from "../services/puzzleService.js";
+import { getStableUserId } from "../services/userIdentity.js";
+
+const MAX_COMMENT = 2000;
+const RATINGS = [
+  { value: 1, label: "Poor" },
+  { value: 2, label: "Fair" },
+  { value: 3, label: "Okay" },
+  { value: 4, label: "Good" },
+  { value: 5, label: "Great" },
+];
+
+const pageStyle = { maxWidth: 640, margin: "0 auto", width: "100%" };
 
 export default function FeedbackPage() {
   const navigate = useNavigate();
@@ -8,116 +22,120 @@ export default function FeedbackPage() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | sending | sent
+  const [error, setError] = useState(null);
 
   // so you can go back to where the student came from
   const from = location.state?.from || "/student";
+  const canSubmit = comment.trim().length > 0 && status !== "sending";
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-
-    const payload = {
-      rating,
-      comment: comment.trim(),
-      email: email.trim(),
-      path: window.location.pathname,
-      from,
-      timestamp: new Date().toISOString(),
-    };
-
-    const key = "pp_feedback";
-    const existing = JSON.parse(localStorage.getItem(key) || "[]");
-    existing.push(payload);
-    localStorage.setItem(key, JSON.stringify(existing));
-
-    alert("Thanks! Your feedback was saved ✅");
-    navigate(from);
+    if (!canSubmit) return;
+    setStatus("sending");
+    setError(null);
+    try {
+      await puzzleService.submitFeedback({
+        rating,
+        comment: comment.trim(),
+        email: email.trim() || undefined,
+        page: from,
+        userId: getStableUserId(),
+      });
+      setStatus("sent");
+    } catch (err) {
+      setError(err.message || "Feedback couldn't be sent. Please try again.");
+      setStatus("idle");
+    }
   };
 
+  if (status === "sent") {
+    return (
+      <div style={pageStyle}>
+        <div className="card stack" style={{ alignItems: "flex-start" }}>
+          <CheckCircle2 size={32} aria-hidden="true" style={{ color: "var(--color-success-fg)" }} />
+          <h1 className="page-title">Thank you!</h1>
+          <p role="status" style={{ margin: 0 }}>Thanks! Your feedback was sent to the course team.</p>
+          <button type="button" className="btn btn--primary" onClick={() => navigate(from)}>
+            Back to puzzles
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ maxWidth: 700, margin: "40px auto", padding: 16 }}>
-      <h2>Feedback</h2>
-      <p>Help us improve SUTD Parsons Puzzles (50.004).</p>
+    <div style={pageStyle}>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Feedback</h1>
+          <p className="page-subtitle">Help us improve SUTD Parsons Puzzles (50.004).</p>
+        </div>
+      </div>
 
-      <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-        <label>
-          Overall experience: <b>{rating}/5</b>
-          <input
-            type="range"
-            min="1"
-            max="5"
-            value={rating}
-            onChange={(e) => setRating(parseInt(e.target.value, 10))}
-            style={{ width: "100%" }}
-          />
-        </label>
+      <form onSubmit={submit} className="card stack" noValidate>
+        <div className="field">
+          <span className="field__label" id="rating-label">Overall experience</span>
+          <div className="segmented segmented--block" role="radiogroup" aria-labelledby="rating-label">
+            {RATINGS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={rating === value}
+                aria-label={`${value} – ${label}`}
+                className="segmented__option"
+                onClick={() => setRating(value)}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+          <span className="field__hint">1 = poor, 5 = great. Currently {rating}/5.</span>
+        </div>
 
-        <label>
-          What worked well? What was confusing?
+        <div className="field">
+          <label className="field__label" htmlFor="feedback-comment">What worked well? What was confusing?</label>
           <textarea
+            id="feedback-comment"
+            className="input"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             rows={6}
+            maxLength={MAX_COMMENT}
             placeholder="E.g. proof blocks confusing / hints helpful / UI suggestions..."
-            style={{
-              width: "100%",
-              padding: 10,
-              borderRadius: 10,
-              border: "1px solid var(--border)",
-              background: "var(--panel)",
-              color: "var(--text)",
-            }}
           />
-        </label>
+          <span className="field__hint">{comment.length}/{MAX_COMMENT}</span>
+        </div>
 
-        <label>
-          Email (optional)
+        <div className="field">
+          <label className="field__label" htmlFor="feedback-email">Email (optional, if you want a reply)</label>
           <input
+            id="feedback-email"
+            type="email"
+            className="input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@sutd.edu.sg"
-            style={{
-              width: "100%",
-              padding: 10,
-              borderRadius: 10,
-              border: "1px solid var(--border)",
-              background: "var(--panel)",
-              color: "var(--text)",
-            }}
+            autoComplete="email"
           />
-        </label>
+        </div>
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button
-            type="button"
-            onClick={() => navigate(from)}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 10,
-              border: "1px solid var(--border)",
-              background: "transparent",
-              color: "var(--text)",
-              cursor: "pointer",
-            }}
-          >
+        {error && <div className="notice notice--danger" role="alert">{error}</div>}
+
+        <div className="cluster" style={{ justifyContent: "flex-end" }}>
+          <button type="button" className="btn" onClick={() => navigate(from)}>
             Cancel
           </button>
-
-          <button
-            type="submit"
-            disabled={!comment.trim()}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 10,
-              border: "1px solid var(--accent)",
-              background: "var(--accent)",
-              color: "white",
-              cursor: "pointer",
-              opacity: !comment.trim() ? 0.6 : 1,
-            }}
-          >
-            Submit
+          <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
+            <MessageSquare size={16} aria-hidden="true" />
+            {status === "sending" ? "Sending..." : "Submit"}
           </button>
         </div>
+
+        <p className="field__hint" style={{ margin: 0 }}>
+          Feedback is stored on the course server with an anonymous browser ID and the page you came from. Your email is only stored if you enter one.
+        </p>
       </form>
     </div>
   );

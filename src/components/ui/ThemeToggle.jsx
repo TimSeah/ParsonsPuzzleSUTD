@@ -1,35 +1,12 @@
-// src/components/ui/ThemeToggle.jsx
-import React from "react";
-
-
+import { Moon, Sun } from 'lucide-react';
 
 export default function ThemeToggle({ theme, onToggle }) {
-  const isDark = theme === "dark";
+  const isDark = theme === 'dark';
+  const label = isDark ? 'Switch to light theme' : 'Switch to dark theme';
 
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label="Toggle theme"
-      title="Toggle theme"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "8px 12px",
-        borderRadius: 999,
-        border: "1px solid var(--border)",
-        background: "var(--panel)",
-        color: "var(--text)",
-        cursor: "pointer",
-      }}
-    >
-      <span style={{ fontSize: 14 }}>
-        {isDark ? "☀️ Light" : "🌙 Dark" }
-      </span>
+    <button type="button" className="icon-btn" onClick={onToggle} aria-label={label} title={label}>
+      {isDark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
     </button>
   );
 }
-
-
-

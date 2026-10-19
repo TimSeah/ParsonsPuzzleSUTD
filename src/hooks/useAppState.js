@@ -6,9 +6,10 @@ export const useAppState = () => {
   const [currentPuzzle, setCurrentPuzzle] = useState(null);
   const [useLocalData, setUseLocalData] = useState(false);
   
-  // API data and health check
-  const { puzzles: apiPuzzles, loading: puzzlesLoading, error: puzzlesError } = usePuzzles();
-  const { isHealthy: apiHealthy, loading: healthLoading } = useApiHealth();
+  // API data and health check (not polled while the bundled data is selected)
+  const apiEnabled = { enabled: !useLocalData };
+  const { puzzles: apiPuzzles, loading: puzzlesLoading, error: puzzlesError } = usePuzzles(null, {}, apiEnabled);
+  const { isHealthy: apiHealthy, loading: healthLoading } = useApiHealth(apiEnabled);
   
   // Determine which puzzle data to use - now using JSON-based PuzzleLoader for fallback
   const localPuzzles = PuzzleLoader.getAllPuzzles();

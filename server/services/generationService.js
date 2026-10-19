@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 import Puzzle from '../models/Puzzle.js';
 import PuzzleHistory from '../models/PuzzleHistory.js';
 import openaiPuzzleService from './openaiPuzzleService.js';
-import leanClient from './leanClient.js';
+import leanClient, { LEAN_POLICY_VERSION } from './leanClient.js';
+import generationQuota from './generationLimits.js';
 import { buildPuzzlePrompt } from './promptBuilder.js';
 import { normalizeGenerationRequest, validateCandidate } from './puzzleContract.js';
 
@@ -30,14 +31,25 @@ function safePuzzle(puzzle, source) {
 }
 
 export class GenerationService {
-  constructor({ PuzzleModel = Puzzle, HistoryModel = PuzzleHistory, openai = openaiPuzzleService, lean = leanClient } = {}) {
+  constructor({
+    PuzzleModel = Puzzle,
+    HistoryModel = PuzzleHistory,
+    openai = openaiPuzzleService,
+    lean = leanClient,
+    quota = generationQuota,
+    maxConcurrent = Number(process.env.GENERATION_MAX_CONCURRENT) || 4,
+  } = {}) {
     this.Puzzle = PuzzleModel; this.History = HistoryModel; this.openai = openai; this.lean = lean;
+    this.quota = quota; this.maxConcurrent = maxConcurrent;
+    this.activeGenerations = 0;
+    this.usersGenerating = new Set();
   }
 
   async findUnseen({ userId, difficulty, topics }) {
     const history = await this.History.find({ userId, $or: [{ seenCount: { $gt: 0 } }, { attemptCount: { $gt: 0 } }] }).select('puzzleId -_id').lean();
     const excluded = history.map(item => item.puzzleId);
-    const filter = { isActive: true, difficulty, 'verification.status': 'verified', id: { $nin: excluded } };
+    // Only serve puzzles checked under the current verification policy.
+    const filter = { isActive: true, difficulty, 'verification.status': 'verified', 'verification.policyVersion': { $gte: LEAN_POLICY_VERSION }, id: { $nin: excluded } };
     if (topics.length) filter.category = { $in: topics };
     const count = await this.Puzzle.countDocuments(filter);
     if (!count) return null;
@@ -57,12 +69,33 @@ export class GenerationService {
     await this.History.updateOne({ userId, puzzleId }, update, { upsert: true });
   }
 
-  async generate(body) {
-    const maxRepairAttempts = Number(process.env.OPENAI_REPAIR_ATTEMPTS || 2);
+  async generate(body, { ip } = {}) {
     const request = normalizeGenerationRequest(body);
     const cached = await this.findUnseen(request);
     if (cached) { await this.recordSeen(request.userId, cached.id); return safePuzzle(cached, 'cache'); }
 
+    // Fresh generations are expensive (OpenAI + Lean), so they are limited
+    // per user, globally, and by a daily quota. Slots are reserved before the
+    // first await so concurrent requests can't slip past the checks.
+    if (this.usersGenerating.has(request.userId)) {
+      throw Object.assign(new Error('A puzzle is already being generated for you. Please wait for it to finish.'), { status: 429, code: 'GENERATION_IN_PROGRESS' });
+    }
+    if (this.activeGenerations >= this.maxConcurrent) {
+      throw Object.assign(new Error('The puzzle generator is busy right now. Please try again in a minute.'), { status: 503, code: 'GENERATION_BUSY' });
+    }
+    this.usersGenerating.add(request.userId);
+    this.activeGenerations += 1;
+    try {
+      await this.quota.consume({ userId: request.userId, ip });
+      return await this.generateFresh(request);
+    } finally {
+      this.usersGenerating.delete(request.userId);
+      this.activeGenerations -= 1;
+    }
+  }
+
+  async generateFresh(request) {
+    const maxRepairAttempts = Number(process.env.OPENAI_REPAIR_ATTEMPTS || 2);
     let diagnostics = null;
     let lastVerification = null;
     let improperlyFormattedAttemptCount = 0;
@@ -101,11 +134,11 @@ export class GenerationService {
           id,
           source: 'llm-generated',
           contentFingerprint,
-          verification: { ...lastVerification, status: 'verified', verifiedAt: new Date() },
+          verification: { ...lastVerification, status: 'verified', verifiedAt: new Date(), policyVersion: LEAN_POLICY_VERSION },
           generation: {
             model: generated.model,
             responseId: generated.responseId,
-            promptVersion: '1.1',
+            promptVersion: '1.2',
             repairAttemptCount: attempt,
             improperlyFormattedAttemptCount,
             leanRejectedAttemptCount,

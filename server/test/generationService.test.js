@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GenerationService } from '../services/generationService.js';
+import { LEAN_POLICY_VERSION } from '../services/leanClient.js';
 
 function validCandidate() {
   return {
@@ -14,25 +15,33 @@ function validCandidate() {
     blocks: Array.from({ length: 4 }, (_, index) => ({
       id: `step${index + 1}`,
       latex: `Derived statement ${index + 1} by Assumption.`,
-      leanFragment: 'trivial',
+      leanFragment: `have h${index + 1} : True := trivial`,
       pedagogicalRole: 'derivation',
     })),
     solutionOrder: ['step1', 'step2', 'step3', 'step4'],
     lean: {
       theoremName: 'test_theorem',
       imports: ['Mathlib'],
-      source: 'import Mathlib\nexample : True := by trivial',
+      source: [
+        'import Mathlib',
+        'theorem test_theorem : True := by',
+        ...Array.from({ length: 4 }, (_, index) => `  have h${index + 1} : True := trivial`),
+        '  exact h4',
+      ].join('\n'),
     },
   };
 }
 
-function dependencies({ generatedCandidates, leanResults }) {
+function dependencies({ generatedCandidates, leanResults, openaiGate = null, cachedPuzzle = null }) {
   let generatedIndex = 0;
   let leanIndex = 0;
   let savedPuzzle;
+  let cacheFilter;
+  const quotaCalls = [];
   return {
     PuzzleModel: {
-      countDocuments: async () => 0,
+      countDocuments: async filter => { cacheFilter = filter; return cachedPuzzle ? 1 : 0; },
+      findOne: () => ({ skip: async () => cachedPuzzle }),
       create: async puzzle => {
         savedPuzzle = puzzle;
         return { ...puzzle, toObject: () => puzzle };
@@ -44,14 +53,20 @@ function dependencies({ generatedCandidates, leanResults }) {
       updateOne: async () => {},
     },
     openai: {
-      generate: async () => ({
-        candidate: structuredClone(generatedCandidates[generatedIndex++]),
-        model: 'gpt-6-astra',
-        responseId: `response-${generatedIndex}`,
-      }),
+      generate: async () => {
+        if (openaiGate) await openaiGate;
+        return {
+          candidate: structuredClone(generatedCandidates[generatedIndex++ % generatedCandidates.length]),
+          model: 'gpt-6-astra',
+          responseId: `response-${generatedIndex}`,
+        };
+      },
     },
-    lean: { verify: async () => leanResults[leanIndex++] },
+    lean: { verify: async () => leanResults[leanIndex++ % leanResults.length] },
+    quota: { consume: async args => { quotaCalls.push(args); } },
     saved: () => savedPuzzle,
+    cacheFilter: () => cacheFilter,
+    quotaCalls: () => quotaCalls,
   };
 }
 
@@ -78,7 +93,7 @@ test('stores formatting and Lean rejection counts on the successful puzzle', asy
   assert.deepEqual(deps.saved().generation, {
     model: 'gpt-6-astra',
     responseId: 'response-3',
-    promptVersion: '1.1',
+    promptVersion: '1.2',
     repairAttemptCount: 2,
     improperlyFormattedAttemptCount: 1,
     leanRejectedAttemptCount: 1,
@@ -102,4 +117,90 @@ test('stores zero counters when the first attempt succeeds', async () => {
   assert.equal(deps.saved().generation.improperlyFormattedAttemptCount, 0);
   assert.equal(deps.saved().generation.leanRejectedAttemptCount, 0);
   assert.equal(deps.saved().generation.repairAttemptCount, 0);
+});
+
+test('only serves cached puzzles verified under the current Lean policy', async () => {
+  const deps = dependencies({
+    generatedCandidates: [validCandidate()],
+    leanResults: [{ valid: true, status: 'verified', diagnostics: [], axioms: ['propext'] }],
+  });
+  await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
+
+  assert.deepEqual(deps.cacheFilter()['verification.policyVersion'], { $gte: LEAN_POLICY_VERSION });
+  assert.equal(deps.cacheFilter()['verification.status'], 'verified');
+  assert.equal(deps.saved().verification.policyVersion, LEAN_POLICY_VERSION);
+  assert.deepEqual(deps.saved().verification.axioms, ['propext']);
+});
+
+test('asks the model to repair blocks that are not tied to the Lean proof', async () => {
+  const untied = validCandidate();
+  untied.blocks[2].leanFragment = 'simp';
+  const deps = dependencies({
+    generatedCandidates: [untied, validCandidate()],
+    leanResults: [{ valid: true, status: 'verified', diagnostics: [] }],
+  });
+  await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
+
+  assert.equal(deps.saved().generation.improperlyFormattedAttemptCount, 1);
+  assert.equal(deps.saved().generation.repairAttemptCount, 1);
+});
+
+const REQUEST = { userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] };
+const VERIFIED = [{ valid: true, status: 'verified', diagnostics: [] }];
+
+test('serves cached puzzles without consuming the generation quota', async () => {
+  const cached = { id: 'cached-1', title: 'Cached', blocks: [], solutionOrder: [], verification: { status: 'verified' } };
+  const deps = dependencies({ generatedCandidates: [validCandidate()], leanResults: VERIFIED, cachedPuzzle: cached });
+  const result = await new GenerationService(deps).generate(REQUEST, { ip: '1.2.3.4' });
+  assert.equal(result.source, 'cache');
+  assert.equal(deps.quotaCalls().length, 0);
+});
+
+test('charges fresh generations to the user and client IP', async () => {
+  const deps = dependencies({ generatedCandidates: [validCandidate()], leanResults: VERIFIED });
+  await new GenerationService(deps).generate(REQUEST, { ip: '1.2.3.4' });
+  assert.deepEqual(deps.quotaCalls(), [{ userId: 'u', ip: '1.2.3.4' }]);
+});
+
+test('stops before calling OpenAI when the daily quota is exhausted', async () => {
+  const deps = dependencies({ generatedCandidates: [validCandidate()], leanResults: VERIFIED });
+  let openaiCalled = false;
+  deps.openai = { generate: async () => { openaiCalled = true; } };
+  deps.quota = { consume: async () => { throw Object.assign(new Error('quota'), { status: 429, code: 'GENERATION_QUOTA_EXCEEDED' }); } };
+  const service = new GenerationService(deps);
+  await assert.rejects(service.generate(REQUEST), error => error.code === 'GENERATION_QUOTA_EXCEEDED');
+  assert.equal(openaiCalled, false);
+  assert.equal(service.activeGenerations, 0);
+  assert.equal(service.usersGenerating.size, 0);
+});
+
+test('allows only one fresh generation per user at a time', async () => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const deps = dependencies({ generatedCandidates: [validCandidate()], leanResults: VERIFIED, openaiGate: gate });
+  const service = new GenerationService(deps);
+
+  const first = service.generate(REQUEST);
+  await new Promise(resolve => setImmediate(resolve));
+  await assert.rejects(service.generate({ ...REQUEST, requestId: 'r2' }), error => error.status === 429 && error.code === 'GENERATION_IN_PROGRESS');
+
+  release();
+  await first;
+  await service.generate({ ...REQUEST, requestId: 'r3' });
+  assert.equal(service.usersGenerating.size, 0);
+});
+
+test('caps the number of simultaneous fresh generations', async () => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const deps = dependencies({ generatedCandidates: [validCandidate()], leanResults: VERIFIED, openaiGate: gate });
+  const service = new GenerationService({ ...deps, maxConcurrent: 2 });
+
+  const running = [service.generate({ ...REQUEST, userId: 'a' }), service.generate({ ...REQUEST, userId: 'b' })];
+  await new Promise(resolve => setImmediate(resolve));
+  await assert.rejects(service.generate({ ...REQUEST, userId: 'c' }), error => error.status === 503 && error.code === 'GENERATION_BUSY');
+
+  release();
+  await Promise.all(running);
+  assert.equal(service.activeGenerations, 0);
 });

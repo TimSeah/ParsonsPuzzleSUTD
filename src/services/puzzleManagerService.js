@@ -36,6 +36,7 @@ class PuzzleManagerService {
       return {
         success: true,
         message: 'Puzzle created successfully! Students can see it immediately.',
+        savedTo: 'server',
         puzzle: savedPuzzle,
         filename: this.getCategoryFileName(puzzle.category)
       };
@@ -43,8 +44,8 @@ class PuzzleManagerService {
     } catch (error) {
       console.error('Error saving puzzle:', error);
       
-      // Fallback to localStorage if server is down
-      if (error.message.includes('fetch')) {
+      // Fallback to localStorage if server is down (fetch rejects with a TypeError)
+      if (error instanceof TypeError || error.message.includes('fetch')) {
         console.warn('Server unavailable, saving to localStorage as fallback');
         this.saveToLocalStorage(puzzle);
         this.downloadUpdatedFile(this.getStoredPuzzles(puzzle.category), this.getCategoryFileName(puzzle.category));
@@ -52,6 +53,7 @@ class PuzzleManagerService {
         return {
           success: true,
           message: 'Server unavailable. Puzzle saved locally and downloaded as JSON file.',
+          savedTo: 'local',
           puzzle: puzzle,
           filename: this.getCategoryFileName(puzzle.category)
         };

@@ -1,7 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { PuzzleDisplay, LeftControlPanel, LoadingState } from '../components';
-import { FloatingHelpButton, StatusIndicator } from '../components/ui';
+import { useEffect, useRef, useState } from 'react';
+import { AlertCircle, Shuffle, SlidersHorizontal, WifiOff } from 'lucide-react';
+import { PuzzleDisplay } from '../components';
+import { Dialog, LoadingState, StatusIndicator } from '../components/ui';
+import PuzzleSettings from '../components/layout/PuzzleSettings';
+import { describeSettings } from '../components/layout/puzzleSettingsOptions';
 import { useAppState } from '../hooks/useAppState';
+import useMediaQuery, { MOBILE_QUERY } from '../hooks/useMediaQuery';
 import puzzleService from '../services/puzzleService.js';
 import { PuzzleLoader } from '../services/puzzleLoader.js';
 import { getStableUserId } from '../services/userIdentity.js';
@@ -15,18 +19,6 @@ function loadSubmode() {
   return saved === SUBMODES.CHALLENGE ? SUBMODES.CHALLENGE : SUBMODES.PRACTICE;
 }
 
-function submodeButtonStyle(active) {
-  return {
-    padding: '10px 14px',
-    borderRadius: 10,
-    border: active ? '1px solid rgba(56,189,248,0.5)' : '1px solid var(--color-border-default)',
-    background: active ? 'rgba(56,189,248,0.14)' : 'var(--color-canvas-subtle)',
-    color: active ? 'rgba(56,189,248,1)' : 'var(--color-fg-default)',
-    cursor: 'pointer',
-    fontWeight: 700,
-  };
-}
-
 function StudentPage() {
   const {
     currentPuzzle,
@@ -34,6 +26,7 @@ function StudentPage() {
     isUsingApi,
     isLoading,
     healthLoading,
+    puzzlesError,
     toggleDataSource
   } = useAppState();
 
@@ -48,6 +41,8 @@ function StudentPage() {
   const generationRequestRef = useRef(0);
 
   const [submode, setSubmode] = useState(loadSubmode);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
 
   useEffect(() => {
     localStorage.setItem(SUBMODE_KEY, submode);
@@ -87,12 +82,6 @@ function StudentPage() {
     
     try {
       if (dataSource === 'local') {
-        // Local Database - filter from JSON files
-        console.log('✅ Filtering local puzzles:', {
-          difficulty: selectedDifficulty,
-          proofTypes: selectedProofTypes
-        });
-        
         let filteredPuzzles = PuzzleLoader.getAllPuzzles();
         
         // Filter by difficulty
@@ -124,13 +113,6 @@ function StudentPage() {
         // Select random puzzle from filtered results
         const randomIndex = Math.floor(Math.random() * candidates.length);
         const selectedPuzzle = candidates[randomIndex];
-        
-        console.log('🎉 Selected puzzle from local database:', {
-          id: selectedPuzzle.id,
-          title: selectedPuzzle.displayTitle,
-          difficulty: selectedPuzzle.difficulty,
-          tags: selectedPuzzle.tags
-        });
         
         setGeneratedPuzzle(selectedPuzzle);
       } else {
@@ -169,80 +151,123 @@ function StudentPage() {
     }
   };
   
-  // Handle loading state
-  if (isLoading) {
-    return (
-      <LoadingState 
-        title="Loading puzzles..."
-        message="Connecting to database..."
-      />
-    );
-  }
+  const settingsProps = {
+    dataSource,
+    onDataSourceChange: handleDataSourceChange,
+    difficulty: selectedDifficulty,
+    onDifficultyChange: handleDifficultyChange,
+    topics: selectedProofTypes,
+    onTopicsChange: handleProofTypesChange,
+  };
+  const settingsSummary = describeSettings(settingsProps);
+  const connectionError = dataSource === 'smart' ? puzzlesError : null;
 
-  // Handle case where no puzzle is selected yet
-  if (!displayPuzzle) {
-    return (
-      <LoadingState 
-        title="No puzzles available"
-        message="Please check your connection or try refreshing the page."
-      />
-    );
+  const getNewPuzzleFromSheet = () => {
+    setIsSettingsOpen(false);
+    handleGeneratePuzzle();
+  };
+
+  if (isLoading) {
+    return <LoadingState title="Loading puzzles…" message="Connecting to the puzzle server." />;
   }
 
   return (
-    <div className={styles['student-page-container']}>
-      <LeftControlPanel
-        dataSource={dataSource}
-        onDataSourceChange={handleDataSourceChange}
-        selectedDifficulty={selectedDifficulty}
-        onDifficultyChange={handleDifficultyChange}
-        selectedProofTypes={selectedProofTypes}
-        onProofTypesChange={handleProofTypesChange}
-        onGeneratePuzzle={handleGeneratePuzzle}
-        isGenerating={isGenerating}
-        generationError={generationError}
-      />
+    <div className={styles.student}>
+      <h1 className="visually-hidden">Student practice</h1>
 
-      <div className={styles['student-page']}>
-        <header className={styles['page-header']}>
-          <h1>Parsons Puzzles for Math Proofs</h1>
-          <p>Practice formal mathematical proofs through interactive drag-and-drop puzzles</p>
+      {!isMobile && (
+        <aside className={`card ${styles.sidebar}`} aria-labelledby="settings-heading">
+          <h2 id="settings-heading" className={styles.sidebarTitle}>
+            <SlidersHorizontal size={16} aria-hidden="true" /> Puzzle settings
+          </h2>
+          <PuzzleSettings {...settingsProps} />
+          <p className={styles.sidebarNote}>Settings apply to the next puzzle.</p>
+        </aside>
+      )}
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => setSubmode(SUBMODES.PRACTICE)}
-              style={submodeButtonStyle(submode === SUBMODES.PRACTICE)}
-            >
-              Practice Mode
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubmode(SUBMODES.CHALLENGE)}
-              style={submodeButtonStyle(submode === SUBMODES.CHALLENGE)}
-            >
-              Challenge Mode
+      <div className={styles.main}>
+        <div className={styles.toolbar}>
+          <div className="segmented" role="radiogroup" aria-label="Mode">
+            {[[SUBMODES.PRACTICE, 'Practice'], [SUBMODES.CHALLENGE, 'Challenge']].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={submode === value}
+                className="segmented__option"
+                onClick={() => setSubmode(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.toolbarActions}>
+            {isMobile ? (
+              <button
+                type="button"
+                className={`btn ${styles.settingsButton}`}
+                onClick={() => setIsSettingsOpen(true)}
+                aria-haspopup="dialog"
+              >
+                <SlidersHorizontal size={16} aria-hidden="true" />
+                <span className={styles.settingsSummary}>{settingsSummary}</span>
+                <span className="visually-hidden">, change puzzle settings</span>
+              </button>
+            ) : (
+              <StatusIndicator isUsingApi={isUsingApi} isLoading={isLoading || healthLoading} />
+            )}
+            <button type="button" className="btn btn--primary" onClick={handleGeneratePuzzle} disabled={isGenerating}>
+              {isGenerating
+                ? <><LoadingState size="small" title="Generating puzzle" /> Generating…</>
+                : <><Shuffle size={16} aria-hidden="true" /> New puzzle</>}
             </button>
           </div>
-        </header>
+        </div>
 
-        <main className={styles['main-content']}>
-          <PuzzleDisplay 
-            key={`${displayPuzzle.id}:${submode}`} 
-            puzzle={displayPuzzle} 
+        {generationError && (
+          <div className="notice notice--danger" role="alert">
+            <AlertCircle size={16} aria-hidden="true" />
+            <span>{generationError}</span>
+          </div>
+        )}
+        {connectionError && (
+          <div className="notice notice--warning" role="status">
+            <WifiOff size={16} aria-hidden="true" />
+            <span>Can&apos;t load puzzles from the server ({connectionError}). Showing the bundled puzzles while it reconnects.</span>
+          </div>
+        )}
+
+        {displayPuzzle ? (
+          <PuzzleDisplay
+            key={`${displayPuzzle.id}:${submode}`}
+            puzzle={displayPuzzle}
             onNextPuzzle={handleCustomNextPuzzle}
             isLastPuzzle={false}
             onPuzzleTried={handlePuzzleTried}
             mode={submode}
           />
-        </main>
-
-        <StatusIndicator 
-          isUsingApi={isUsingApi} 
-          isLoading={isLoading || healthLoading}
-        />
-        <FloatingHelpButton />
+        ) : (
+          <LoadingState title="No puzzles available" message="Check your connection, or switch to Bundled puzzles in the settings." />
+        )}
       </div>
+
+      <Dialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        title="Puzzle settings"
+        variant="sheet"
+        footer={(
+          <button type="button" className="btn btn--primary btn--block" onClick={getNewPuzzleFromSheet} disabled={isGenerating}>
+            <Shuffle size={16} aria-hidden="true" /> Get a new puzzle
+          </button>
+        )}
+      >
+        <div className={styles.sheetStatus}>
+          <StatusIndicator isUsingApi={isUsingApi} isLoading={isLoading || healthLoading} />
+        </div>
+        <PuzzleSettings {...settingsProps} />
+      </Dialog>
     </div>
   );
 }

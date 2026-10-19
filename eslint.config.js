@@ -37,9 +37,9 @@ export default [
       globals: { ...globals.browser, ...globals.node },
     },
   },
-  // Backend configuration
+  // Backend and Lean worker configuration
   {
-    files: ['server/**/*.js'],
+    files: ['server/**/*.js', 'lean-worker/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.node,

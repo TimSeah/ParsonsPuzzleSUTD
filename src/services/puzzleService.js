@@ -33,6 +33,7 @@ class PuzzleService {
       throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
     }
 
+    if (response.status === 204) return null;
     return response.json();
   }
 
@@ -63,6 +64,13 @@ class PuzzleService {
     return this.fetchWithError(`/generate/${encodeURIComponent(puzzleId)}/tried`, {
       method: 'POST',
       body: JSON.stringify({ userId, completed })
+    });
+  }
+
+  async submitFeedback({ rating, comment, email, page, userId }) {
+    return this.fetchWithError('/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ rating, comment, email, page, userId })
     });
   }
 

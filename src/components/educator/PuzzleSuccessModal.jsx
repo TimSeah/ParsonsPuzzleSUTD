@@ -1,40 +1,45 @@
-import React from 'react';
-import styles from './PuzzleSuccessModal.module.css';
+import { CheckCircle2, Download } from 'lucide-react';
+import { Dialog } from '../ui';
 
-function PuzzleSuccessModal({ isOpen, onClose, puzzleTitle, filename }) {
-  if (!isOpen) return null;
+// Confirms a published puzzle. `savedTo` is 'server' (students see it now)
+// or 'local' (server unavailable: saved in this browser and downloaded).
+function PuzzleSuccessModal({ isOpen, onClose, puzzleTitle, filename, savedTo = 'server' }) {
+  const savedLocally = savedTo === 'local';
 
   return (
-    <div className={styles['modal-overlay']}>
-      <div className={styles['modal-content']}>
-        <div className={styles['success-icon']}>✅</div>
-        
-        <h2>Puzzle Created Successfully!</h2>
-        
-        <div className={styles['success-details']}>
-          <p><strong>Puzzle:</strong> {puzzleTitle}</p>
-          <p><strong>File:</strong> {filename}</p>
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Puzzle published"
+      footer={<button type="button" className="btn btn--primary" onClick={onClose}>Done</button>}
+    >
+      <div className="stack">
+        <div className={`notice ${savedLocally ? 'notice--warning' : 'notice--success'}`}>
+          {savedLocally ? <Download size={18} aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}
+          <div>
+            <strong>{puzzleTitle || 'Your puzzle'}</strong>
+            <p style={{ margin: '0.25rem 0 0' }}>
+              {savedLocally
+                ? 'The server was unavailable, so the puzzle was saved in this browser and downloaded as a JSON file.'
+                : 'Saved to the course database. Students can solve it now.'}
+            </p>
+          </div>
         </div>
 
-        <div className={styles['instructions']}>
-          <h3>📥 Next Steps:</h3>
-          <ol>
-            <li>The updated JSON file has been downloaded to your computer</li>
-            <li>Replace the existing <code>{filename}</code> in your project</li>
-            <li>The puzzle will be available to students immediately</li>
-          </ol>
-        </div>
-
-        <div className={styles['modal-actions']}>
-          <button 
-            className={styles['close-btn']} 
-            onClick={onClose}
-          >
-            🎉 Great! Create Another
-          </button>
-        </div>
+        {savedLocally && (
+          <div>
+            <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>Students can&apos;t see it yet. Next steps:</p>
+            <ol style={{ margin: 0, paddingLeft: '1.25rem', lineHeight: 1.6 }}>
+              <li>Publish it again once the server is back online, or</li>
+              <li>
+                Keep {filename ? <code>{filename}</code> : 'the downloaded file'} and ask the project maintainer to import it.
+                Don&apos;t replace the bundled file with it: it only holds puzzles saved in this browser.
+              </li>
+            </ol>
+          </div>
+        )}
       </div>
-    </div>
+    </Dialog>
   );
 }
 

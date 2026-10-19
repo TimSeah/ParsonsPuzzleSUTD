@@ -1,54 +1,20 @@
-import React from 'react';
-import styles from './StatusIndicator.module.css';
+const STATUSES = {
+  loading: { label: 'Connecting…', detail: 'Checking the puzzle server' },
+  online: { label: 'Online', detail: 'Puzzles are loaded from the course database' },
+  offline: { label: 'Offline', detail: 'Using the bundled puzzles in this app' },
+};
 
+// Small inline pill showing where puzzles are coming from.
 const StatusIndicator = ({ isUsingApi, isLoading = false }) => {
-  const getStatus = () => {
-    if (isLoading) {
-      return {
-        icon: '⏳',
-        text: 'Connecting...',
-        type: 'loading'
-      };
-    }
-    
-    if (isUsingApi) {
-      return {
-        icon: '🌐',
-        text: 'Connected to MongoDB Atlas',
-        type: 'online'
-      };
-    }
-    
-    return {
-      icon: '💾',
-      text: 'Using local puzzle data',
-      type: 'offline'
-    };
-  };
-
-  const status = getStatus();
+  const type = isLoading ? 'loading' : isUsingApi ? 'online' : 'offline';
+  const status = STATUSES[type];
 
   return (
-    <div className={`${styles.statusIndicator} ${styles[status.type]}`} title={status.text}>
-      <div className={styles.statusIcon}>
-        {status.icon}
-      </div>
-      <div className={styles.statusTooltip}>
-        <div className={styles.tooltipContent}>
-          <strong>Data Source</strong>
-          <p>{status.text}</p>
-          {status.type === 'online' && (
-            <small>Real-time database connection active</small>
-          )}
-          {status.type === 'offline' && (
-            <small>Running in offline mode</small>
-          )}
-          {status.type === 'loading' && (
-            <small>Establishing connection...</small>
-          )}
-        </div>
-      </div>
-    </div>
+    <span className="badge" role="status" title={status.detail}>
+      <span className={`status-dot status-dot--${type}`} aria-hidden="true" />
+      {status.label}
+      <span className="visually-hidden">: {status.detail}</span>
+    </span>
   );
 };
 

@@ -1,50 +1,43 @@
-import React, { useState } from 'react';
-import styles from './CustomTagInput.module.css';
+import { useId, useState } from 'react';
+import { Plus } from 'lucide-react';
 
+// Free-text tag entry. Not a <form>, so it can sit inside other forms.
 function CustomTagInput({ onAddTag, existingTags = [] }) {
   const [inputValue, setInputValue] = useState('');
+  const inputId = useId();
+  const normalized = inputValue.trim().toLowerCase();
+  const isDuplicate = Boolean(normalized) && existingTags.includes(normalized);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const trimmedValue = inputValue.trim().toLowerCase();
-    
-    if (trimmedValue && !existingTags.includes(trimmedValue)) {
-      onAddTag(trimmedValue);
-      setInputValue('');
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleSubmit(e);
-    }
+  const add = () => {
+    if (!normalized || isDuplicate) return;
+    onAddTag(normalized);
+    setInputValue('');
   };
 
   return (
-    <div className={styles['custom-tag-input']}>
-      <h4>Add Custom Tag:</h4>
-      <form onSubmit={handleSubmit} className={styles['input-form']}>
+    <div className="field">
+      <label className="field__label" htmlFor={inputId}>Add a custom tag</label>
+      <div className="cluster" style={{ flexWrap: 'nowrap' }}>
         <input
+          id={inputId}
           type="text"
+          className="input"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Enter custom tag..."
-          className={styles['tag-input']}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="e.g. strong-induction"
+          aria-invalid={isDuplicate || undefined}
         />
-        <button
-          type="submit"
-          disabled={!inputValue.trim() || existingTags.includes(inputValue.trim().toLowerCase())}
-          className={styles['add-tag-btn']}
-        >
-          ➕ Add
+        <button type="button" className="btn" onClick={add} disabled={!normalized || isDuplicate}>
+          <Plus size={16} aria-hidden="true" /> Add
         </button>
-      </form>
-      {inputValue.trim() && existingTags.includes(inputValue.trim().toLowerCase()) && (
-        <div className={styles['duplicate-warning']}>
-          This tag already exists
-        </div>
-      )}
+      </div>
+      {isDuplicate && <p className="field__error">This tag is already selected.</p>}
     </div>
   );
 }

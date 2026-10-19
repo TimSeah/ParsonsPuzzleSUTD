@@ -8,27 +8,35 @@ This README describes the current source checkout. The configured GitHub reposit
 
 ### Student practice
 
-- Drag proof blocks between the available-block panel and proof workspace, reorder them, and reset the puzzle.
+- Build a proof by dragging steps between **Available steps** and **Your proof**, or by tapping **+** on a step and using the ↑ / ↓ / ✕ buttons to reorder or remove it (designed for phones; on touch screens a drag starts after a short press so swiping still scrolls). Reset the puzzle at any time.
 - Receive automatic order-based feedback, scores, hints, and completion feedback against the stored solution order.
 - Render mathematical notation with KaTeX and use interactive placeholders in puzzles that include them.
-- Open the built-in dictionary and help panel for mathematical terminology.
-- Select Easy, Medium, or Hard difficulty and multiple proof-topic filters.
-- Choose **Local Database** for bundled JSON puzzles or **Astra (MongoDB + OpenAI)** for verified-puzzle retrieval and generation.
+- Open the built-in dictionary of mathematical terminology from the book icon in the header.
+- Choose puzzle settings: **Bundled** puzzles or **AI generated** (Lean-verified retrieval and generation through Astra, MongoDB and OpenAI), Easy / Medium / Hard, and any number of topics. On desktop the settings sit in a side panel; on phones they open in a bottom sheet from the summary button (for example "Bundled · Medium · All topics"). **New puzzle** applies them.
+- Switch between **Practice** mode (live feedback while arranging) and **Challenge** mode with three variants: **Lockout** (results only on Submit; five wrong submissions in a row lock the puzzle for 10 seconds), **Timed** (5 minutes, graded automatically) and **Limited moves** (20 moves). Showing the solution disables Submit for that puzzle. Challenge state is kept in the browser, so it is a practice aid rather than an enforced assessment.
+- Toggle between light and dark themes (remembered per browser; defaults to the system preference).
+- Send feedback to the course team from the **Feedback** page.
 
 The current student topic controls offer Induction, Set Theory, Recursion, Logic, Combinatorics, Graph Theory, and Data Structures. The backend additionally accepts `big-o`; the bundled collection and educator form include Big O puzzles. Bundled content covers four categories: Big O, Induction, Recursion, and Set Theory. Local filters match puzzle tags, so some topic/difficulty combinations have no results.
 
 ### Astra generation and Lean verification
 
-1. Look for an active, Lean-verified database puzzle matching the selected difficulty/topics that this user has not seen or attempted.
+1. Look for an active database puzzle that was Lean-verified under the current verification policy, matches the selected difficulty/topics, and that this user has not seen or attempted.
 2. If none is available, request structured puzzle JSON from OpenAI, including student-facing proof blocks and a complete Lean theorem.
-3. Check the puzzle contract: required fields, block IDs, solution order, difficulty, category, and proof-step content.
-4. Send the Lean source to the local worker for compilation against Mathlib.
+3. Check the puzzle contract: required fields, block IDs, solution order, difficulty, category, and proof-step content. The Lean source must declare `lean.theoremName` as a top-level `theorem`, and each block's `leanFragment` must appear verbatim (ignoring whitespace) in the Lean source, in solution order, so the steps students arrange are the steps Lean checks.
+4. Send the Lean source to the local worker, which compiles it against Mathlib and checks the result (see below).
 5. Retry formatting or verification failures with repair feedback, within the configured attempt limit.
-6. Save successful puzzles, verification metadata, model/response details, and repair counters; then return the puzzle to the student.
+6. Save successful puzzles, verification metadata (including the axioms used and the policy version), model/response details, and repair counters; then return the puzzle to the student.
+
+A proof only counts as verified when the worker reports that it:
+
+- compiles with no errors and no warnings (lint-style warnings such as unused variables or deprecated names are allowed);
+- declares the named theorem, and `#print axioms` (appended by the worker) shows it uses only `propext`, `Classical.choice` and `Quot.sound`, which rules out `sorry`, `native_decide` and custom axioms;
+- passes the source policy: Mathlib-only imports, an allowlist of ordinary attributes, and no `sorry`/`admit`, `axiom`, `unsafe`, `#eval`/`#print`/`#exit` and similar commands, macros/notation/elaborators or other metaprogramming, string literals, IO, or `debug.*` options. See the [worker README](lean-worker/README.md) for the full policy and its known limitation.
 
 Generated puzzles target 4–7 blocks for Easy, 7–10 for Medium, and 9–12 for Hard. Content fingerprints help deduplicate generated records. OpenAI requests support background polling and timeouts.
 
-**Verification scope:** Lean checks the generated Lean theorem before publication through the generation flow. Student arrangements are checked against `solutionOrder` in the browser; each student arrangement is not separately compiled in Lean. The system does not formally establish that every natural-language block exactly expresses its Lean fragment. Educator-created and bundled puzzles are not automatically Lean-verified.
+**Verification scope:** Lean checks the generated Lean theorem before publication through the generation flow. Student arrangements are checked against `solutionOrder` in the browser; each student arrangement is not separately compiled in Lean. The system checks that each block's Lean fragment is part of the verified proof, but it does not formally establish that the natural-language text of a block (or the puzzle statement) exactly expresses its Lean counterpart; that still needs human review. Educator-created and bundled puzzles are not automatically Lean-verified.
 
 ### Educator tools
 
@@ -37,7 +45,7 @@ Generated puzzles target 4–7 blocks for Easy, 7–10 for Medium, and 9–12 fo
 - Keep browser-local backups and download a category JSON fallback for certain network failures.
 - View puzzle-count statistics and export available puzzle records.
 
-Normal successful server publication requires no manual JSON replacement. The current success dialog still shows older file-download instructions; follow the [Educator guide](guides/EDUCATOR_GUIDE.md). Local backups do not synchronize automatically. Export currently requests up to 1,000 server puzzles, or uses browser-local records if fetching fails; it is not a complete database backup.
+Normal successful server publication requires no manual JSON replacement, and the success dialog says so; if the server was unreachable it says the puzzle was only saved in this browser and how to follow up (see the [Educator guide](guides/EDUCATOR_GUIDE.md)). Local backups do not synchronize automatically. Export currently requests up to 1,000 server puzzles, or uses browser-local records if fetching fails; it is not a complete database backup.
 
 ### Storage and reliability
 
@@ -46,7 +54,7 @@ Normal successful server publication requires no manual JSON replacement. The cu
 - The backend reconnects to MongoDB automatically, with configurable timeouts and DNS fallback for certain Atlas lookup failures.
 - The frontend polls backend health and can fall back to bundled content when the API is unavailable.
 - REST endpoints support puzzle creation, retrieval, filtering, updates, soft deletion, and statistics.
-- Security headers, configurable request limits, and CORS rules are implemented. Authentication and authorization are not implemented.
+- Security headers, configurable request limits (with stricter per-IP, per-user and daily limits on fresh AI generation), and CORS rules are implemented. Authentication and authorization are not implemented.
 
 ## Architecture
 
@@ -188,7 +196,7 @@ The backend health check returns HTTP 200 with `database: "connected"` when read
 
 1. Check both health endpoints.
 2. On a fresh empty database, publish a simple puzzle through Educator mode first, then reload Student mode. The current student page can otherwise stop at “No puzzles available” when the API is healthy but returns no puzzles.
-3. In Student mode, select **Astra (MongoDB + OpenAI)**, choose a difficulty/topic, and click **Generate Puzzle**. Generation requires the key, database, and worker; it can take several minutes.
+3. In Student mode, choose **AI generated** in the puzzle settings, pick a difficulty/topic, and click **New puzzle**. Generation requires the key, database, and worker; it can take several minutes.
 4. Arrange blocks and check the automatic feedback. Request another puzzle to exercise history-aware retrieval/generation.
 
 For a direct compiler check, run from `lean-worker` in a Bash-compatible terminal:
@@ -205,7 +213,7 @@ A successful check exits without errors. In PowerShell, pipe the same source usi
 
 ### Local-only practice
 
-After installing the frontend dependencies, run `npm run dev` without the backend. Once the connection check falls back to bundled puzzles, choose **Local Database** and click **Generate Puzzle**. This selects a bundled puzzle; it does not call OpenAI. MongoDB, an API key, and Lean are not required for this mode. Broaden the filters if no local puzzle matches.
+After installing the frontend dependencies, run `npm run dev` without the backend. Once the connection check falls back to bundled puzzles, choose **Bundled** in the puzzle settings and click **New puzzle**. This selects a bundled puzzle; it does not call OpenAI. MongoDB, an API key, and Lean are not required for this mode. Broaden the filters if no local puzzle matches.
 
 ## Optional bundled-puzzle import
 
@@ -226,8 +234,9 @@ Run these from the repository root:
 | `npm run dev:lean` | Start the Lean worker |
 | `npm run dev:fullstack` | Start all three application processes |
 | `npm test` | Run frontend and backend tests |
-| `npm run test:frontend` | Run frontend tests |
-| `npm run test:server` | Run backend tests |
+| `npm run test:frontend` | Run frontend tests (Vitest + React Testing Library) |
+| `npm run test:watch` | Run frontend tests in watch mode |
+| `npm run test:server` | Run backend tests (`node:test`) |
 | `npm run lint` | Check JavaScript/React code |
 | `npm run build` | Generate the production frontend in `dist/` |
 | `npm run preview` | Preview the built frontend; backend services remain separate |
@@ -264,7 +273,7 @@ guides/             Current development, educator, and database guides
   archive/          Historical migration documentation
 ```
 
-Some older frontend generation and Lean-service files remain for legacy code/tests. The active Student Astra flow calls the backend's `/api/generate`; proof verification happens through `server/services/leanClient.js` and the separate worker.
+The active Student Astra flow calls the backend's `/api/generate`; proof verification happens through `server/services/leanClient.js` and the separate worker. There is no browser-side generation or verification code.
 
 ## API overview
 
@@ -280,10 +289,25 @@ Some older frontend generation and Lean-service files remain for legacy code/tes
 | `DELETE /api/puzzles/:id` | Mark a puzzle inactive |
 | `POST /api/generate` | Retrieve an unseen verified puzzle or generate one |
 | `POST /api/generate/:puzzleId/tried` | Record an attempt or completion |
+| `POST /api/feedback` | Store student feedback: `rating` (1–5), `comment` (≤ 2000 chars), optional `email`, `page`, `userId`. Limited to 5 per 15 minutes per IP (`FEEDBACK_RATE_LIMIT_MAX`, `FEEDBACK_RATE_LIMIT_WINDOW_MS`) |
+
+Feedback is stored in the MongoDB `feedbacks` collection. There is no admin screen yet; export it with `npm --prefix server run feedback:export > feedback.json`.
 
 Generation requests contain `userId`, `requestId`, `difficulty`, and a `topics` array. Accepted category keys are `big-o`, `induction`, `set-theory`, `recursion`, `logic`, `combinatorics`, `graph-theory`, and `data-structures`.
 
-The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. Keep the worker internal; its default listener is `127.0.0.1:3001`.
+Serving a previously verified puzzle from the database is always allowed. A **fresh generation** (OpenAI + Lean) is limited because each one can make several paid OpenAI calls and Lean compiles:
+
+| Limit | Default | Setting | Response |
+| --- | --- | --- | --- |
+| `POST /api/generate` requests per IP | 10 per 15 minutes | `GENERATION_RATE_LIMIT_MAX`, `GENERATION_RATE_LIMIT_WINDOW_MS` | 429 `GENERATION_RATE_LIMITED` |
+| Fresh generations per user per UTC day | 10 | `GENERATION_DAILY_LIMIT_PER_USER` (0 = unlimited) | 429 `GENERATION_QUOTA_EXCEEDED` |
+| Fresh generations per IP per UTC day | 30 | `GENERATION_DAILY_LIMIT_PER_IP` (0 = unlimited) | 429 `GENERATION_QUOTA_EXCEEDED` |
+| Fresh generations running per user | 1 | none | 429 `GENERATION_IN_PROGRESS` |
+| Fresh generations running per backend process | 4 | `GENERATION_MAX_CONCURRENT` | 503 `GENERATION_BUSY` |
+
+Daily counters are stored in MongoDB (`generationusages`, expired automatically). Behind a reverse proxy, set `TRUST_PROXY` (for example `1`) so limits use the client's IP. The user ID is an anonymous browser ID chosen by the client, so per-user limits and `/tried` history are not a security boundary until authentication is added.
+
+The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. It runs `LEAN_MAX_CONCURRENT` compiles at once (default 1) with up to `LEAN_MAX_QUEUE` waiting (default 2), and answers 503 when full. Keep the worker internal; its default listener is `127.0.0.1:3001`.
 
 ## Build and deployment
 

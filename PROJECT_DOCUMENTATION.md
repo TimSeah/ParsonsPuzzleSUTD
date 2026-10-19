@@ -131,104 +131,85 @@ VITE_API_BASE_URL=http://localhost:5001/api
 #### `/src/pages/StudentPage.jsx`
 **Purpose**: Main student interface for solving puzzles
 **Key Features**:
-- Unified control panel integration
-- Puzzle display with drag-and-drop
-- Loading states and error handling
-- Floating help button for guidance
+- Puzzle-first layout: toolbar with **Practice | Challenge**, status pill and **New puzzle**
+- Puzzle settings in a side panel on desktop, or a bottom sheet behind a summary button on phones
+- Generation/connection notices and loading states
 
 **Dependencies**:
 - `useAppState` hook for state management
 - `PuzzleDisplay` for interactive solving
-- `UnifiedControlPanel` for data source control
-- UI components for loading and status
+- `PuzzleSettings` for puzzle source, difficulty and topics
+- `useMediaQuery` to choose the desktop or mobile settings layout
 
 #### `/src/pages/EducatorPage.jsx`
 **Purpose**: Educator dashboard for puzzle creation and management
 **Key Features**:
-- Statistics dashboard with async loading
-- Category-based puzzle creation buttons
-- Puzzle creation modal integration
-- Success feedback with next action suggestions
+- Page header with **Create puzzle** and **Export all**, plus an Online/Offline pill from the API health check
+- Statistics tiles (total, categories, easy/medium/hard) and a per-category summary of created puzzles
+- **Quick create** list that opens the creator with a category already chosen
+- Success dialog after publishing that says whether the puzzle went to the server or was saved locally
 
 **State Management**:
 - Statistics loading and error handling
-- Puzzle creation workflow management
-- Success modal state management
+- Puzzle creation workflow management (the creator replaces the dashboard while open)
+- Success modal state, including where the puzzle was saved (`savedTo`)
 
 **Integration**:
-- `puzzleManagerService` for server communication
+- `puzzleManagerService` for server communication (`savePuzzle` returns `savedTo: 'server' | 'local'`)
 - `PuzzleCreator` component for puzzle creation
 - `PuzzleSuccessModal` for completion feedback
 
+#### `/src/pages/FeedbackPage.jsx`
+**Purpose**: Student feedback form sent to `POST /api/feedback`
+**Key Features**:
+- 1–5 rating as a segmented radio group, comment (with character count) and optional email
+- Errors shown inline without losing the typed comment; thank-you card with a link back to the previous page
+
 ### Component System (`/src/components`)
 
-The component system is organized by functionality with clear separation of concerns:
+The component system is organized by functionality with clear separation of concerns. Shared building blocks (buttons, cards, segmented controls, chips, badges, notices, form fields, dialogs/bottom sheets) are global classes in `src/styles/ui.css`, built on the `--color-*` theme tokens in `src/index.css`.
 
 #### UI Components (`/src/components/ui`)
 
-**`DataSourceBadge.jsx`**
-- **Purpose**: Visual indicator of current data source (API/Local)
-- **Props**: `isUsingApi`, `puzzleCount`
-- **Features**: Connection status display, puzzle count indicator
+**`Dialog.jsx`**
+- **Purpose**: Accessible modal dialog; `variant="sheet"` becomes a bottom sheet on mobile
+- **Features**: Escape/backdrop/close button, focus moved in and restored on close, page scroll locked while open
 
-**`DataSourceToggle.jsx`**
-- **Purpose**: Toggle between API and local data sources
-- **Props**: `useLocalData`, `onToggle`, `isLoading`
-- **Features**: Manual data source switching, loading states
-
-**`ErrorTooltip.jsx`**
-- **Purpose**: Error display with tooltip functionality
-- **Props**: `error`, `show`
-- **Features**: Graceful error presentation, conditional display
+**`DictionaryModal.jsx`**
+- **Purpose**: Searchable dictionary of maths and algorithms terms, opened from the header
 
 **`LoadingState.jsx`**
-- **Purpose**: Consistent loading spinner component
-- **Features**: Centered loading animation, semantic loading indication
-
-**`PuzzleSelector.jsx`**
-- **Purpose**: Dropdown for selecting puzzles
-- **Props**: `puzzles`, `currentPuzzle`, `onPuzzleChange`
-- **Features**: Puzzle navigation, category-aware display
+- **Purpose**: Consistent loading state (`size="small"` renders an inline spinner, e.g. inside a button)
 
 **`StatusIndicator.jsx`**
-- **Purpose**: General status indication component
-- **Features**: Success/error/loading status visualization
+- **Purpose**: Inline status pill showing whether puzzles come from the API (Online), the bundled data (Offline) or are still connecting
+
+**`ThemeToggle.jsx`**
+- **Purpose**: Light/dark theme icon button in the header
 
 #### Layout Components (`/src/components/layout`)
 
-**`UnifiedControlPanel.jsx`**
-- **Purpose**: Main control panel combining data source and puzzle controls
-- **Props**: Complete application state props for data source management
-- **Features**:
-  - Data source badge and toggle integration
-  - Puzzle selector integration
-  - Error tooltip positioning
-  - Responsive grid layout
-
-**CSS Architecture**: Uses CSS Modules (`UnifiedControlPanel.module.css`) with:
-- Grid-based responsive layout
-- Interactive hover states
-- GitHub-inspired design system
-- Accessibility-focused styling
+**`PuzzleSettings.jsx`**
+- **Purpose**: Puzzle source (Bundled / AI generated), difficulty and topic choices for the next puzzle
+- **Features**: Segmented radio groups and topic chips; option lists and `describeSettings()` live in `puzzleSettingsOptions.js`
 
 #### Puzzle Components (`/src/components/puzzle`)
 
 **`PuzzleDisplay.jsx`**
 - **Purpose**: Main puzzle solving interface
 - **Features**:
-  - Drag-and-drop proof block arrangement
-  - LaTeX rendering for mathematical content
-  - Interactive element handling (dropdowns, inputs)
-  - Proof validation and feedback
-  - Solution state management
+  - Proof board: **Available steps** and **Your proof** side by side on desktop (the proof column stays in view while scrolling), stacked with the proof first on phones
+  - Drag and drop (mouse, keyboard, and touch with a short press) plus tap controls: **+** to add, ↑ / ↓ to reorder, ✕ to remove. Both paths share the same move rules (Limited Moves counting, timer start, history reporting)
+  - Practice mode with live feedback; Challenge mode (Lockout, Timed, Limited moves) with a rules/status banner and Submit
+  - LaTeX rendering and interactive dropdown placeholders
 
 **`ProofBlock.jsx`**
 - **Purpose**: Individual proof statement blocks
 - **Features**:
   - Drag-and-drop functionality with @dnd-kit
+  - Step numbers and tap action buttons (which don't start a drag)
   - LaTeX rendering with interactive placeholders
-  - Dropdown rendering for mathematical operators
-  - Block highlighting and selection states
+  - Learner-friendly transitions for generated blocks with a pedagogical role
 
 **`ProofValidationDisplay.jsx`**
 - **Purpose**: Validation results and feedback display
@@ -237,11 +218,7 @@ The component system is organized by functionality with clear separation of conc
   - Score and progress indication
   - Error highlighting and suggestions
 
-**`ValidatorDemo.jsx`**
-- **Purpose**: Standalone validation testing component
-- **Features**: Testing interface for proof validation logic
-
-#### Renderer Components (`/src/components/renderers`)
+  #### Renderer Components (`/src/components/renderers`)
 
 **`KatexRenderer.jsx`**
 - **Purpose**: LaTeX mathematical expression rendering
@@ -254,46 +231,31 @@ The component system is organized by functionality with clear separation of conc
 #### Educator Components (`/src/components/educator`)
 
 **`PuzzleCreator.jsx`**
-- **Purpose**: Complete puzzle creation interface
+- **Purpose**: Complete puzzle creation interface (Edit / Preview)
 - **Features**:
-  - Category-based puzzle creation
-  - Drag-and-drop block ordering with @dnd-kit
-  - LaTeX editor with live preview
-  - Tag management system
-  - Form validation and submission
-  - Preview mode for student experience
-
-**Component Architecture**:
-- React 19 compatible drag-and-drop
-- Sortable proof blocks with visual feedback
-- Category-specific suggested tags
-- Real-time LaTeX preview
-- Comprehensive form validation
+  - Details, Tags and Proof steps cards; difficulty as a segmented control
+  - Live LaTeX preview under each LaTeX field and the new-step box (Ctrl+Enter adds a step)
+  - Steps reorder by dragging the grip (mouse, touch, keyboard) or with ↑ / ↓; delete per step
+  - Validation messages under each field (`aria-invalid` / `aria-describedby`) plus a summary; save errors keep the form
+  - Preview renders the puzzle with the student `PuzzleDisplay` so it can be solved before publishing
+  - Sticky Cancel / Publish footer (above the tab bar on mobile)
+- **Categories**: `educatorCategories.js` holds the category names, descriptions and suggested tags
 
 **`CustomTagInput.jsx`**
-- **Purpose**: Flexible tag input component
-- **Features**:
-  - Suggested tags from category
-  - Custom tag creation
-  - Tag validation and deduplication
-  - Keyboard navigation support
+- **Purpose**: Free-text tag entry (Enter or **Add**); lower-cases tags and blocks duplicates
 
 **`PuzzleSuccessModal.jsx`**
-- **Purpose**: Success feedback after puzzle creation
-- **Features**:
-  - Success confirmation display
-  - Next action suggestions
-  - Modal state management
-  - Clear user guidance
+- **Purpose**: Dialog shown after publishing
+- **Features**: Server saves say students can solve it now; local fallback saves explain which downloaded JSON file replaces `src/puzzles/data/<file>`
 
 #### Navigation Components (`/src/components/navigation`)
 
 **`NavigationHeader.jsx`**
-- **Purpose**: Main application navigation
+- **Purpose**: App header and mobile navigation
 - **Features**:
-  - Student/Educator page navigation
-  - Active page highlighting
-  - Responsive navigation design
+  - Desktop: one header row with the brand, Student/Educator links, Feedback link, dictionary and theme buttons
+  - Mobile (< 768px): compact header (brand, dictionary, theme) plus a fixed bottom tab bar (Student, Educator, Feedback)
+  - Active page marked with `aria-current`, skip-to-content link, Feedback remembers the page you came from
 
 ### Hooks (`/src/hooks`)
 
@@ -330,11 +292,10 @@ The component system is organized by functionality with clear separation of conc
 - Loading state management
 
 **Hook Variants**:
-- `usePuzzles(category, filters)` - Multiple puzzles
-- `usePuzzle(puzzleId)` - Single puzzle
-- `usePuzzleSearch()` - Search functionality
-- `usePuzzleStats()` - Statistics data
-- `useApiHealth()` - Health check
+- `usePuzzles(category, filters, { enabled })` - Multiple puzzles; retries every 5s on failure while enabled
+- `useApiHealth({ enabled })` - Health check polling
+
+Both hooks are disabled while the student has selected the bundled (local) puzzles.
 
 ### Services (`/src/services`)
 
@@ -373,20 +334,6 @@ The component system is organized by functionality with clear separation of conc
 - exportAllPuzzles()         // Export to JSON file
 ```
 
-#### `hybridPuzzleService.js`
-**Purpose**: Unified service combining JSON and server data
-**Features**:
-- Seamless integration of default (JSON) and created (MongoDB) puzzles
-- Server availability detection
-- Fallback mechanisms
-- Source tracking and attribution
-
-**Architecture**:
-- JSON files provide immediate default content
-- Server data adds educator-created puzzles
-- Transparent failover on server unavailability
-- Source information for debugging
-
 #### `puzzleLoader.js`
 **Purpose**: JSON-based puzzle loading service
 **Features**:
@@ -416,13 +363,7 @@ The component system is organized by functionality with clear separation of conc
 
 ### Puzzle Data (`/src/puzzles`)
 
-#### Legacy JavaScript Files
-- `bigOProofs.js` - Big O notation puzzles
-- `inductionProofs.js` - Mathematical induction puzzles  
-- `recursionProofs.js` - Recursion and algorithm puzzles
-- `setTheoryProofs.js` - Set theory puzzles
-
-#### Modern JSON Data (`/src/puzzles/data`)
+#### JSON Data (`/src/puzzles/data`)
 - `big-o-proofs.json` - Structured Big O puzzles
 - `induction-proofs.json` - Mathematical induction puzzles
 - `recursion-proofs.json` - Recursion puzzles
@@ -701,8 +642,8 @@ The system supports dynamic content through placeholders:
 ```
 App.jsx
 ├── Pages (StudentPage, EducatorPage)
-│   ├── Layout Components (UnifiedControlPanel)
-│   ├── UI Components (LoadingState, ErrorTooltip)
+│   ├── Layout Components (PuzzleSettings)
+│   ├── UI Components (Dialog, LoadingState, StatusIndicator)
 │   └── Feature Components (PuzzleDisplay, PuzzleCreator)
 └── Services (Data management and API calls)
 ```
@@ -828,18 +769,22 @@ npm run dev:fullstack # Both servers concurrently
 
 ### Testing Strategy
 
-1. **Manual Testing**:
+1. **Automated Testing** (run in CI on every pull request; see `guides/DEVELOPMENT.md`):
+   - Frontend: Vitest + React Testing Library (`npm run test:frontend`) covering LaTeX rendering of every bundled puzzle, proof blocks, practice/challenge modes, puzzle generation flow and the API client
+   - Backend: `node:test` (`npm run test:server`) covering the generation service, puzzle contract, OpenAI client and Lean client
+
+2. **Manual Testing**:
    - Educator puzzle creation workflow
    - Student puzzle solving experience
    - Data source switching functionality
    - Mobile responsiveness
 
-2. **Integration Testing**:
+3. **Integration Testing**:
    - Frontend-backend API integration
    - Database migration and data integrity
    - Error handling and fallback mechanisms
 
-3. **Sample Data**: 
+4. **Sample Data**: 
    - `SAMPLE.md` provides comprehensive test scenarios
    - Multiple categories and difficulty levels
    - LaTeX rendering validation
@@ -914,6 +859,7 @@ npm install --production
 ### Pages (`/src/pages`)
 - `StudentPage.jsx` - Student puzzle solving interface
 - `EducatorPage.jsx` - Educator dashboard and management
+- `FeedbackPage.jsx` - Student feedback form
 - `StudentPage.module.css` - Student page styling
 - `EducatorPage.module.css` - Educator page styling
 - `index.js` - Page component exports
@@ -923,25 +869,23 @@ npm install --production
 - `README.md` - Component organization documentation
 
 ### UI Components (`/src/components/ui`)
-- `DataSourceBadge.jsx` - Connection status indicator
-- `DataSourceToggle.jsx` - Data source switcher
-- `ErrorTooltip.jsx` - Error display component
 - `LoadingState.jsx` - Loading spinner component
-- `PuzzleSelector.jsx` - Puzzle selection dropdown
-- `StatusIndicator.jsx` - General status indicator
+- `StatusIndicator.jsx` - Online / offline / connecting status pill
+- `Dialog.jsx` - Accessible dialog / mobile bottom sheet
+- `DictionaryModal.jsx` - Notation dictionary (opened from the header)
+- `ThemeToggle.jsx` - Light/dark theme switch
 - CSS Modules for each component
 - `index.js` - UI component exports
 
 ### Layout Components (`/src/components/layout`)
-- `UnifiedControlPanel.jsx` - Main application control panel
-- `UnifiedControlPanel.module.css` - Control panel styling
+- `PuzzleSettings.jsx` - Puzzle source, difficulty and topic settings
+- `puzzleSettingsOptions.js` - Settings options and summary text
 - `index.js` - Layout component exports
 
 ### Puzzle Components (`/src/components/puzzle`)
-- `PuzzleDisplay.jsx` - Main puzzle solving interface
+- `PuzzleDisplay.jsx` - Main puzzle solving interface (practice and challenge modes)
 - `ProofBlock.jsx` - Individual proof block component
 - `ProofValidationDisplay.jsx` - Validation feedback display
-- `ValidatorDemo.jsx` - Validation testing component
 - CSS files for styling
 - `index.js` - Puzzle component exports
 
@@ -952,8 +896,9 @@ npm install --production
 ### Educator Components (`/src/components/educator`)
 - `PuzzleCreator.jsx` - Complete puzzle creation interface
 - `CustomTagInput.jsx` - Tag input component
-- `PuzzleSuccessModal.jsx` - Success feedback modal
-- CSS Modules for styling
+- `PuzzleSuccessModal.jsx` - Success dialog (server vs. local save)
+- `educatorCategories.js` - Categories and suggested tags
+- `PuzzleCreator.module.css` - Creator styling
 - `index.js` - Educator component exports
 
 ### Navigation Components (`/src/components/navigation`)
@@ -967,16 +912,13 @@ npm install --production
 ### Services (`/src/services`)
 - `puzzleService.js` - Core API communication service
 - `puzzleManagerService.js` - High-level puzzle management
-- `hybridPuzzleService.js` - Unified JSON/server data service
 - `puzzleLoader.js` - JSON-based puzzle loading service
 
 ### Utilities (`/src/utils`)
 - `ProofValidator.js` - Proof validation logic and feedback
 
 ### Puzzle Data (`/src/puzzles`)
-- `index.js` - Puzzle export aggregation
-- Legacy JavaScript files (bigOProofs.js, etc.)
-- `/data/` - Modern JSON puzzle files
+- `/data/` - JSON puzzle files, loaded by `src/services/puzzleLoader.js`
 
 ### Styles (`/src/styles`)
 - `shared.css` - Shared styling utilities
