@@ -29,13 +29,17 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            server/package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
 
-      - name: Install frontend dependencies
+      - name: Install repo tooling (lint, scripts)
         run: npm ci
 
-      - name: Install server dependencies
-        run: npm ci --prefix server
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
 
       - name: Lint
         run: npm run lint
@@ -46,8 +50,38 @@ jobs:
       - name: Frontend tests
         run: npm run test:frontend
 
-      - name: Server tests
-        run: npm run test:server
+      - name: Backend tests
+        run: npm run test:backend
 
       - name: Lean worker policy tests
         run: npm run test:lean
+
+  compose:
+    name: Docker Compose config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml (all profiles)
+        run: docker compose --profile generation config --quiet
+
+  docker:
+    name: Docker images build (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [frontend, backend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service }}
+          push: false
+          tags: parsonspuzzle-${{ matrix.service }}:ci
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}

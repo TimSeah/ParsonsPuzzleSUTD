@@ -9,6 +9,8 @@ import { buildCheckedSource, evaluate, validateSource } from './verifier.js';
 import { createLimiter } from './limiter.js';
 
 const PORT = Number(process.env.PORT || 3001);
+// Loopback only by default; the Docker image sets HOST=0.0.0.0 on a private network.
+const HOST = process.env.HOST || '127.0.0.1';
 const MAX_SOURCE_BYTES = Number(process.env.MAX_SOURCE_BYTES || 20000);
 const DEFAULT_TIMEOUT_MS = Number(process.env.LEAN_TIMEOUT_MS || 30000);
 const compileLimiter = createLimiter({
@@ -121,4 +123,4 @@ http.createServer(async (req, res) => {
   } catch (error) {
     return json(res, error.message === 'REQUEST_TOO_LARGE' ? 413 : 400, { status: 'rejected', valid: false, diagnostics: [{ severity: 'error', message: 'Invalid verification request' }] });
   }
-}).listen(PORT, '127.0.0.1', () => console.log(`Lean worker listening on http://127.0.0.1:${PORT}`));
+}).listen(PORT, HOST, () => console.log(`Lean worker listening on http://${HOST}:${PORT}`));

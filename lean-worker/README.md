@@ -27,7 +27,7 @@ The response includes `status` (`verified`, `rejected`, `timeout` or `infrastruc
 | `allowedAxioms` | The theorem only uses `propext`, `Classical.choice` and `Quot.sound` |
 | `allowedImports` | Every imported module is `Mathlib` or `Mathlib.*` |
 
-A proof is `verified` only if every check is true. The backend (`server/services/leanClient.js`) also requires each check to be reported explicitly, so an older worker that doesn't run them is treated as a rejection.
+A proof is `verified` only if every check is true. The backend (`backend/services/leanClient.js`) also requires each check to be reported explicitly, so an older worker that doesn't run them is treated as a rejection.
 
 ## Source policy
 
@@ -48,5 +48,7 @@ The worker runs `lake env lean --json` and parses Lean's structured messages. Th
 **Known limitation:** the axioms report comes from elaborating the untrusted file itself, so the source policy above is what stops a proof from replacing the `#print axioms` command. A stronger design is to compile the proof to an `.olean` and read its axioms (and re-check it in the kernel, e.g. with lean4checker) in a separate trusted process.
 
 ## Deployment
+
+`Dockerfile` builds an image with the pinned Lean toolchain and the prebuilt Mathlib cache, running as a non-root user. It sets `HOST=0.0.0.0` so other containers can reach it. Outside Docker the worker listens on `127.0.0.1` unless `HOST` is set. In `docker-compose.yml` it runs under the `generation` profile on a private network and isn't published on the host; see [Deployment](../docs/deployment.md).
 
 For production, run this worker in a separate network-disabled container with filesystem, CPU, memory, process, and request limits. The local process boundary and source policy are defence in depth, not a complete security sandbox.

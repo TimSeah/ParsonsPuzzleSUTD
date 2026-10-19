@@ -1,0 +1,8 @@
+# Build context: lean-worker/
+.lake
+node_modules
+test
+*.log
+*.md
+Dockerfile
+.dockerignore

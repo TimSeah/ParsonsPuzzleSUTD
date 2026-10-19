@@ -17,18 +17,19 @@ The frontend includes bundled JSON puzzles for local use and fallback. Publishin
 
 Install Node.js/npm and Git, plus Elan with `lake` on your PATH for Lean verification. Use a Node version supporting JSON import attributes (`with { type: 'json' }`); this checkout was inspected with Node 26.7.0. The worker's `lean-toolchain` and `lakefile.toml` pin Lean and Mathlib to 4.32.0.
 
-From the repository root:
+The repository has three Node packages, each with its own `package.json` and lockfile: `frontend/`, `backend/` and `lean-worker/` (no npm dependencies). The root `package.json` only holds the shared scripts and lint tooling. From the repository root:
 
 ```bash
-npm install
-npm --prefix server install
+npm run setup
 ```
 
-Create `.env` from [.env.example](../.env.example) and `server/.env` from [server/.env.example](../server/.env.example) if they do not already exist. Preserve existing settings. Configure:
+This runs `npm ci` at the root, in `frontend/` and in `backend/`.
 
-- Root `.env`: `VITE_API_BASE_URL=http://localhost:5001/api`.
-- `server/.env`: `MONGODB_URI`, `PORT=5001`, `FRONTEND_URL=http://localhost:5173`, and `NODE_ENV=development`.
-- For generation, set `OPENAI_API_KEY` only in `server/.env`, select an accessible model using `OPENAI_MODEL`, and set `LEAN_VERIFY_URL=http://localhost:3001/verify`.
+Create `frontend/.env` from [frontend/.env.example](../frontend/.env.example) and `backend/.env` from [backend/.env.example](../backend/.env.example) if they do not already exist. Preserve existing settings. Configure:
+
+- `frontend/.env`: `VITE_API_BASE_URL=http://localhost:5001/api`.
+- `backend/.env`: `MONGODB_URI`, `PORT=5001`, `FRONTEND_URL=http://localhost:5173`, and `NODE_ENV=development`.
+- For generation, set `OPENAI_API_KEY` only in `backend/.env`, select an accessible model using `OPENAI_MODEL`, and set `LEAN_VERIFY_URL=http://localhost:3001/verify`.
 
 Never put secrets in variables prefixed with `VITE_`; those are exposed to the browser. The example files list optional timeout and reconnect settings.
 
@@ -42,7 +43,7 @@ cd ..
 
 This runs `lake update` and downloads cached build artifacts. Review any resulting changes to `lake-manifest.json`. See the [worker README](../lean-worker/README.md) for worker details and deployment limits.
 
-For database configuration and importing bundled puzzles, see [Database setup](MIGRATION_GUIDE.md).
+For database configuration and importing bundled puzzles, see [Database setup](database-setup.md).
 
 ## Start the app
 
@@ -58,7 +59,7 @@ Alternatively, run each command in a separate terminal from the repository root:
 
 ```bash
 npm run dev
-npm run dev:server
+npm run dev:backend
 npm run dev:lean
 ```
 
@@ -84,19 +85,19 @@ npm run lint
 npm run build
 ```
 
-`npm test` runs the frontend and backend test suites. It does not replace checking the running services.
+`npm test` runs the frontend, backend and Lean worker policy test suites. It does not replace checking the running services.
 
-- Frontend tests use [Vitest](https://vitest.dev/) with React Testing Library in a jsdom environment. They live next to the code they test as `*.test.js` / `*.test.jsx`; shared setup is in `src/test/`. Use `npm run test:watch` while developing.
-- Backend tests use Node's built-in `node:test` runner and live in `server/test/`.
-- GitHub Actions (`.github/workflows/ci.yml`) runs lint, build and both test suites on Node 22 and 24 for every pull request and for pushes to `main` and `refactor`. The frontend tests need Node 22.22+ or 24.15+.
+- Frontend tests use [Vitest](https://vitest.dev/) with React Testing Library in a jsdom environment. They live next to the code they test as `*.test.js` / `*.test.jsx`; shared setup is in `frontend/src/test/`. Use `npm run test:watch` while developing.
+- Backend tests use Node's built-in `node:test` runner and live in `backend/test/`.
+- GitHub Actions (`.github/workflows/ci.yml`) runs lint, build and all three test suites on Node 22 and 24, and builds the frontend and backend Docker images, for every pull request and for pushes to `main` and `refactor`. The frontend tests need Node 22.22+ or 24.15+.
 
 ## How puzzle loading works
 
-`src/App.jsx` handles routes. `src/hooks/useAppState.js` chooses API puzzles or the bundled `PuzzleLoader` data based on the selected source, API health, and fetch errors. Educator publishing uses `src/services/puzzleManagerService.js` to save through the backend, with a browser-local fallback for certain network failures.
+`frontend/src/App.jsx` handles routes. `frontend/src/hooks/useAppState.js` chooses API puzzles or the bundled `PuzzleLoader` data based on the selected source, API health, and fetch errors. Educator publishing uses `frontend/src/services/puzzleManagerService.js` to save through the backend, with a browser-local fallback for certain network failures.
 
 ## Bundled JSON puzzle reference
 
-The files are in `src/puzzles/data/`:
+The files are in `frontend/src/data/puzzles/`:
 
 | File | Contents |
 | --- | --- |
@@ -131,7 +132,7 @@ Each file contains category metadata and a `puzzles` array. A minimal illustrati
 
 Use unique puzzle IDs, unique block IDs within each puzzle, and a `solutionOrder` containing those block IDs in the intended order. Difficulty is `easy`, `medium`, or `hard`. Escape LaTeX backslashes as `\\` inside JSON strings. Preserve existing puzzles when adding entries.
 
-`src/services/puzzleLoader.js` imports these files and exposes:
+`frontend/src/services/puzzleLoader.js` imports these files and exposes:
 
 - `getAllPuzzles()`, `getPuzzleById(id)`, and `getPuzzlesByCategory(category)`.
 - `getPuzzlesByDifficulty(difficulty)`, `getPuzzlesByTags(tags)`, and `searchPuzzles(text)`.
@@ -139,7 +140,7 @@ Use unique puzzle IDs, unique block IDs within each puzzle, and a `solutionOrder
 
 For loader category arguments, use the category names in the JSON files. Database imports use category keys such as `big-o` and `set-theory`; these are a separate convention.
 
-Changing bundled JSON affects local content; it does not automatically update MongoDB. The [database import](MIGRATION_GUIDE.md#import-bundled-puzzles) is a separate operation. The earlier JavaScript-to-JSON transition is preserved in the [archive](archive/JSON_MIGRATION_GUIDE.md).
+Changing bundled JSON affects local content; it does not automatically update MongoDB. The [database import](database-setup.md#import-bundled-puzzles) is a separate operation. The earlier JavaScript-to-JSON transition is preserved in the [archive](archive/json-migration-guide.md).
 
 ## Troubleshooting
 

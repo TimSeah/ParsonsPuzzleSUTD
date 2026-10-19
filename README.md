@@ -45,7 +45,7 @@ Generated puzzles target 4–7 blocks for Easy, 7–10 for Medium, and 9–12 fo
 - Keep browser-local backups and download a category JSON fallback for certain network failures.
 - View puzzle-count statistics and export available puzzle records.
 
-Normal successful server publication requires no manual JSON replacement, and the success dialog says so; if the server was unreachable it says the puzzle was only saved in this browser and how to follow up (see the [Educator guide](guides/EDUCATOR_GUIDE.md)). Local backups do not synchronize automatically. Export currently requests up to 1,000 server puzzles, or uses browser-local records if fetching fails; it is not a complete database backup.
+Normal successful server publication requires no manual JSON replacement, and the success dialog says so; if the server was unreachable it says the puzzle was only saved in this browser and how to follow up (see the [Educator guide](docs/educator-guide.md)). Local backups do not synchronize automatically. Export currently requests up to 1,000 server puzzles, or uses browser-local records if fetching fails; it is not a complete database backup.
 
 ### Storage and reliability
 
@@ -70,10 +70,10 @@ React/Vite frontend
 
 | Component | Local default | Location |
 | --- | --- | --- |
-| Frontend | http://localhost:5173 | `src/` |
-| Backend | http://localhost:5001/api | `server/` |
+| Frontend | http://localhost:5173 | `frontend/src/` |
+| Backend | http://localhost:5001/api | `backend/` |
 | Lean worker | http://127.0.0.1:3001 | `lean-worker/` |
-| Database | Local MongoDB or Atlas URI | Configured in `server/.env` |
+| Database | Local MongoDB or Atlas URI | Configured in `backend/.env` |
 
 ## Set up from GitHub
 
@@ -92,15 +92,16 @@ The Lean worker pins **Lean 4.32.0 and Mathlib v4.32.0**. Use the checked-in too
 ```bash
 git clone https://github.com/lav-22/AlgoKnit.git
 cd AlgoKnit
-npm ci
-npm --prefix server ci
+npm run setup
 ```
+
+`npm run setup` installs the repo tooling (lint and scripts) at the root, then the `frontend/` and `backend/` packages. Each package has its own `package.json` and lockfile.
 
 If using a fork, replace the clone URL with your fork's URL and enter the directory Git creates. Subsequent commands assume the repository root unless stated otherwise.
 
 ### 3. Configure the frontend
 
-Create `.env` at the repository root with these values, or add them to your existing file:
+Create `frontend/.env` from [frontend/.env.example](frontend/.env.example), or add these values to your existing file:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5001/api
@@ -108,23 +109,23 @@ VITE_API_TIMEOUT_MS=30000
 VITE_GENERATION_TIMEOUT_MS=1200000
 ```
 
-These settings are public browser configuration. Keep the OpenAI key and database credentials in `server/.env`, never in a `VITE_` variable. Restart Vite after changing frontend settings.
+These settings are public browser configuration. Keep the OpenAI key and database credentials in `backend/.env`, never in a `VITE_` variable. Restart Vite after changing frontend settings.
 
 ### 4. Configure the backend
 
 For a fresh checkout, copy the backend template:
 
 ```bash
-cp server/.env.example server/.env
+cp backend/.env.example backend/.env
 ```
 
 PowerShell equivalent:
 
 ```powershell
-Copy-Item server/.env.example server/.env
+Copy-Item backend/.env.example backend/.env
 ```
 
-Skip the copy if `server/.env` already exists. Edit that file and replace placeholder values:
+Skip the copy if `backend/.env` already exists. Edit that file and replace placeholder values:
 
 ```env
 MONGODB_URI=mongodb://127.0.0.1:27017/parsonspuzzle
@@ -149,7 +150,7 @@ LEAN_TIMEOUT_MS=30000
 
 For Atlas, replace `MONGODB_URI` with the connection string from your cluster, including your database name. Create a database user and allow your machine's IP through Atlas network access. URI-encode special characters in the password. For local MongoDB, start the database service separately before running the backend.
 
-See [server/.env.example](server/.env.example) for optional rate-limit, database timeout, reconnect, and DNS settings. Environment files are excluded from Git.
+See [backend/.env.example](backend/.env.example) for optional rate-limit, database timeout, reconnect, and DNS settings. Environment files are excluded from Git.
 
 ### 5. Install the Lean toolchain and Mathlib cache
 
@@ -179,7 +180,7 @@ This starts the frontend, backend, and Lean worker. It does not start MongoDB. A
 
 ```bash
 npm run dev
-npm run dev:server
+npm run dev:backend
 npm run dev:lean
 ```
 
@@ -217,11 +218,11 @@ After installing the frontend dependencies, run `npm run dev` without the backen
 
 ## Optional bundled-puzzle import
 
-The repository includes `npm --prefix server run migrate`, which reads `src/puzzles/data/` and creates or updates MongoDB records by puzzle ID.
+The repository includes `npm --prefix backend run migrate`, which reads `frontend/src/data/puzzles/` and creates or updates MongoDB records by puzzle ID.
 
 The importer uses the model’s category keys: `big-o`, `induction`, `set-theory`, and `recursion`. This command is not a required installation step. Existing matching records can be overwritten and reactivated, and per-puzzle errors may not produce a failing process exit code. Back up edited records before re-importing and inspect the results.
 
-See [Database setup](guides/MIGRATION_GUIDE.md) for connection and import behavior.
+See [Database setup](docs/database-setup.md) for connection and import behavior.
 
 ## Commands
 
@@ -229,16 +230,18 @@ Run these from the repository root:
 
 | Command | Purpose |
 | --- | --- |
+| `npm run setup` | Install root tooling, frontend and backend dependencies |
 | `npm run dev` | Start the frontend |
-| `npm run dev:server` | Start the backend with automatic restarts |
+| `npm run dev:backend` | Start the backend with automatic restarts |
 | `npm run dev:lean` | Start the Lean worker |
 | `npm run dev:fullstack` | Start all three application processes |
-| `npm test` | Run frontend and backend tests |
+| `npm test` | Run frontend, backend and Lean worker policy tests |
 | `npm run test:frontend` | Run frontend tests (Vitest + React Testing Library) |
 | `npm run test:watch` | Run frontend tests in watch mode |
-| `npm run test:server` | Run backend tests (`node:test`) |
-| `npm run lint` | Check JavaScript/React code |
-| `npm run build` | Generate the production frontend in `dist/` |
+| `npm run test:backend` | Run backend tests (`node:test`) |
+| `npm run test:lean` | Run Lean worker policy tests (no Lean installation needed) |
+| `npm run lint` | Check JavaScript/React code in all three packages |
+| `npm run build` | Generate the production frontend in `frontend/dist/` |
 | `npm run preview` | Preview the built frontend; backend services remain separate |
 
 Automated tests include contract validation, Lean-client response handling, OpenAI background polling, and generation repair counters. Mock-based tests do not establish live OpenAI, MongoDB, or Lean availability; use the first-run checks above.
@@ -246,34 +249,41 @@ Automated tests include contract validation, Lean-client response handling, Open
 ## Repository map
 
 ```text
-src/
-  components/       Student, educator, navigation, and shared UI
-  pages/            Student and educator screens
-  hooks/            Application state, puzzle loading, and API health
-  services/         Browser API clients, puzzle loading, and user identity
-  puzzles/data/     Bundled JSON puzzles
-  data/             Dictionary terms
-  utils/            Student proof-order validation
-server/
+package.json        Repo-level scripts (setup, dev, test, lint) and lint tooling
+eslint.config.js    One lint configuration for all three packages
+docker-compose.yml  Frontend, backend, MongoDB (and optional Lean worker) containers
+frontend/           React/Vite app
+  src/
+    components/     Student, educator, navigation, and shared UI
+    pages/          Student, educator and feedback screens
+    hooks/          Application state, puzzle loading, and API health
+    services/       Browser API clients, puzzle loading, and user identity
+    data/           Dictionary terms and bundled JSON puzzles (data/puzzles/)
+    styles/         Shared design system and base styles
+    utils/          Student proof-order validation
+    test/           Test setup and helpers
+  public/           Static assets copied unchanged into the build
+  Dockerfile        Build with Node, serve with Nginx (nginx.conf)
+backend/
   server.js         Express startup and health endpoint
-  models/           Puzzle and user-history database schemas
-  routes/           Puzzle management and generation endpoints
-  services/         Database, OpenAI, contract, prompt, and Lean integration
-  scripts/          Bundled-puzzle importer
+  models/           Puzzle, history, feedback and usage schemas
+  routes/           Puzzle, generation and feedback endpoints
+  services/         Database, OpenAI, contract, prompt, limits and Lean integration
+  scripts/          Bundled-puzzle importer and feedback export
   test/             Backend automated tests
+  Dockerfile        Production API image
 lean-worker/
   server.js         Local HTTP service that invokes Lean
+  verifier.js       Proof acceptance policy (axioms, imports, warnings)
   lean-toolchain    Pinned Lean version
   lakefile.toml     Mathlib dependency declaration
   lake-manifest.json  Resolved dependency revisions
   .lake/            Generated dependencies and caches; ignored by Git
-public/             Static assets copied unchanged into the frontend build
-dist/               Generated frontend build; ignored by Git
-guides/             Current development, educator, and database guides
+docs/               Architecture, development, deployment, database and educator guides
   archive/          Historical migration documentation
 ```
 
-The active Student Astra flow calls the backend's `/api/generate`; proof verification happens through `server/services/leanClient.js` and the separate worker. There is no browser-side generation or verification code.
+The active Student Astra flow calls the backend's `/api/generate`; proof verification happens through `backend/services/leanClient.js` and the separate worker. There is no browser-side generation or verification code.
 
 ## API overview
 
@@ -291,7 +301,7 @@ The active Student Astra flow calls the backend's `/api/generate`; proof verific
 | `POST /api/generate/:puzzleId/tried` | Record an attempt or completion |
 | `POST /api/feedback` | Store student feedback: `rating` (1–5), `comment` (≤ 2000 chars), optional `email`, `page`, `userId`. Limited to 5 per 15 minutes per IP (`FEEDBACK_RATE_LIMIT_MAX`, `FEEDBACK_RATE_LIMIT_WINDOW_MS`) |
 
-Feedback is stored in the MongoDB `feedbacks` collection. There is no admin screen yet; export it with `npm --prefix server run feedback:export > feedback.json`.
+Feedback is stored in the MongoDB `feedbacks` collection. There is no admin screen yet; export it with `npm --prefix backend run feedback:export > feedback.json`.
 
 Generation requests contain `userId`, `requestId`, `difficulty`, and a `topics` array. Accepted category keys are `big-o`, `induction`, `set-theory`, `recursion`, `logic`, `combinatorics`, `graph-theory`, and `data-structures`.
 
@@ -307,19 +317,13 @@ Serving a previously verified puzzle from the database is always allowed. A **fr
 
 Daily counters are stored in MongoDB (`generationusages`, expired automatically). Behind a reverse proxy, set `TRUST_PROXY` (for example `1`) so limits use the client's IP. The user ID is an anonymous browser ID chosen by the client, so per-user limits and `/tried` history are not a security boundary until authentication is added.
 
-The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. It runs `LEAN_MAX_CONCURRENT` compiles at once (default 1) with up to `LEAN_MAX_QUEUE` waiting (default 2), and answers 503 when full. Keep the worker internal; its default listener is `127.0.0.1:3001`.
+The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. It runs `LEAN_MAX_CONCURRENT` compiles at once (default 1) with up to `LEAN_MAX_QUEUE` waiting (default 2), and answers 503 when full. Keep the worker internal; its default listener is `127.0.0.1:3001` (set `HOST` to change it, as the Docker image does).
 
 ## Build and deployment
 
-For a production frontend, set `VITE_API_BASE_URL` to the deployed backend's `/api` address **before** running `npm run build`. Deploy `dist/` with an SPA fallback to `index.html`. The backend runs separately with `npm --prefix server start`, its own environment variables, and `FRONTEND_URL` set to the deployed frontend origin. GitHub Pages can host static output but cannot run the backend, database, or Lean worker.
+For a production frontend, set `VITE_API_BASE_URL` to the deployed backend's `/api` address **before** running `npm run build`. Deploy `frontend/dist/` with an SPA fallback to `index.html`. The backend runs separately with `npm --prefix backend start`, its own environment variables, and `FRONTEND_URL` set to the deployed frontend origin. GitHub Pages can host static output but cannot run the backend, database, or Lean worker.
 
-The existing `docker-compose.yml` starts a frontend at http://localhost:3000, a backend at http://localhost:5000/api, and MongoDB:
-
-```bash
-docker compose up --build
-```
-
-Stop them with `docker compose down`. The supplied Compose setup does **not** configure OpenAI or include a Lean worker, so it is not a complete Astra deployment. Its frontend API URL is also set to localhost; change that build setting for remote users. Use the local full-stack instructions for the complete current development flow.
+To run the stack in containers, use `docker compose up --build` from the repository root, or `docker compose --profile generation up --build` to include the Lean worker for AI generation. See [Deployment](docs/deployment.md) for the services, settings and limits.
 
 Before exposing the application publicly, add authentication/authorization for puzzle writes and generation. Deploy the Lean worker with a separate execution sandbox and resource/network restrictions; its local process boundary is not a production sandbox. See the [worker README](lean-worker/README.md).
 
@@ -330,7 +334,7 @@ Before exposing the application publicly, add authentication/authorization for p
 | `lake` is not found | Install Elan and reopen a terminal with its bin directory on PATH |
 | Lean or Mathlib import fails | Run setup inside `lean-worker`; keep toolchain and Mathlib pins aligned |
 | Backend health returns 503 | Check MongoDB service/Atlas access, credentials, DNS, and backend logs |
-| OpenAI access/model error | Set the key and an accessible model in `server/.env`; restart the backend |
+| OpenAI access/model error | Set the key and an accessible model in `backend/.env`; restart the backend |
 | Generation timeout | Check worker health and server logs; review OpenAI, Lean, and frontend generation timeouts separately |
 | Frontend cannot reach API | Check `VITE_API_BASE_URL`, port 5001, and restart Vite after environment changes |
 | No puzzles on a fresh database | Publish one through Educator mode and reload Student mode; see the first-run limitation above |
@@ -340,10 +344,15 @@ Before exposing the application publicly, add authentication/authorization for p
 
 ## Further documentation
 
-- [Development and bundled JSON reference](guides/DEVELOPMENT.md)
-- [Educator guide](guides/EDUCATOR_GUIDE.md)
-- [Database setup and import](guides/MIGRATION_GUIDE.md)
+All guides live in [docs/](docs/README.md):
+
+- [Architecture](docs/architecture.md)
+- [Development and bundled JSON reference](docs/development.md)
+- [Deployment (Docker Compose)](docs/deployment.md)
+- [Database setup and import](docs/database-setup.md)
+- [Educator guide](docs/educator-guide.md)
+- [Sample puzzles for testing](docs/sample-puzzles.md)
 - [Lean worker](lean-worker/README.md)
-- [Historical JavaScript-to-JSON migration](guides/archive/JSON_MIGRATION_GUIDE.md)
+- [Historical JavaScript-to-JSON migration](docs/archive/json-migration-guide.md)
 
 When contributing, create a branch, run the relevant tests/lint/build checks, and update documentation with behavior changes. Keep credentials and generated folders (`node_modules/`, `dist/`, and `lean-worker/.lake/`) out of commits. Preserve the npm lockfiles and Lean dependency pins.

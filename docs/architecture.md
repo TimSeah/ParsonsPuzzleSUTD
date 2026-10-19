@@ -58,35 +58,37 @@ The application follows a full-stack architecture with clear separation of conce
 
 ## Frontend Structure
 
-### Root Level Files
+### Repository root
 
-#### `/package.json`
+The root `package.json` holds repo-level scripts (`setup`, `dev`, `dev:fullstack`, `test`, `lint`) and the shared ESLint tooling. `eslint.config.js` lints all three packages. Each app has its own `package.json` and lockfile.
+
+### Frontend package (`/frontend`)
+
+#### `/frontend/package.json`
 **Purpose**: Frontend dependency management and build scripts
 **Key Features**:
 - Modern React 19.1 with latest ecosystem
 - @dnd-kit for React 19 compatible drag-and-drop
-- Concurrently for full-stack development
-- Development and production build scripts
+- Vitest + React Testing Library for tests
 
 ```json
 {
   "scripts": {
-    "dev": "vite",                                    // Frontend development
-    "build": "vite build",                           // Production build
-    "dev:fullstack": "concurrently \"npm run dev:server\" \"npm run dev\"", // Full stack development
-    "dev:server": "cd server && npm run dev"        // Backend development
+    "dev": "vite",            // Frontend development (npm run dev from the root)
+    "build": "vite build",    // Production build into frontend/dist
+    "test": "vitest run"      // Frontend tests (npm run test:frontend from the root)
   }
 }
 ```
 
-#### `/vite.config.js`
+#### `/frontend/vite.config.js`
 **Purpose**: Vite build configuration
 **Features**:
 - React plugin integration
 - Development server configuration
 - Build optimization settings
 
-#### `/index.html`
+#### `/frontend/index.html`
 **Purpose**: Main HTML template
 **Features**:
 - SEO meta tags for educational content
@@ -94,23 +96,23 @@ The application follows a full-stack architecture with clear separation of conce
 - Open Graph/Twitter card metadata
 - KaTeX CSS import for mathematical rendering
 
-#### `/.env`
-**Purpose**: Frontend environment variables
+#### `/frontend/.env`
+**Purpose**: Frontend environment variables (copy from `/frontend/.env.example`)
 **Configuration**:
 ```
 VITE_API_BASE_URL=http://localhost:5001/api
 ```
 
-### Source Code Structure (`/src`)
+### Source Code Structure (`/frontend/src`)
 
-#### `/src/main.jsx`
+#### `/frontend/src/main.jsx`
 **Purpose**: React application entry point
 **Functionality**:
 - React 19 StrictMode setup
 - KaTeX CSS import for mathematical rendering
 - Root DOM mounting
 
-#### `/src/App.jsx`
+#### `/frontend/src/App.jsx`
 **Purpose**: Main application component and routing
 **Features**:
 - React Router setup with navigation
@@ -118,7 +120,7 @@ VITE_API_BASE_URL=http://localhost:5001/api
 - Unified navigation header
 - Default route redirection to student page
 
-#### `/src/App.css` & `/src/index.css`
+#### `/frontend/src/App.css` & `/frontend/src/index.css`
 **Purpose**: Global application styling
 **Features**:
 - Dark theme with GitHub-inspired design
@@ -126,9 +128,9 @@ VITE_API_BASE_URL=http://localhost:5001/api
 - Responsive design utilities
 - Mathematical content styling
 
-### Page Components (`/src/pages`)
+### Page Components (`/frontend/src/pages`)
 
-#### `/src/pages/StudentPage.jsx`
+#### `/frontend/src/pages/StudentPage.jsx`
 **Purpose**: Main student interface for solving puzzles
 **Key Features**:
 - Puzzle-first layout: toolbar with **Practice | Challenge**, status pill and **New puzzle**
@@ -141,7 +143,7 @@ VITE_API_BASE_URL=http://localhost:5001/api
 - `PuzzleSettings` for puzzle source, difficulty and topics
 - `useMediaQuery` to choose the desktop or mobile settings layout
 
-#### `/src/pages/EducatorPage.jsx`
+#### `/frontend/src/pages/EducatorPage.jsx`
 **Purpose**: Educator dashboard for puzzle creation and management
 **Key Features**:
 - Page header with **Create puzzle** and **Export all**, plus an Online/Offline pill from the API health check
@@ -159,17 +161,17 @@ VITE_API_BASE_URL=http://localhost:5001/api
 - `PuzzleCreator` component for puzzle creation
 - `PuzzleSuccessModal` for completion feedback
 
-#### `/src/pages/FeedbackPage.jsx`
+#### `/frontend/src/pages/FeedbackPage.jsx`
 **Purpose**: Student feedback form sent to `POST /api/feedback`
 **Key Features**:
 - 1–5 rating as a segmented radio group, comment (with character count) and optional email
 - Errors shown inline without losing the typed comment; thank-you card with a link back to the previous page
 
-### Component System (`/src/components`)
+### Component System (`/frontend/src/components`)
 
-The component system is organized by functionality with clear separation of concerns. Shared building blocks (buttons, cards, segmented controls, chips, badges, notices, form fields, dialogs/bottom sheets) are global classes in `src/styles/ui.css`, built on the `--color-*` theme tokens in `src/index.css`.
+The component system is organized by functionality with clear separation of concerns. Shared building blocks (buttons, cards, segmented controls, chips, badges, notices, form fields, dialogs/bottom sheets) are global classes in `frontend/src/styles/ui.css`, built on the `--color-*` theme tokens in `frontend/src/index.css`.
 
-#### UI Components (`/src/components/ui`)
+#### UI Components (`/frontend/src/components/ui`)
 
 **`Dialog.jsx`**
 - **Purpose**: Accessible modal dialog; `variant="sheet"` becomes a bottom sheet on mobile
@@ -187,13 +189,13 @@ The component system is organized by functionality with clear separation of conc
 **`ThemeToggle.jsx`**
 - **Purpose**: Light/dark theme icon button in the header
 
-#### Layout Components (`/src/components/layout`)
+#### Layout Components (`/frontend/src/components/layout`)
 
 **`PuzzleSettings.jsx`**
 - **Purpose**: Puzzle source (Bundled / AI generated), difficulty and topic choices for the next puzzle
 - **Features**: Segmented radio groups and topic chips; option lists and `describeSettings()` live in `puzzleSettingsOptions.js`
 
-#### Puzzle Components (`/src/components/puzzle`)
+#### Puzzle Components (`/frontend/src/components/puzzle`)
 
 **`PuzzleDisplay.jsx`**
 - **Purpose**: Main puzzle solving interface
@@ -218,7 +220,7 @@ The component system is organized by functionality with clear separation of conc
   - Score and progress indication
   - Error highlighting and suggestions
 
-  #### Renderer Components (`/src/components/renderers`)
+  #### Renderer Components (`/frontend/src/components/renderers`)
 
 **`KatexRenderer.jsx`**
 - **Purpose**: LaTeX mathematical expression rendering
@@ -228,7 +230,7 @@ The component system is organized by functionality with clear separation of conc
   - Error handling for invalid LaTeX
   - Caching for performance optimization
 
-#### Educator Components (`/src/components/educator`)
+#### Educator Components (`/frontend/src/components/educator`)
 
 **`PuzzleCreator.jsx`**
 - **Purpose**: Complete puzzle creation interface (Edit / Preview)
@@ -246,9 +248,9 @@ The component system is organized by functionality with clear separation of conc
 
 **`PuzzleSuccessModal.jsx`**
 - **Purpose**: Dialog shown after publishing
-- **Features**: Server saves say students can solve it now; local fallback saves explain which downloaded JSON file replaces `src/puzzles/data/<file>`
+- **Features**: Server saves say students can solve it now; local fallback saves explain which downloaded JSON file replaces `frontend/src/data/puzzles/<file>`
 
-#### Navigation Components (`/src/components/navigation`)
+#### Navigation Components (`/frontend/src/components/navigation`)
 
 **`NavigationHeader.jsx`**
 - **Purpose**: App header and mobile navigation
@@ -257,7 +259,7 @@ The component system is organized by functionality with clear separation of conc
   - Mobile (< 768px): compact header (brand, dictionary, theme) plus a fixed bottom tab bar (Student, Educator, Feedback)
   - Active page marked with `aria-current`, skip-to-content link, Feedback remembers the page you came from
 
-### Hooks (`/src/hooks`)
+### Hooks (`/frontend/src/hooks`)
 
 #### `useAppState.js`
 **Purpose**: Central application state management
@@ -297,7 +299,7 @@ The component system is organized by functionality with clear separation of conc
 
 Both hooks are disabled while the student has selected the bundled (local) puzzles.
 
-### Services (`/src/services`)
+### Services (`/frontend/src/services`)
 
 #### `puzzleService.js`
 **Purpose**: Core API communication service
@@ -342,7 +344,7 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 - Filtering and search capabilities
 - Metadata extraction
 
-### Utilities (`/src/utils`)
+### Utilities (`/frontend/src/utils`)
 
 #### `ProofValidator.js`
 **Purpose**: Proof validation logic and feedback generation
@@ -361,9 +363,11 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 - calculateScore(userOrder)    // Score calculation
 ```
 
-### Puzzle Data (`/src/puzzles`)
+### Puzzle Data (`/frontend/src/data`)
 
-#### JSON Data (`/src/puzzles/data`)
+`terms.js` holds the dictionary terms; the bundled puzzles are below.
+
+#### Bundled puzzles (`/frontend/src/data/puzzles`)
 - `big-o-proofs.json` - Structured Big O puzzles
 - `induction-proofs.json` - Mathematical induction puzzles
 - `recursion-proofs.json` - Recursion puzzles
@@ -394,7 +398,7 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 }
 ```
 
-### Styling (`/src/styles`)
+### Styling (`/frontend/src/styles`)
 
 #### `shared.css`
 **Purpose**: Shared styling utilities and variables
@@ -408,9 +412,9 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 
 ## Backend Structure
 
-### Root Level Files (`/server`)
+### Backend package (`/backend`)
 
-#### `/server/package.json`
+#### `/backend/package.json`
 **Purpose**: Backend dependency management
 **Key Dependencies**:
 - `express` - Web framework
@@ -429,7 +433,7 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 }
 ```
 
-#### `/server/server.js`
+#### `/backend/server.js`
 **Purpose**: Main server application file
 **Features**:
 - Express server configuration
@@ -446,7 +450,7 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 // JSON parsing: 10MB limit for large puzzles
 ```
 
-### Data Models (`/server/models`)
+### Data Models (`/backend/models`)
 
 #### `Puzzle.js`
 **Purpose**: MongoDB schema definition for puzzles
@@ -474,7 +478,7 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 - `category` - Category-based queries
 - `isActive` - Active puzzle filtering
 
-### API Routes (`/server/routes`)
+### API Routes (`/backend/routes`)
 
 #### `puzzles.js`
 **Purpose**: RESTful API endpoints for puzzle management
@@ -515,7 +519,7 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 - Purpose: Aggregate statistics
 - Response: Total counts, category breakdown, difficulty distribution
 
-### Database Scripts (`/server/scripts`)
+### Database Scripts (`/backend/scripts`)
 
 #### `migratePuzzles.js`
 **Purpose**: Data migration utility for initial setup
@@ -527,13 +531,13 @@ Both hooks are disabled while the student has selected the bundled (local) puzzl
 
 **Usage**:
 ```bash
-cd server
+cd backend
 npm run migrate
 ```
 
 ### Configuration Files
 
-#### `/server/.env` (Not in repo - see .env.example)
+#### `/backend/.env` (Not in repo - see .env.example)
 **Purpose**: Server environment configuration
 ```env
 MONGODB_URI=mongodb+srv://...    # MongoDB connection string
@@ -696,17 +700,17 @@ Components ──→ Hooks ──→ Services ──→ Data Sources
    
    # Install dependencies
    npm install
-   cd server && npm install && cd ..
+   cd backend && npm install && cd ..
    
    # Configure environment
-   cp server/.env.example server/.env
-   # Edit server/.env with MongoDB URI
+   cp backend/.env.example backend/.env
+   # Edit backend/.env with MongoDB URI
    ```
 
 2. **Database Setup**:
    ```bash
    # Start MongoDB (local) or configure Atlas
-   cd server
+   cd backend
    npm run migrate  # Import initial puzzle data
    ```
 
@@ -717,7 +721,7 @@ Components ──→ Hooks ──→ Services ──→ Data Sources
    
    # Or separately
    npm run dev         # Frontend (port 5173)
-   cd server && npm run dev  # Backend (port 5000)
+   cd backend && npm run dev  # Backend (port 5000)
    ```
 
 ### Development Commands
@@ -730,7 +734,7 @@ npm run preview      # Preview production build
 npm run lint         # Run ESLint
 
 # Backend Development  
-cd server
+cd backend
 npm run dev          # Development with nodemon
 npm start            # Production server
 npm run migrate      # Data migration
@@ -769,9 +773,9 @@ npm run dev:fullstack # Both servers concurrently
 
 ### Testing Strategy
 
-1. **Automated Testing** (run in CI on every pull request; see `guides/DEVELOPMENT.md`):
+1. **Automated Testing** (run in CI on every pull request; see `development.md`):
    - Frontend: Vitest + React Testing Library (`npm run test:frontend`) covering LaTeX rendering of every bundled puzzle, proof blocks, practice/challenge modes, puzzle generation flow and the API client
-   - Backend: `node:test` (`npm run test:server`) covering the generation service, puzzle contract, OpenAI client and Lean client
+   - Backend: `node:test` (`npm run test:backend`) covering the generation service, puzzle contract, OpenAI client and Lean client
 
 2. **Manual Testing**:
    - Educator puzzle creation workflow
@@ -785,7 +789,7 @@ npm run dev:fullstack # Both servers concurrently
    - Error handling and fallback mechanisms
 
 4. **Sample Data**: 
-   - `SAMPLE.md` provides comprehensive test scenarios
+   - `sample-puzzles.md` provides comprehensive test scenarios
    - Multiple categories and difficulty levels
    - LaTeX rendering validation
 
@@ -803,7 +807,7 @@ npm run build
 #### Backend Deployment
 ```bash
 # Prepare for production
-cd server
+cd backend
 npm install --production
 
 # Set environment variables on hosting platform
@@ -841,22 +845,27 @@ npm install --production
 ## File Index and Purpose
 
 ### Root Level
-- `package.json` - Frontend dependencies and scripts
-- `vite.config.js` - Vite build configuration
-- `eslint.config.js` - Code quality configuration
-- `index.html` - HTML template with meta tags
-- `.env` - Frontend environment variables
+- `package.json` - Repo-level scripts (setup, dev, test, lint) and lint tooling
+- `eslint.config.js` - Code quality configuration for all packages
+- `docker-compose.yml` - Container setup (see [deployment.md](deployment.md))
 - `.gitignore` - Git exclusion patterns
 - `README.md` - Main project documentation
-- `SAMPLE.md` - Test puzzle examples
+- `docs/` - Guides (this file, development, deployment, database, educator, sample puzzles)
 
-### Frontend (`/src`)
+### Frontend package (`/frontend`)
+- `package.json` - Frontend dependencies and scripts
+- `vite.config.js` - Vite build and Vitest configuration
+- `index.html` - HTML template with meta tags
+- `.env.example` - Frontend environment template (copy to `.env`)
+- `Dockerfile`, `nginx.conf`, `.dockerignore` - Production image (Node build, Nginx serve)
+
+### Frontend (`/frontend/src`)
 - `main.jsx` - React application entry point
 - `App.jsx` - Main application component and routing
 - `App.css` - Global application styles
 - `index.css` - Base CSS styles
 
-### Pages (`/src/pages`)
+### Pages (`/frontend/src/pages`)
 - `StudentPage.jsx` - Student puzzle solving interface
 - `EducatorPage.jsx` - Educator dashboard and management
 - `FeedbackPage.jsx` - Student feedback form
@@ -864,11 +873,11 @@ npm install --production
 - `EducatorPage.module.css` - Educator page styling
 - `index.js` - Page component exports
 
-### Components (`/src/components`)
+### Components (`/frontend/src/components`)
 - `index.js` - Main component export aggregation
 - `README.md` - Component organization documentation
 
-### UI Components (`/src/components/ui`)
+### UI Components (`/frontend/src/components/ui`)
 - `LoadingState.jsx` - Loading spinner component
 - `StatusIndicator.jsx` - Online / offline / connecting status pill
 - `Dialog.jsx` - Accessible dialog / mobile bottom sheet
@@ -877,23 +886,23 @@ npm install --production
 - CSS Modules for each component
 - `index.js` - UI component exports
 
-### Layout Components (`/src/components/layout`)
+### Layout Components (`/frontend/src/components/layout`)
 - `PuzzleSettings.jsx` - Puzzle source, difficulty and topic settings
 - `puzzleSettingsOptions.js` - Settings options and summary text
 - `index.js` - Layout component exports
 
-### Puzzle Components (`/src/components/puzzle`)
+### Puzzle Components (`/frontend/src/components/puzzle`)
 - `PuzzleDisplay.jsx` - Main puzzle solving interface (practice and challenge modes)
 - `ProofBlock.jsx` - Individual proof block component
 - `ProofValidationDisplay.jsx` - Validation feedback display
 - CSS files for styling
 - `index.js` - Puzzle component exports
 
-### Renderer Components (`/src/components/renderers`)
+### Renderer Components (`/frontend/src/components/renderers`)
 - `KatexRenderer.jsx` - LaTeX mathematical rendering
 - `index.js` - Renderer component exports
 
-### Educator Components (`/src/components/educator`)
+### Educator Components (`/frontend/src/components/educator`)
 - `PuzzleCreator.jsx` - Complete puzzle creation interface
 - `CustomTagInput.jsx` - Tag input component
 - `PuzzleSuccessModal.jsx` - Success dialog (server vs. local save)
@@ -901,45 +910,58 @@ npm install --production
 - `PuzzleCreator.module.css` - Creator styling
 - `index.js` - Educator component exports
 
-### Navigation Components (`/src/components/navigation`)
+### Navigation Components (`/frontend/src/components/navigation`)
 - `NavigationHeader.jsx` - Main application navigation
 - `index.js` - Navigation component exports
 
-### Hooks (`/src/hooks`)
+### Hooks (`/frontend/src/hooks`)
 - `useAppState.js` - Central application state management
 - `usePuzzles.js` - Puzzle data fetching hooks
 
-### Services (`/src/services`)
+### Services (`/frontend/src/services`)
 - `puzzleService.js` - Core API communication service
 - `puzzleManagerService.js` - High-level puzzle management
 - `puzzleLoader.js` - JSON-based puzzle loading service
 
-### Utilities (`/src/utils`)
+### Utilities (`/frontend/src/utils`)
 - `ProofValidator.js` - Proof validation logic and feedback
 
-### Puzzle Data (`/src/puzzles`)
-- `/data/` - JSON puzzle files, loaded by `src/services/puzzleLoader.js`
+### Data (`/frontend/src/data`)
+- `terms.js` - Dictionary terms
+- `puzzles/` - Bundled JSON puzzle files, loaded by `frontend/src/services/puzzleLoader.js`
 
-### Styles (`/src/styles`)
+### Styles (`/frontend/src/styles`)
 - `shared.css` - Shared styling utilities
+- `ui.css` - Design system classes (buttons, cards, fields, dialogs)
 
-### Backend (`/server`)
+### Backend (`/backend`)
 - `server.js` - Main server application
 - `package.json` - Backend dependencies and scripts
 - `README.md` - Backend documentation
 - `.env.example` - Environment template
+- `Dockerfile`, `.dockerignore` - Production API image
 
-### Models (`/server/models`)
+### Models (`/backend/models`)
 - `Puzzle.js` - MongoDB puzzle schema
+- `PuzzleHistory.js`, `Feedback.js`, `GenerationUsage.js` - History, feedback and generation-usage schemas
 
-### Routes (`/server/routes`)
+### Routes (`/backend/routes`)
 - `puzzles.js` - RESTful API endpoints
+- `generation.js`, `feedback.js` - Generation and feedback endpoints
 
-### Scripts (`/server/scripts`)
-- `migratePuzzles.js` - Database migration utility
+### Scripts (`/backend/scripts`)
+- `migratePuzzles.js` - Imports `frontend/src/data/puzzles` into MongoDB
+- `exportFeedback.js` - Exports stored feedback as JSON
 
-### Documentation (`/guides`)
-- [DEVELOPMENT.md](guides/DEVELOPMENT.md) - Current development setup and bundled JSON reference
-- [MIGRATION_GUIDE.md](guides/MIGRATION_GUIDE.md) - Database setup and puzzle import
-- [archive/JSON_MIGRATION_GUIDE.md](guides/archive/JSON_MIGRATION_GUIDE.md) - Historical JavaScript-to-JSON migration notes
-- [EDUCATOR_GUIDE.md](guides/EDUCATOR_GUIDE.md) - Puzzle creation, publishing, and backups
+### Lean worker (`/lean-worker`)
+- `server.js`, `verifier.js`, `limiter.js` - Verification service, proof policy and compile queue
+- `lean-toolchain`, `lakefile.toml`, `lake-manifest.json` - Lean and Mathlib pins
+
+### Documentation (`/docs`)
+- [README.md](README.md) - Index of all guides
+- [development.md](development.md) - Current development setup and bundled JSON reference
+- [deployment.md](deployment.md) - Docker images, Compose and production settings
+- [database-setup.md](database-setup.md) - Database setup and puzzle import
+- [sample-puzzles.md](sample-puzzles.md) - Puzzles for testing the educator workflow
+- [archive/json-migration-guide.md](archive/json-migration-guide.md) - Historical JavaScript-to-JSON migration notes
+- [educator-guide.md](educator-guide.md) - Puzzle creation, publishing, and backups

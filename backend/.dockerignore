@@ -1,0 +1,12 @@
+# Build context: backend/
+node_modules
+logs
+test
+coverage
+.env
+.env.*
+!.env.example
+*.log
+*.md
+Dockerfile
+.dockerignore

@@ -124,4 +124,4 @@ Confirm that the download exists and inspect its `totalPuzzles` count. Keep a co
 
 ## Support
 
-For setup and service checks, see the [Development guide](DEVELOPMENT.md). Database setup and importing bundled puzzles are covered in [Database setup](MIGRATION_GUIDE.md).
+For setup and service checks, see the [Development guide](development.md). Database setup and importing bundled puzzles are covered in [Database setup](database-setup.md).

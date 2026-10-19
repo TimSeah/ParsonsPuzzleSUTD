@@ -1,11 +1,11 @@
 // Prints all stored student feedback as JSON (newest first).
-// Usage: npm --prefix server run feedback:export > feedback.json
+// Usage: npm --prefix backend run feedback:export > feedback.json
 import { connectDatabase, stopDatabase } from '../services/database.js';
 import Feedback from '../models/Feedback.js';
 
 const connected = await connectDatabase();
 if (!connected) {
-  console.error('Could not connect to MongoDB; check MONGODB_URI in server/.env');
+  console.error('Could not connect to MongoDB; check MONGODB_URI in backend/.env');
   await stopDatabase();
   process.exit(1);
 }

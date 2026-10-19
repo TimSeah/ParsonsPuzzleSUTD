@@ -3,10 +3,10 @@
  */
 
 // Import all JSON puzzle data
-import bigOProofsData from '../puzzles/data/big-o-proofs.json' with { type: 'json' };
-import inductionProofsData from '../puzzles/data/induction-proofs.json' with { type: 'json' };
-import setTheoryProofsData from '../puzzles/data/set-theory-proofs.json' with { type: 'json' };
-import recursionProofsData from '../puzzles/data/recursion-proofs.json' with { type: 'json' };
+import bigOProofsData from '../data/puzzles/big-o-proofs.json' with { type: 'json' };
+import inductionProofsData from '../data/puzzles/induction-proofs.json' with { type: 'json' };
+import setTheoryProofsData from '../data/puzzles/set-theory-proofs.json' with { type: 'json' };
+import recursionProofsData from '../data/puzzles/recursion-proofs.json' with { type: 'json' };
 
 /**
  * Transform puzzle data from JSON format to the format expected by components

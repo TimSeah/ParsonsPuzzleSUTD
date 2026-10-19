@@ -2,8 +2,7 @@ services:
   # Frontend service - React app served by Nginx
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ./frontend
       args:
         VITE_API_BASE_URL: http://localhost:5000/api
     ports:
@@ -17,10 +16,14 @@ services:
   # Backend service - Node.js/Express API
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ./backend
     ports:
       - "5000:5000"
+    # Optional: OPENAI_API_KEY, OPENAI_MODEL, limits, etc. The values under
+    # `environment` below take precedence (needs Docker Compose 2.24+).
+    env_file:
+      - path: ./backend/.env
+        required: false
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -28,9 +31,25 @@ services:
       - FRONTEND_URL=http://localhost:3000
       - RATE_LIMIT_WINDOW_MS=900000
       - RATE_LIMIT_MAX_REQUESTS=100
+      # Used only when the lean-worker service runs (profile "generation")
+      - LEAN_VERIFY_URL=http://lean-worker:3001/verify
     depends_on:
       mongodb:
         condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Lean 4 + Mathlib proof checker for AI generation. Large image (several GB)
+  # and memory-hungry, so it only starts with: docker compose --profile generation up
+  # Not published on the host; only the backend can reach it.
+  lean-worker:
+    build:
+      context: ./lean-worker
+    profiles: ["generation"]
+    environment:
+      - LEAN_MAX_CONCURRENT=1
+      - LEAN_MAX_QUEUE=2
     restart: unless-stopped
     networks:
       - app-network
