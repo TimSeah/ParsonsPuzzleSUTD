@@ -2,7 +2,7 @@
 @import './styles/shared.css';
 
 :root {
-  /* GitHub Dark Theme Color Palette */
+  /* GitHub Dark Theme Color Palette (default / fallback values) */
   --color-canvas-default: #0d1117;
   --color-canvas-subtle: #161b22;
   --color-canvas-inset: #010409;
@@ -44,6 +44,46 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+}
+
+/* Explicit dark theme (mirrors the default values above) */
+:root[data-theme="dark"] {
+  --color-canvas-default: #0d1117;
+  --color-canvas-subtle: #161b22;
+  --color-canvas-inset: #010409;
+  --color-border-default: #30363d;
+  --color-border-muted: #21262d;
+  --color-border-subtle: #21262d;
+  --color-fg-default: #e6edf3;
+  --color-fg-muted: #7d8590;
+  --color-fg-subtle: #656d76;
+  --color-accent-fg: #2f81f7;
+  --color-accent-emphasis: #1f6feb;
+  --color-accent-muted: rgba(56, 139, 253, 0.4);
+  --color-accent-subtle: rgba(56, 139, 253, 0.15);
+  --color-neutral-muted: rgba(110, 118, 129, 0.4);
+  --color-primer-shadow-inset: inset 0 0.0625rem 0 rgba(208, 215, 222, 0.2);
+  color-scheme: dark;
+}
+
+/* Light theme — proper contrast so text is readable on a light background */
+:root[data-theme="light"] {
+  --color-canvas-default: #ffffff;
+  --color-canvas-subtle: #f6f7fb;
+  --color-canvas-inset: #eef0f4;
+  --color-border-default: #d0d7de;
+  --color-border-muted: #e4e7eb;
+  --color-border-subtle: #eaecef;
+  --color-fg-default: #0b1220;
+  --color-fg-muted: #57606a;
+  --color-fg-subtle: #6e7781;
+  --color-accent-fg: #1f6feb;
+  --color-accent-emphasis: #0969da;
+  --color-accent-muted: rgba(31, 111, 235, 0.25);
+  --color-accent-subtle: rgba(31, 111, 235, 0.1);
+  --color-neutral-muted: rgba(110, 118, 129, 0.2);
+  --color-primer-shadow-inset: inset 0 0.0625rem 0 rgba(27, 31, 36, 0.06);
+  color-scheme: light;
 }
 
 * {

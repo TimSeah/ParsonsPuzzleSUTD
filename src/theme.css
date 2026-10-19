@@ -1,0 +1,47 @@
+/* src/theme.css */
+
+/* Default (light) */
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --panel: #f6f7fb;
+  --text: #0b1220;
+  /* --muted: #5b6475; */
+  --border: rgba(0, 0, 0, 0.12);
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --accent: #3b82f6;
+}
+
+
+
+/* Dark */
+:root[data-theme="dark"] {
+  --bg: #0b1220;
+  --panel: #121a2b;
+  --text: #e6edf7;
+  /* --muted: #a9b4c7; */
+  --border: rgba(255, 255, 255, 0.14);
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --accent: #60a5fa;
+}
+
+/* Apply to page */
+html, body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+a { color: var(--accent); }
+
+/* Optional: make common containers look good even if old CSS exists */
+.card, .panel, .container {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+html, body, #root {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+
