@@ -19,14 +19,14 @@ Fill out the essential puzzle details:
 - **Difficulty**: Easy, Medium, or Hard
 
 ### Step 2: Tags
-Tags help students find and categorize puzzles:
+Add at least one tag. Tags help students find and categorize puzzles:
 
 - **Suggested Tags**: Click on pre-defined tags relevant to your chosen category
 - **Custom Tags**: Add your own tags using the custom input field
 - **Selected Tags**: Review and remove tags as needed
 
 ### Step 3: Proof Blocks
-Build your proof step by step:
+Add at least two proof blocks. Build your proof step by step:
 
 1. **Add Blocks**: Write each proof step in LaTeX format
    - Use the preview to see how your LaTeX will render
@@ -62,18 +62,25 @@ Build your proof step by step:
 {{setop}}       // Will become dropdown for ∈, ⊆, etc.
 ```
 
-## File Management
+## Publishing and backups
 
-### After Publishing
-1. **Automatic Download**: The system automatically downloads an updated JSON file
-2. **Manual Integration**: Replace the corresponding file in your project:
-   - Big O puzzles → `src/puzzles/data/big-o-proofs.json`
-   - Induction puzzles → `src/puzzles/data/induction-proofs.json`
-   - Recursion puzzles → `src/puzzles/data/recursion-proofs.json`
-   - Set Theory puzzles → `src/puzzles/data/set-theory-proofs.json`
+### Normal publishing
 
-### Export All Puzzles
-Use the **Export All Puzzles** button to download all your created puzzles in a single file for backup.
+Publishing sends the puzzle to the backend for storage in MongoDB and keeps a backup in this browser's local storage. You do not need to download or replace project files after a successful server save. Students using database content can load the published puzzle; refresh Student mode if it was already open.
+
+The current success dialog still displays older instructions about downloading and replacing JSON files. Those instructions do not describe a normal server save.
+
+### When the server cannot be reached
+
+For certain network failures, the app saves the puzzle in this browser and downloads a category JSON file. This is a local backup, not confirmation that the puzzle reached the shared database. Other server or validation errors can fail publishing without this fallback.
+
+Keep the downloaded file and ask the project maintainer to check or import it before relying on student access. Do not blindly replace a bundled category file: the download may contain only browser-stored puzzles and could omit existing bundled content. Browser-local saves do not automatically synchronize when the server returns.
+
+### Export puzzles
+
+Use **Export All Puzzles** to download `all-puzzles-export.json`. With the server available, this exports the records returned by the server (currently requested with a limit of 1,000). If fetching fails, it exports puzzles stored in this browser instead. It is not a complete database backup and does not automatically include all bundled local puzzles.
+
+Confirm that the download exists and inspect its `totalPuzzles` count. Keep a copy outside the browser before clearing browser data.
 
 ## Best Practices
 
@@ -98,7 +105,7 @@ Use the **Export All Puzzles** button to download all your created puzzles in a 
 
 ### Common LaTeX Issues
 - **Missing braces**: Ensure all `{` have matching `}`
-- **Escaped characters**: Use `\\` for actual backslashes in text
+- **Backslashes**: Enter LaTeX commands with one backslash in the editor, such as `\frac{1}{2}`. Use doubled backslashes only when writing JSON strings directly.
 - **Text in math mode**: Use `\text{...}` for regular text within math
 
 ### Block Ordering
@@ -106,11 +113,12 @@ Use the **Export All Puzzles** button to download all your created puzzles in a 
 - Ensure you're dragging from the handle (⋮⋮) icon
 - The final order should represent the correct solution sequence
 
-### File Integration
-- Make sure to backup original files before replacing
-- Verify JSON syntax is valid after editing
-- Test the updated puzzles in student mode
+### Publishing issues
+
+- If publishing fails, keep a copy of your puzzle text and check that the backend and database are available.
+- If a JSON fallback downloads, preserve it and confirm server publication separately before sharing the puzzle with students.
+- If a published puzzle is missing, refresh Student mode and check whether it is using local bundled content instead of database content.
 
 ## Support
 
-For technical issues or feature requests, please refer to the development documentation or contact the system administrator.
+For setup and service checks, see the [Development guide](DEVELOPMENT.md). Database setup and importing bundled puzzles are covered in [Database setup](MIGRATION_GUIDE.md).

@@ -22,9 +22,9 @@ function loadPuzzleData() {
   const recursionData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'recursion-proofs.json'), 'utf8'));
 
   return {
-    bigO: bigOData.puzzles,
+    'big-o': bigOData.puzzles,
     induction: inductionData.puzzles,
-    setTheory: setTheoryData.puzzles,
+    'set-theory': setTheoryData.puzzles,
     recursion: recursionData.puzzles
   };
 }

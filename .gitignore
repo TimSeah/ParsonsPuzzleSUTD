@@ -10,6 +10,7 @@ lerna-debug.log*
 # Dependencies
 node_modules
 server/node_modules
+lean-worker/.lake/
 
 # Build outputs
 dist
@@ -19,6 +20,7 @@ build
 # Environment variables
 *.local
 .env
+.env.local
 server/.env
 
 # Runtime data
@@ -43,3 +45,4 @@ server/logs/
 *.njsproj
 *.sln
 *.sw?
+.vercel

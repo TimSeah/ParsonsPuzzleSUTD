@@ -1,8 +1,17 @@
+/* Container for left panel + main content */
+.student-page-container {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-canvas-default, #0d1117);
+}
+
 .student-page {
-  min-height: calc(100vh - 120px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   padding: 1rem;
-  max-width: 87.5rem;
-  margin: 0 auto;
+  overflow-y: auto;
 }
 
 .page-header {
@@ -27,10 +36,17 @@
 
 .main-content {
   flex: 1;
+  max-width: 87.5rem;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .student-page-container {
+    flex-direction: column;
+  }
+  
   .student-page {
     padding: 0.5rem;
   }

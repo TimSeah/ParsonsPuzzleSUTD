@@ -6,7 +6,6 @@ const ValidatorDemo = () => {
   // Get the puzzle from the new JSON system
   const testPuzzle = PuzzleLoader.getPuzzleById('proof1'); // This is the n² + n³ = Θ(n³) puzzle
   const [validator] = useState(() => new ProofValidator(testPuzzle));
-  const [testOrder, setTestOrder] = useState([]);
   const [result, setResult] = useState(null);
 
   const testSequences = [
@@ -33,7 +32,6 @@ const ValidatorDemo = () => {
   ];
 
   const runTest = (order) => {
-    setTestOrder(order);
     const validation = validator.validateProof(order);
     setResult(validation);
   };

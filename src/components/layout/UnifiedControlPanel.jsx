@@ -1,5 +1,5 @@
 import React from 'react';
-import { DataSourceBadge, DataSourceToggle, PuzzleSelector, ErrorTooltip } from '../ui';
+import { DataSourceBadge, DataSourceToggle, PuzzleSelector, ErrorTooltip, DifficultySelector, ProofTypeSelector, GeneratePuzzleButton } from '../ui';
 import styles from './UnifiedControlPanel.module.css';
 
 const UnifiedControlPanel = ({
@@ -10,7 +10,14 @@ const UnifiedControlPanel = ({
   onToggleDataSource,
   onPuzzleChange,
   healthLoading,
-  puzzlesError
+  puzzlesError,
+  selectedDifficulty,
+  onDifficultyChange,
+  selectedProofTypes,
+  onProofTypesChange,
+  onGeneratePuzzle,
+  isGenerating = false,
+  generationError = null
 }) => {
   return (
     <div className={styles.unifiedControlPanelWrapper}>
@@ -34,6 +41,24 @@ const UnifiedControlPanel = ({
             currentPuzzle={currentPuzzle}
             onPuzzleChange={onPuzzleChange}
           />
+          
+          <DifficultySelector
+            selectedDifficulty={selectedDifficulty}
+            onDifficultyChange={onDifficultyChange}
+            disabled={healthLoading || isGenerating}
+          />
+          
+          <ProofTypeSelector
+            selectedProofTypes={selectedProofTypes}
+            onProofTypesChange={onProofTypesChange}
+            disabled={healthLoading || isGenerating}
+          />
+          
+          <GeneratePuzzleButton
+            onClick={onGeneratePuzzle}
+            isGenerating={isGenerating}
+            disabled={healthLoading}
+          />
         </div>
         
         <div className={styles.controlPanelActions}>
@@ -44,6 +69,11 @@ const UnifiedControlPanel = ({
       <ErrorTooltip 
         error={puzzlesError}
         show={puzzlesError && !useLocalData}
+      />
+      
+      <ErrorTooltip 
+        error={generationError}
+        show={!!generationError}
       />
     </div>
   );

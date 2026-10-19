@@ -44,8 +44,28 @@
 }
 
 .puzzle-header p strong {
-  color: var(--color-fg-default);
+  color: #ffffff;
   font-weight: 600;
+}
+
+.puzzle-header h2,
+.puzzle-header .mixed-latex-content,
+.puzzle-header .katex-prose,
+.puzzle-header .katex,
+.puzzle-header .katex-error {
+  color: #ffffff !important;
+}
+
+.puzzle-header .katex-prose {
+  font-family: inherit;
+  font-style: normal;
+  white-space: pre-wrap;
+}
+
+.puzzle-header .katex-math-display {
+  display: block;
+  margin: 0.75rem auto;
+  overflow-x: auto;
 }
 
 .puzzle-controls {

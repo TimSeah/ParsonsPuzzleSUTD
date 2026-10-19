@@ -8,7 +8,9 @@ const blockSchema = new mongoose.Schema({
   latex: {
     type: String,
     required: true
-  }
+  },
+  leanFragment: String,
+  pedagogicalRole: String
 });
 
 const puzzleSchema = new mongoose.Schema({
@@ -33,7 +35,7 @@ const puzzleSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['big-o', 'induction', 'set-theory', 'recursion'],
+    enum: ['big-o', 'induction', 'set-theory', 'recursion', 'logic', 'combinatorics', 'graph-theory', 'data-structures'],
     index: true
   },
   difficulty: {
@@ -49,6 +51,32 @@ const puzzleSchema = new mongoose.Schema({
   tags: [{
     type: String
   }],
+  schemaVersion: { type: String, default: '1.0' },
+  source: { type: String, enum: ['local', 'educator', 'llm-generated', 'fallback'], default: 'educator' },
+  contentFingerprint: { type: String, sparse: true, unique: true, index: true },
+  lean: {
+    theoremName: String,
+    imports: [String],
+    source: String
+  },
+  verification: {
+    status: { type: String, enum: ['unverified', 'verified', 'rejected', 'timeout', 'infrastructure_error'], default: 'unverified', index: true },
+    verifiedAt: Date,
+    leanVersion: String,
+    mathlibVersion: String,
+    durationMs: Number,
+    policyChecks: mongoose.Schema.Types.Mixed
+  },
+  generation: {
+    model: String,
+    responseId: String,
+    promptVersion: String,
+    repairAttemptCount: { type: Number, default: 0, min: 0 },
+    improperlyFormattedAttemptCount: { type: Number, default: 0, min: 0 },
+    leanRejectedAttemptCount: { type: Number, default: 0, min: 0 }
+  },
+  useCount: { type: Number, default: 0 },
+  lastServedAt: Date,
   createdAt: {
     type: Date,
     default: Date.now

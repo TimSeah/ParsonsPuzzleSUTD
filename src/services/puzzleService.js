@@ -1,23 +1,36 @@
 // API service for interacting with the backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 30000);
+const GENERATION_TIMEOUT_MS = Number(import.meta.env.VITE_GENERATION_TIMEOUT_MS || 1200000);
 
 class PuzzleService {
   constructor() {
     this.baseURL = API_BASE_URL;
   }
 
-  async fetchWithError(url, options = {}) {
-    const response = await fetch(`${this.baseURL}${url}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
-    });
+  async fetchWithError(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    let response;
+    try {
+      response = await fetch(`${this.baseURL}${url}`, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+      });
+    } catch (error) {
+      if (error.name === 'AbortError') throw new Error('The API took too long to respond. Please try again.');
+      throw new Error('Cannot reach the API on port 5001. Start the full stack and try again.');
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
     }
 
     return response.json();
@@ -37,6 +50,20 @@ class PuzzleService {
     const url = `/puzzles${queryString ? `?${queryString}` : ''}`;
     
     return this.fetchWithError(url);
+  }
+
+  async generatePuzzle({ userId, requestId, difficulty, topics }) {
+    return this.fetchWithError('/generate', {
+      method: 'POST',
+      body: JSON.stringify({ userId, requestId, difficulty, topics })
+    }, GENERATION_TIMEOUT_MS);
+  }
+
+  async recordPuzzleTried(puzzleId, userId, completed = false) {
+    return this.fetchWithError(`/generate/${encodeURIComponent(puzzleId)}/tried`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, completed })
+    });
   }
 
   // Get a specific puzzle by ID
@@ -98,8 +125,7 @@ class PuzzleService {
 
   // Health check
   async healthCheck() {
-    const response = await fetch(`${this.baseURL.replace('/api', '')}/api/health`);
-    return response.json();
+    return this.fetchWithError('/health');
   }
 }
 

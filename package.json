@@ -7,9 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "npm run test:frontend && npm run test:server",
+    "test:frontend": "node --test src/test/*.js",
+    "test:server": "npm --prefix server test",
     "preview": "vite preview",
-    "dev:fullstack": "concurrently \"npm run dev:server\" \"npm run dev\"",
-    "dev:server": "cd server && npm run dev"
+    "dev:fullstack": "concurrently --kill-others-on-fail --names lean,api,web \"npm run dev:lean\" \"npm run dev:server\" \"npm run dev\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:lean": "cd lean-worker && npm start"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

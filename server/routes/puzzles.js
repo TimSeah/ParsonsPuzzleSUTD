@@ -7,22 +7,17 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { category, difficulty, tags, search, limit = 50, offset = 0 } = req.query;
-    
     const filter = { isActive: true };
-    
     if (category) {
       filter.category = category;
     }
-    
     if (difficulty) {
       filter.difficulty = difficulty;
     }
-    
     if (tags) {
       const tagArray = Array.isArray(tags) ? tags : tags.split(',');
       filter.tags = { $in: tagArray };
     }
-    
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -30,7 +25,6 @@ router.get('/', async (req, res) => {
         { statement: { $regex: search, $options: 'i' } }
       ];
     }
-    
     const puzzles = await Puzzle.find(filter)
       .select('-__v')
       .sort({ createdAt: -1 })
@@ -61,11 +55,9 @@ router.get('/:id', async (req, res) => {
       id: req.params.id, 
       isActive: true 
     }).select('-__v');
-    
     if (!puzzle) {
       return res.status(404).json({ error: 'Puzzle not found' });
     }
-    
     res.json(puzzle);
   } catch (error) {
     console.error('Error fetching puzzle:', error);
@@ -78,9 +70,7 @@ router.get('/category/:category', async (req, res) => {
   try {
     const { category } = req.params;
     const { difficulty, limit = 50, offset = 0 } = req.query;
-    
     const filter = { category, isActive: true };
-    
     if (difficulty) {
       filter.difficulty = difficulty;
     }

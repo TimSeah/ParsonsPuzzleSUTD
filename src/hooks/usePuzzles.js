@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import puzzleService from '../services/puzzleService.js';
 
 // Custom hook for fetching puzzles with loading and error states
@@ -7,33 +7,47 @@ export function usePuzzles(category = null, filters = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState(null);
+  const filtersKey = JSON.stringify(filters);
 
   useEffect(() => {
+    let active = true;
+    let retryTimer;
+    let firstAttempt = true;
+    const activeFilters = JSON.parse(filtersKey);
+
     async function fetchPuzzles() {
       try {
-        setLoading(true);
+        if (firstAttempt) setLoading(true);
         setError(null);
         
         let response;
         if (category) {
-          response = await puzzleService.getPuzzlesByCategory(category, filters);
+          response = await puzzleService.getPuzzlesByCategory(category, activeFilters);
         } else {
-          response = await puzzleService.getAllPuzzles(filters);
+          response = await puzzleService.getAllPuzzles(activeFilters);
         }
-        
+
+        if (!active) return;
         setPuzzles(response.puzzles || []);
         setPagination(response.pagination || null);
       } catch (err) {
+        if (!active) return;
         console.error('Error fetching puzzles:', err);
         setError(err.message || 'Failed to fetch puzzles');
         setPuzzles([]);
+        retryTimer = setTimeout(fetchPuzzles, 5000);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
+        firstAttempt = false;
       }
     }
 
     fetchPuzzles();
-  }, [category, JSON.stringify(filters)]);
+    return () => {
+      active = false;
+      clearTimeout(retryTimer);
+    };
+  }, [category, filtersKey]);
 
   return { puzzles, loading, error, pagination };
 }
@@ -142,24 +156,37 @@ export function useApiHealth() {
   const [loading, setLoading] = useState(true);
   const [lastCheck, setLastCheck] = useState(null);
 
-  const checkHealth = async () => {
+  const checkHealth = useCallback(async () => {
     try {
       setLoading(true);
       const response = await puzzleService.healthCheck();
-      setIsHealthy(response.status === 'OK');
+      const healthy = response.status === 'OK' && response.database === 'connected';
+      setIsHealthy(healthy);
       setLastCheck(new Date());
+      return healthy;
     } catch (err) {
       console.error('Health check failed:', err);
       setIsHealthy(false);
       setLastCheck(new Date());
+      return false;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    checkHealth();
-  }, []);
+    let active = true;
+    let timer;
+    const poll = async () => {
+      const healthy = await checkHealth();
+      if (active) timer = setTimeout(poll, healthy ? 30000 : 3000);
+    };
+    void poll();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [checkHealth]);
 
   return { isHealthy, loading, lastCheck, checkHealth };
 }

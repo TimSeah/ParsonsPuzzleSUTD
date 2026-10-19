@@ -36,6 +36,7 @@ try {
 
 } catch (error) {
   console.error('❌ JSON puzzle system test failed:', error);
+  process.exitCode = 1;
 }
 
 export default function runTests() {

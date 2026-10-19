@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -30,7 +30,7 @@ const TIMED_SECONDS = 5 * 60;
 // ✅ NEW: Limited-moves rule
 const MAX_MOVES = 20;
 
-const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }) => {
+const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode = 'practice' }) => {
   const isChallenge = mode === 'challenge';
 
   // internal sub-mode selector in challenge
@@ -43,6 +43,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   const [proofBlocks, setProofBlocks] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [blockSelections, setBlockSelections] = useState({});
+  const triedReported = useRef(false);
+
+  useEffect(() => {
+    triedReported.current = false;
+  }, [puzzle]);
 
   // challenge-only state
   const [revealResults, setRevealResults] = useState(!isChallenge);
@@ -263,6 +268,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
     if (!over) return;
 
+    if (!triedReported.current && onPuzzleTried) {
+      triedReported.current = true;
+      onPuzzleTried(puzzle.id, false);
+    }
+
     const activeId = active.id;
     const overId = over.id;
 
@@ -437,6 +447,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
     if (evaluation.isFullyCorrect) {
       setWrongStreak(0);
+      if (onPuzzleTried) onPuzzleTried(puzzle.id, true);
       return;
     }
 
@@ -736,6 +747,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                     key={block.id}
                     id={block.id}
                     latexContent={block.latex}
+                    pedagogicalRole={block.pedagogicalRole}
                     isInWorkspace={false}
                     blockSelections={blockSelections[block.id] || {}}
                     onSelectionChange={handleSelectionChange}
@@ -763,6 +775,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
                     <ProofBlock
                       id={block.id}
                       latexContent={block.latex}
+                      pedagogicalRole={block.pedagogicalRole}
                       isInWorkspace={true}
                       blockSelections={blockSelections[block.id] || {}}
                       onSelectionChange={handleSelectionChange}
@@ -787,6 +800,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
             onReset={handleReset}
             onNextPuzzle={onNextPuzzle}
             isLastPuzzle={isLastPuzzle}
+            onPuzzleTried={onPuzzleTried}
           />
         )}
       </div>
@@ -796,6 +810,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
           <ProofBlock
             id={activeBlock.id}
             latexContent={activeBlock.latex}
+            pedagogicalRole={activeBlock.pedagogicalRole}
             isOverlay={true}
           />
         ) : null}

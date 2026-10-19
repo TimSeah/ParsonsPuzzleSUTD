@@ -1,10 +1,127 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import katex from 'katex';
+
+const MATH_DELIMITER_PATTERN = /(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\$(?!\$)[^$]+?\$)/g;
+
+const renderLatex = (latex, element, displayMode = false) => {
+  katex.render(latex, element, {
+    throwOnError: false,
+    displayMode,
+    strict: false,
+  });
+};
+
+const normalizeLatexInput = (value) => String(value ?? '')
+  // Values returned through JSON can occasionally be escaped twice.
+  .replace(/\\\\(?=[()[\]])/g, '\\');
+
+const escapeKatexText = (value) => value
+  .replace(/\\/g, '\\textbackslash{}')
+  .replace(/([{}%#$&_])/g, '\\$1');
+
+const hasUndelimitedMath = (content) => /\\(?:bigl|bigr|Bigl|Bigr|land|lor|neg|to|rightarrow|leftrightarrow|in|notin|subset|subseteq|setminus|cup|cap|forall|exists|frac|sqrt|sum|mathbb|Theta|Omega)\b|[∧∨¬→↔∈∉⊂⊆∪∩∀∃≤≥≠]/.test(content);
+
+// Convert old cached strings such as
+// "From h, obtain P \\to R by \\to E" into one KaTeX expression while
+// keeping normal English upright and spaced correctly.
+const prepareUndelimitedLatex = (content) => content
+  .split(/(\s+)/)
+  .map((token) => {
+    if (/^\s+$/.test(token)) return '\\;';
+    if (/^[A-Za-z][A-Za-z'-]{1,}[,.;!?]?$/.test(token)) {
+      const punctuation = token.match(/[,.;!?]$/)?.[0] || '';
+      const word = punctuation ? token.slice(0, -1) : token;
+      return `\\text{${escapeKatexText(word)}}${punctuation}`;
+    }
+    return token;
+  })
+  .join('');
+
+const appendText = (container, text) => {
+  if (!text) return;
+  const span = document.createElement('span');
+  span.className = 'katex-prose';
+  span.textContent = text;
+  container.appendChild(span);
+};
+
+const appendProseOrBareMath = (container, content) => {
+  if (!content) return;
+  if (!hasUndelimitedMath(content)) {
+    appendText(container, content);
+    return;
+  }
+  const span = document.createElement('span');
+  span.className = 'katex-math';
+  renderLatex(prepareUndelimitedLatex(content), span);
+  container.appendChild(span);
+};
+
+const appendMath = (container, token) => {
+  const isDisplay = token.startsWith('\\[') || token.startsWith('$$');
+  const delimiterLength = token.startsWith('$$') ? 2 : 2;
+  const math = token.slice(delimiterLength, -delimiterLength).trim();
+  const span = document.createElement(isDisplay ? 'div' : 'span');
+  span.className = isDisplay ? 'katex-math katex-math-display' : 'katex-math';
+  renderLatex(math, span, isDisplay);
+  container.appendChild(span);
+};
+
+const renderDelimitedContent = (content, container) => {
+  const tokens = content.split(MATH_DELIMITER_PATTERN);
+  tokens.forEach((token) => {
+    if (!token) return;
+    if (/^(\\\[[\s\S]*\\\]|\\\([\s\S]*\\\)|\$\$[\s\S]*\$\$|\$(?!\$)[^$]+\$)$/.test(token)) {
+      appendMath(container, token);
+    } else {
+      appendProseOrBareMath(container, token);
+    }
+  });
+};
+
+const hasMathDelimiters = (content) => {
+  MATH_DELIMITER_PATTERN.lastIndex = 0;
+  return MATH_DELIMITER_PATTERN.test(content);
+};
+
+const isLegacyLatex = (content) => {
+  const trimmed = content.trim();
+  return /^\\(?:text|begin|frac|forall|exists|neg|sqrt|sum|prod|lim|mathbb|mathbf|mathrm)\b/.test(trimmed)
+    || (!/\s/.test(trimmed) && /[\\^_={}]/.test(trimmed));
+};
+
+const getDropdownOptions = (type) => {
+  switch (type) {
+    case 'op':
+      return [
+        ['<', '<'], ['\\leq', '≤'], ['=', '='], ['\\geq', '≥'], ['>', '>'], ['\\neq', '≠']
+      ];
+    case 'quantifier':
+      return [
+        ['\\forall', '∀ (for all)'], ['\\exists', '∃ (exists)'],
+        ['\\exists!', '∃! (exactly one)'], ['\\nexists', '∄ (does not exist)']
+      ];
+    case 'set':
+    case 'setop':
+      return [
+        ['\\in', '∈ (element of)'], ['\\notin', '∉ (not element of)'],
+        ['\\subset', '⊂ (proper subset)'], ['\\subseteq', '⊆ (subset)'],
+        ['\\supset', '⊃ (proper superset)'], ['\\supseteq', '⊇ (superset)'],
+        ['\\emptyset', '∅ (empty set)']
+      ];
+    case 'logic':
+      return [['\\land', '∧ (and)'], ['\\lor', '∨ (or)'], ['\\neg', '¬ (not)']];
+    case 'complexity':
+      return [['O', 'O (upper bound)'], ['\\Omega', 'Ω (lower bound)'], ['\\Theta', 'Θ (tight bound)']];
+    default:
+      return [['', 'Select...']];
+  }
+};
 
 const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive = false, blockId = null }) => {
   const containerRef = useRef();
 
-  const createDropdown = (uniqueKey, currentValue, onChange) => {
+  const createDropdown = useCallback((uniqueKey, currentValue, onChange) => {
     const varType = uniqueKey.split('_')[0]; // Extract type from unique key
     const options = getDropdownOptions(varType);
     const select = document.createElement('select');
@@ -28,55 +145,9 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
     select.addEventListener('pointerdown', (e) => e.stopPropagation());
     
     return select;
-  };
+  }, []);
 
-  const getDropdownOptions = (type) => {
-    switch (type) {
-      case 'op':
-        return [
-          ['<', '<'],
-          ['\\leq', '≤'],
-          ['=', '='],
-          ['\\geq', '≥'],
-          ['>', '>'],
-          ['\\neq', '≠']
-        ];
-      case 'quantifier':
-        return [
-          ['\\forall', '∀ (for all)'],
-          ['\\exists', '∃ (exists)'],
-          ['\\exists!', '∃! (exactly one)'],
-          ['\\nexists', '∄ (does not exist)']
-        ];
-      case 'set':
-      case 'setop':
-        return [
-          ['\\in', '∈ (element of)'],
-          ['\\notin', '∉ (not element of)'],
-          ['\\subset', '⊂ (proper subset)'],
-          ['\\subseteq', '⊆ (subset)'],
-          ['\\supset', '⊃ (proper superset)'],
-          ['\\supseteq', '⊇ (superset)'],
-          ['\\emptyset', '∅ (empty set)']
-        ];
-      case 'logic':
-        return [
-          ['\\land', '∧ (and)'],
-          ['\\lor', '∨ (or)'],
-          ['\\neg', '¬ (not)']
-        ];
-      case 'complexity':
-        return [
-          ['O', 'O (upper bound)'],
-          ['\\Omega', 'Ω (lower bound)'],
-          ['\\Theta', 'Θ (tight bound)']
-        ];
-      default:
-        return [['', 'Select...']];
-    }
-  };
-
-  const renderMixedContent = () => {
+  const renderMixedContent = useCallback(() => {
     if (!containerRef.current || !latex) return;
 
     try {
@@ -85,8 +156,10 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
       const placeholders = [...latex.matchAll(placeholderPattern)];
       
       if (placeholders.length === 0 || !isInteractive) {
-        // No placeholders or not interactive, render as pure LaTeX
-        let processedLatex = latex;
+        // Render ordinary prose normally and only send delimited mathematics to
+        // KaTeX. Rendering an entire English sentence as math removes spaces,
+        // italicises the words, and displays parse failures in red.
+        let processedLatex = normalizeLatexInput(latex);
         
         // Replace placeholders with their selected values
         placeholders.forEach((match, index) => {
@@ -96,10 +169,16 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
           processedLatex = processedLatex.replace(fullMatch, value);
         });
         
-        katex.render(processedLatex, containerRef.current, {
-          throwOnError: false,
-          displayMode: false,
-        });
+        containerRef.current.innerHTML = '';
+        if (hasMathDelimiters(processedLatex)) {
+          renderDelimitedContent(processedLatex, containerRef.current);
+        } else if (hasUndelimitedMath(processedLatex)) {
+          renderLatex(prepareUndelimitedLatex(processedLatex), containerRef.current);
+        } else if (isLegacyLatex(processedLatex)) {
+          renderLatex(processedLatex, containerRef.current);
+        } else {
+          appendText(containerRef.current, processedLatex);
+        }
         return;
       }
 
@@ -118,7 +197,11 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
           const latexBefore = latex.substring(lastIndex, matchStart);
           if (latexBefore.trim()) {
             const span = document.createElement('span');
-            katex.render(latexBefore, span, { throwOnError: false, displayMode: false });
+            if (hasMathDelimiters(latexBefore)) {
+              renderDelimitedContent(latexBefore, span);
+            } else {
+              appendText(span, latexBefore);
+            }
             containerRef.current.appendChild(span);
           }
         }
@@ -137,7 +220,11 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
         const latexAfter = latex.substring(lastIndex);
         if (latexAfter.trim()) {
           const span = document.createElement('span');
-          katex.render(latexAfter, span, { throwOnError: false, displayMode: false });
+          if (hasMathDelimiters(latexAfter)) {
+            renderDelimitedContent(latexAfter, span);
+          } else {
+            appendText(span, latexAfter);
+          }
           containerRef.current.appendChild(span);
         }
       }
@@ -146,13 +233,13 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
       console.error('KaTeX rendering error:', e);
       containerRef.current.textContent = latex;
     }
-  };
+  }, [createDropdown, isInteractive, latex, onVariableChange, variables]);
 
   useEffect(() => {
     renderMixedContent();
-  }, [latex, variables, isInteractive, blockId]);
+  }, [blockId, renderMixedContent]);
 
-  return <span ref={containerRef} />;
+  return <span ref={containerRef} className="mixed-latex-content" />;
 };
 
 export default KatexRenderer;

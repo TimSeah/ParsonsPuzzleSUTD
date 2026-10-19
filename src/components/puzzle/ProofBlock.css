@@ -10,7 +10,8 @@
   font-family: inherit;
   transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
   user-select: none;
-  overflow: hidden; /* Keep content within block boundaries */
+  overflow-x: auto; /* Keep long formulae intact and make them scrollable */
+  overflow-y: hidden;
   overflow-wrap: break-word; /* Less aggressive wrapping - only break at word boundaries when necessary */
   word-wrap: break-word; /* Legacy support for word wrapping */
   word-break: normal; /* Only break words at normal boundaries, not anywhere */
@@ -20,6 +21,47 @@
   box-sizing: border-box; /* Include padding in width calculation */
   white-space: normal; /* Allow normal text flow */
   line-height: 1.5; /* Better line spacing for mixed content */
+  color: #ffffff;
+}
+
+.proof-block .mixed-latex-content,
+.proof-block .katex-prose,
+.proof-block .katex,
+.proof-block .katex-error {
+  color: #ffffff !important;
+}
+
+.proof-block .katex-prose {
+  font-family: inherit;
+  font-style: normal;
+  white-space: pre-wrap;
+}
+
+.proof-block .katex-math {
+  display: inline;
+}
+
+.proof-block .katex-math-display {
+  display: block;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+}
+
+/* KaTeX positions several internal layers relative to one another. Forcing
+   those layers to wrap independently produces duplicated/overlapping glyphs
+   and boxed error fragments. Keep each formula intact; prose around separate
+   formula spans can still wrap normally. */
+.proof-block .katex,
+.proof-block .katex .katex-html,
+.proof-block .katex .base,
+.proof-block .katex * {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.proof-block .katex * {
+  max-width: none !important;
 }
 
 /* Emergency fallback for extremely long content that still doesn't wrap */
@@ -410,4 +452,18 @@ select.dropdown-complexity option {
   .proof-block:focus {
     outline-width: 3px;
   }
+}
+
+/* Final safeguard: never split KaTeX's internal rendering layers. */
+.proof-block .katex,
+.proof-block .katex .katex-html,
+.proof-block .katex .base,
+.proof-block .katex * {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.proof-block .katex * {
+  max-width: none !important;
 }

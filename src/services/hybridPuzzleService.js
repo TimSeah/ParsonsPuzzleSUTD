@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import puzzleService from '../services/puzzleService.js';
 
 // Import JSON files as fallback/default puzzles
-import bigOProofs from '../puzzles/data/big-o-proofs.json';
-import inductionProofs from '../puzzles/data/induction-proofs.json';
-import recursionProofs from '../puzzles/data/recursion-proofs.json';
-import setTheoryProofs from '../puzzles/data/set-theory-proofs.json';
+import bigOProofs from '../puzzles/data/big-o-proofs.json' with { type: 'json' };
+import inductionProofs from '../puzzles/data/induction-proofs.json' with { type: 'json' };
+import recursionProofs from '../puzzles/data/recursion-proofs.json' with { type: 'json' };
+import setTheoryProofs from '../puzzles/data/set-theory-proofs.json' with { type: 'json' };
 
 // JSON file puzzles (default content)
 const JSON_PUZZLES = {

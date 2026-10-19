@@ -98,7 +98,7 @@ The application follows a full-stack architecture with clear separation of conce
 **Purpose**: Frontend environment variables
 **Configuration**:
 ```
-VITE_API_BASE_URL=http://localhost:5000/api
+VITE_API_BASE_URL=http://localhost:5001/api
 ```
 
 ### Source Code Structure (`/src`)
@@ -596,7 +596,7 @@ npm run migrate
 **Purpose**: Server environment configuration
 ```env
 MONGODB_URI=mongodb+srv://...    # MongoDB connection string
-PORT=5000                        # Server port
+PORT=5001                        # Server port
 NODE_ENV=development             # Environment mode
 FRONTEND_URL=http://localhost:5173  # CORS configuration
 ```
@@ -876,7 +876,7 @@ npm install --production
 
 **Development**:
 - Frontend: http://localhost:5173
-- Backend: http://localhost:5000
+- Backend: http://localhost:5001
 - Database: Local MongoDB or Atlas
 
 **Production**:
@@ -997,7 +997,7 @@ npm install --production
 - `migratePuzzles.js` - Database migration utility
 
 ### Documentation (`/guides`)
-- `DEVELOPMENT.md` - Development setup guide
-- `MIGRATION_GUIDE.md` - MongoDB Atlas migration guide
-- `JSON_MIGRATION_GUIDE.md` - JavaScript to JSON migration guide
-- `EDUCATOR_GUIDE.md` - Educator usage documentation
+- [DEVELOPMENT.md](guides/DEVELOPMENT.md) - Current development setup and bundled JSON reference
+- [MIGRATION_GUIDE.md](guides/MIGRATION_GUIDE.md) - Database setup and puzzle import
+- [archive/JSON_MIGRATION_GUIDE.md](guides/archive/JSON_MIGRATION_GUIDE.md) - Historical JavaScript-to-JSON migration notes
+- [EDUCATOR_GUIDE.md](guides/EDUCATOR_GUIDE.md) - Puzzle creation, publishing, and backups

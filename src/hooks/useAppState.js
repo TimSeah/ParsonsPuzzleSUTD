@@ -45,7 +45,9 @@ export const useAppState = () => {
   // Derived state
   const currentPuzzleIndex = puzzles.findIndex(p => p.id === currentPuzzle?.id);
   const isLastPuzzle = currentPuzzleIndex === puzzles.length - 1;
-  const isLoading = (puzzlesLoading || healthLoading) && !useLocalData;
+  const isLoading = !useLocalData
+    && apiHealthy !== false
+    && (puzzlesLoading || (healthLoading && apiHealthy === null));
 
   return {
     // State

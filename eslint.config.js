@@ -31,6 +31,12 @@ export default [
       ],
     },
   },
+  {
+    files: ['src/test/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+    },
+  },
   // Backend configuration
   {
     files: ['server/**/*.js'],

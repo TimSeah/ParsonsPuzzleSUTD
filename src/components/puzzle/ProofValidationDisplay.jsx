@@ -3,10 +3,11 @@ import ProofValidator from '../../utils/ProofValidator';
 import { KatexRenderer } from '../renderers';
 import './ProofValidationDisplay.css';
 
-const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, isLastPuzzle }) => {
+const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, isLastPuzzle, onPuzzleTried }) => {
   const [validator, setValidator] = useState(() => new ProofValidator(puzzle));
   const [validationResult, setValidationResult] = useState(null);
   const [showHints, setShowHints] = useState(false);
+  const [completionReported, setCompletionReported] = useState(false);
 
   // Update validator when puzzle changes
   useEffect(() => {
@@ -19,15 +20,21 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
     });
   }, [puzzle]);
 
+  useEffect(() => { setCompletionReported(false); }, [puzzle.id]);
+
   useEffect(() => {
     if (proofBlocks && proofBlocks.length > 0) {
       const userOrder = proofBlocks.map(block => block.id);
       const result = validator.validateProof(userOrder);
       setValidationResult(result);
+      if (result.isCorrect && !completionReported && onPuzzleTried) {
+        setCompletionReported(true);
+        onPuzzleTried(puzzle.id, true);
+      }
     } else {
       setValidationResult(null);
     }
-  }, [proofBlocks, validator]);
+  }, [proofBlocks, validator, completionReported, onPuzzleTried, puzzle.id]);
 
   const getScoreColor = (score) => {
     if (score >= 90) return '#4CAF50'; // Green

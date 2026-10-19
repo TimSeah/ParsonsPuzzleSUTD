@@ -36,7 +36,7 @@ npm install
 2. Update the `.env` file with your MongoDB Atlas connection string:
    ```env
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?retryWrites=true&w=majority
-   PORT=5000
+   PORT=5001
    NODE_ENV=development
    FRONTEND_URL=http://localhost:5173
    ```
@@ -85,7 +85,7 @@ For production:
 npm start
 ```
 
-The server will start on `http://localhost:5000`
+The server will start on `http://localhost:5001`
 
 ## API Endpoints
 
@@ -103,6 +103,7 @@ The server will start on `http://localhost:5000`
 ### Health Check
 
 - `GET /api/health` - Server health check
+- `POST /api/generate` - Return an unseen cached puzzle, or generate with GPT-6 Astra and verify with Lean
 
 ## Data Model
 
@@ -160,11 +161,15 @@ You can add puzzles through the API or by updating the migration script:
 ### Environment Variables
 
 - `MONGODB_URI`: MongoDB Atlas connection string
-- `PORT`: Server port (default: 5000)
+- `PORT`: Server port (default: 5001)
 - `NODE_ENV`: Environment (development/production)
 - `FRONTEND_URL`: Frontend URL for CORS
 - `RATE_LIMIT_WINDOW_MS`: Rate limit window
 - `RATE_LIMIT_MAX_REQUESTS`: Max requests per window
+- `OPENAI_MODEL`: OpenAI model used for generation (default: `gpt-6-astra`)
+- `OPENAI_BACKGROUND`: Run long OpenAI responses in background mode and poll them
+- `OPENAI_TIMEOUT_MS`: Overall timeout for each OpenAI generation attempt
+- `OPENAI_POLL_INTERVAL_MS`: Background-response polling interval
 
 ## Troubleshooting
 
@@ -174,6 +179,23 @@ You can add puzzles through the API or by updating the migration script:
 2. **Authentication Errors**: Check your database user credentials
 3. **Migration Errors**: Ensure all puzzle files are properly formatted
 4. **CORS Errors**: Verify the `FRONTEND_URL` environment variable
+
+### Port already in use
+
+The full stack uses ports 5173 (web), 5001 (API), and 3001 (Lean). List the
+processes listening on those ports:
+
+```bash
+lsof -nP -iTCP:3001 -iTCP:5001 -iTCP:5173 -sTCP:LISTEN
+```
+
+Stop all three development listeners cleanly:
+
+```bash
+lsof -t -iTCP:3001 -iTCP:5001 -iTCP:5173 -sTCP:LISTEN | xargs kill
+```
+
+Use `kill -9 <PID>` only if a listed process remains after a normal `kill <PID>`.
 
 ### Logs
 
