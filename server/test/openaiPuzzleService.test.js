@@ -25,7 +25,7 @@ test('uses GPT-6 Astra background mode and polls until completed', async () => {
   };
 
   try {
-    const service = new OpenAIPuzzleService({ apiKey: 'test-key', fetchImpl });
+    const service = new OpenAIPuzzleService({ apiKey: 'test-key', model: 'gpt-6-astra', fetchImpl });
     const result = await service.generate('Create a test puzzle', { userId: 'user-1', requestId: 'request-1' });
 
     assert.equal(calls.length, 2);

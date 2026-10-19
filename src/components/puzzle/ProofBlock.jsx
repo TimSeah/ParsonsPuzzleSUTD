@@ -43,6 +43,10 @@ const ProofBlock = ({
     const text = String(content || '').trim();
     if (!text) return text;
 
+    // Only model-generated blocks carry a pedagogical role; bundled and
+    // educator puzzles are rendered exactly as authored.
+    if (!role) return text;
+
     // Preserve complete KaTeX expressions that already contain their own
     // learner-facing wording, e.g. \text{Consider the case } ... . Prefixing
     // these would turn a valid expression into raw, unparseable text.

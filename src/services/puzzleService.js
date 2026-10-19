@@ -23,7 +23,7 @@ class PuzzleService {
       });
     } catch (error) {
       if (error.name === 'AbortError') throw new Error('The API took too long to respond. Please try again.');
-      throw new Error('Cannot reach the API on port 5001. Start the full stack and try again.');
+      throw new Error(`Cannot reach the API at ${this.baseURL}. Start the full stack and try again.`);
     } finally {
       clearTimeout(timeout);
     }

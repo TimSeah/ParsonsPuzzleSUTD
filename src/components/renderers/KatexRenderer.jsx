@@ -59,7 +59,7 @@ const appendProseOrBareMath = (container, content) => {
 
 const appendMath = (container, token) => {
   const isDisplay = token.startsWith('\\[') || token.startsWith('$$');
-  const delimiterLength = token.startsWith('$$') ? 2 : 2;
+  const delimiterLength = token.startsWith('$') && !token.startsWith('$$') ? 1 : 2;
   const math = token.slice(delimiterLength, -delimiterLength).trim();
   const span = document.createElement(isDisplay ? 'div' : 'span');
   span.className = isDisplay ? 'katex-math katex-math-display' : 'katex-math';
@@ -84,10 +84,17 @@ const hasMathDelimiters = (content) => {
   return MATH_DELIMITER_PATTERN.test(content);
 };
 
+// Bundled/educator puzzles are written entirely in LaTeX math mode (prose wrapped
+// in \text{...}), while generated puzzles are English prose with delimited math.
+// Treat undelimited content as legacy LaTeX unless it reads like English prose.
 const isLegacyLatex = (content) => {
-  const trimmed = content.trim();
-  return /^\\(?:text|begin|frac|forall|exists|neg|sqrt|sum|prod|lim|mathbb|mathbf|mathrm)\b/.test(trimmed)
-    || (!/\s/.test(trimmed) && /[\\^_={}]/.test(trimmed));
+  if (hasMathDelimiters(content)) return false;
+  if (/\\(?:text[a-z]*|math[a-z]+)\{/.test(content)) return true;
+  const proseWords = content
+    .replace(/\{\{\w+\}\}/g, ' ')
+    .replace(/\\[A-Za-z]+/g, ' ')
+    .match(/\b[A-Za-z]{3,}\b/g) || [];
+  return proseWords.length < 2;
 };
 
 const getDropdownOptions = (type) => {
@@ -170,12 +177,12 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
         });
         
         containerRef.current.innerHTML = '';
-        if (hasMathDelimiters(processedLatex)) {
+        if (isLegacyLatex(processedLatex)) {
+          renderLatex(processedLatex, containerRef.current);
+        } else if (hasMathDelimiters(processedLatex)) {
           renderDelimitedContent(processedLatex, containerRef.current);
         } else if (hasUndelimitedMath(processedLatex)) {
           renderLatex(prepareUndelimitedLatex(processedLatex), containerRef.current);
-        } else if (isLegacyLatex(processedLatex)) {
-          renderLatex(processedLatex, containerRef.current);
         } else {
           appendText(containerRef.current, processedLatex);
         }
@@ -184,6 +191,16 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
 
       // Clear container
       containerRef.current.innerHTML = '';
+      const legacyLatex = isLegacyLatex(normalizeLatexInput(latex));
+      const renderFragment = (fragment, span) => {
+        if (legacyLatex) {
+          renderLatex(fragment, span);
+        } else if (hasMathDelimiters(fragment)) {
+          renderDelimitedContent(fragment, span);
+        } else {
+          appendText(span, fragment);
+        }
+      };
       
       // Split latex by placeholders and render mixed content
       let lastIndex = 0;
@@ -197,11 +214,7 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
           const latexBefore = latex.substring(lastIndex, matchStart);
           if (latexBefore.trim()) {
             const span = document.createElement('span');
-            if (hasMathDelimiters(latexBefore)) {
-              renderDelimitedContent(latexBefore, span);
-            } else {
-              appendText(span, latexBefore);
-            }
+            renderFragment(latexBefore, span);
             containerRef.current.appendChild(span);
           }
         }
@@ -220,11 +233,7 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
         const latexAfter = latex.substring(lastIndex);
         if (latexAfter.trim()) {
           const span = document.createElement('span');
-          if (hasMathDelimiters(latexAfter)) {
-            renderDelimitedContent(latexAfter, span);
-          } else {
-            appendText(span, latexAfter);
-          }
+          renderFragment(latexAfter, span);
           containerRef.current.appendChild(span);
         }
       }

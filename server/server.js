@@ -13,7 +13,7 @@ import {
 } from './services/database.js';
 
 const app = express();
-const PORT = Number(process.env.PORT);
+const PORT = Number(process.env.PORT) || 5001;
 const ASSISTANT_NAME = process.env.OPENAI_ASSISTANT_NAME;
 const OPENAI_MODEL = process.env.OPENAI_MODEL;
 
@@ -22,8 +22,8 @@ app.use(helmet());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS),
-  max: Number(process.env.RATE_LIMIT_MAX_REQUESTS),
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   skip: req => req.path === '/api/health',
   message: 'Too many requests from this IP, please try again later.'
 });

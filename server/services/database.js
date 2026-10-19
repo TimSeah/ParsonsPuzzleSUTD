@@ -2,11 +2,11 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import dns from 'node:dns';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-const SERVER_SELECTION_TIMEOUT_MS = Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS);
-const CONNECT_TIMEOUT_MS = Number(process.env.MONGODB_CONNECT_TIMEOUT_MS);
-const RETRY_MIN_MS = Number(process.env.MONGODB_RETRY_MIN_MS);
-const RETRY_MAX_MS = Number(process.env.MONGODB_RETRY_MAX_MS);
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parsonspuzzle';
+const SERVER_SELECTION_TIMEOUT_MS = Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS) || 30000;
+const CONNECT_TIMEOUT_MS = Number(process.env.MONGODB_CONNECT_TIMEOUT_MS) || 30000;
+const RETRY_MIN_MS = Number(process.env.MONGODB_RETRY_MIN_MS) || 2000;
+const RETRY_MAX_MS = Number(process.env.MONGODB_RETRY_MAX_MS) || 30000;
 
 const mongooseOptions = {
   serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS,
