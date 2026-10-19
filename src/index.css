@@ -299,6 +299,11 @@ input:focus, textarea:focus, select:focus {
   white-space: normal !important;
 }
 
+/* Never break between a base and its superscript/subscript (e.g. n³). */
+.katex :has(> .msupsub) {
+  white-space: nowrap !important;
+}
+
 .katex .mbin,
 .katex .mrel {
   color: var(--color-accent-fg);

@@ -45,7 +45,7 @@ Generated puzzles target 4–7 blocks for Easy, 7–10 for Medium, and 9–12 fo
 - Keep browser-local backups and download a category JSON fallback for certain network failures.
 - View puzzle-count statistics and export available puzzle records.
 
-Normal successful server publication requires no manual JSON replacement. The current success dialog still shows older file-download instructions; follow the [Educator guide](guides/EDUCATOR_GUIDE.md). Local backups do not synchronize automatically. Export currently requests up to 1,000 server puzzles, or uses browser-local records if fetching fails; it is not a complete database backup.
+Normal successful server publication requires no manual JSON replacement, and the success dialog says so; if the server was unreachable it says the puzzle was only saved in this browser and how to follow up (see the [Educator guide](guides/EDUCATOR_GUIDE.md)). Local backups do not synchronize automatically. Export currently requests up to 1,000 server puzzles, or uses browser-local records if fetching fails; it is not a complete database backup.
 
 ### Storage and reliability
 

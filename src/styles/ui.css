@@ -445,6 +445,11 @@ textarea.input {
   resize: vertical;
 }
 
+.input--mono {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+
 /* ---------- Dialogs and sheets ---------- */
 
 .overlay {

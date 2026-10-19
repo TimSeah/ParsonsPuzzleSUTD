@@ -50,6 +50,23 @@ describe('FeedbackPage', () => {
     expect(screen.getByText('Student page')).toBeInTheDocument();
   });
 
+  it('sends the rating picked in the 1–5 scale', async () => {
+    vi.mocked(puzzleService.submitFeedback).mockResolvedValue({ id: 'f2' });
+    const user = renderPage();
+
+    const group = screen.getByRole('radiogroup', { name: 'Overall experience' });
+    expect(screen.getByRole('radio', { name: /5/ })).toHaveAttribute('aria-checked', 'true');
+    await user.click(screen.getByRole('radio', { name: '2 – Fair' }));
+    expect(group).toHaveTextContent('12345');
+    expect(screen.getByRole('radio', { name: '2 – Fair' })).toHaveAttribute('aria-checked', 'true');
+
+    await user.type(screen.getByRole('textbox', { name: /What worked well/ }), 'Too hard');
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText(/Thanks!/)).toBeInTheDocument();
+    expect(vi.mocked(puzzleService.submitFeedback).mock.calls[0][0].rating).toBe(2);
+  });
+
   it('keeps the form and shows the error when sending fails', async () => {
     vi.mocked(puzzleService.submitFeedback).mockRejectedValue(new Error('Feedback can’t be saved right now.'));
     const user = renderPage();
