@@ -8,7 +8,7 @@ npm start
 npm test   # verification policy unit tests (no Lean installation needed)
 ```
 
-The worker listens only on `127.0.0.1:3001`, limits request/source size, invokes Lake without a shell, enforces a timeout, and deletes each temporary proof file.
+By default the worker listens only on `127.0.0.1:3001` (`HOST` and `PORT` change this). It limits request and source size, invokes Lake without a shell, enforces a timeout, and deletes each temporary proof file.
 
 Each compile loads Mathlib and can use a lot of memory, so the worker runs at most `LEAN_MAX_CONCURRENT` compiles at once (default `1`) with up to `LEAN_MAX_QUEUE` more waiting (default `2`). Further requests get `503` with `Retry-After`, and queued requests whose client has disconnected are skipped. `GET /health` reports the current `compiles` counts. Time spent queued counts against the backend's `LEAN_TIMEOUT_MS`.
 
@@ -49,6 +49,6 @@ The worker runs `lake env lean --json` and parses Lean's structured messages. Th
 
 ## Deployment
 
-`Dockerfile` builds an image with the pinned Lean toolchain and the prebuilt Mathlib cache, running as a non-root user. It sets `HOST=0.0.0.0` so other containers can reach it. Outside Docker the worker listens on `127.0.0.1` unless `HOST` is set. In `docker-compose.yml` it runs under the `generation` profile on a private network and isn't published on the host; see [Deployment](../docs/deployment.md).
+`Dockerfile` builds an image with the pinned Lean toolchain and the prebuilt Mathlib cache, running as a non-root user. It sets `HOST=0.0.0.0` so other containers can reach it. Outside Docker the worker listens on `127.0.0.1` unless `HOST` is set. In `docker-compose.yml` it runs under the `generation` profile on a private network and isn't published on the host; see [Deployment](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Deployment).
 
 For production, run this worker in a separate network-disabled container with filesystem, CPU, memory, process, and request limits. The local process boundary and source policy are defence in depth, not a complete security sandbox.

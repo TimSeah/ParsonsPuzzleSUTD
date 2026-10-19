@@ -1,358 +1,79 @@
-# Parsons Puzzle SUTD / AlgoKnit
+# Parsons Puzzles SUTD
 
-An interactive mathematical proof-learning application for SUTD 50.004 Algorithms. Students arrange shuffled proof blocks into a solution; educators create puzzles; Astra retrieves previously verified puzzles or generates new ones using OpenAI and a Lean 4 worker.
+A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students rebuild a proof by putting shuffled steps in order. Educators publish their own puzzles, and Astra generates new ones with OpenAI, checking every proof with Lean 4 first.
 
-This README describes the current source checkout. The configured GitHub repository is [lav-22/AlgoKnit](https://github.com/lav-22/AlgoKnit). Local changes become available to other users only after they are committed and pushed.
+**Documentation is in the [wiki](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki).**
+
+![Practice mode: steps on the left, the student's proof on the right, feedback below](.github/assets/screenshots/student-practice.png)
 
 ## Features
 
-### Student practice
+### For students
 
-- Build a proof by dragging steps between **Available steps** and **Your proof**, or by tapping **+** on a step and using the ↑ / ↓ / ✕ buttons to reorder or remove it (designed for phones; on touch screens a drag starts after a short press so swiping still scrolls). Reset the puzzle at any time.
-- Receive automatic order-based feedback, scores, hints, and completion feedback against the stored solution order.
-- Render mathematical notation with KaTeX and use interactive placeholders in puzzles that include them.
-- Open the built-in dictionary of mathematical terminology from the book icon in the header.
-- Choose puzzle settings: **Bundled** puzzles or **AI generated** (Lean-verified retrieval and generation through Astra, MongoDB and OpenAI), Easy / Medium / Hard, and any number of topics. On desktop the settings sit in a side panel; on phones they open in a bottom sheet from the summary button (for example "Bundled · Medium · All topics"). **New puzzle** applies them.
-- Switch between **Practice** mode (live feedback while arranging) and **Challenge** mode with three variants: **Lockout** (results only on Submit; five wrong submissions in a row lock the puzzle for 10 seconds), **Timed** (5 minutes, graded automatically) and **Limited moves** (20 moves). Showing the solution disables Submit for that puzzle. Challenge state is kept in the browser, so it is a practice aid rather than an enforced assessment.
-- Toggle between light and dark themes (remembered per browser; defaults to the system preference).
-- Send feedback to the course team from the **Feedback** page.
+- Drag steps into place, or tap **+** and reorder with ↑ / ↓. Works on desktop and phones.
+- **Practice** mode gives a score and hints as you go.
+- **Challenge** mode hides the result until you submit, with Lockout, Timed (5 minutes) and Limited moves (20) rules.
+- Pick bundled puzzles or AI-generated ones by difficulty and topic.
+- Built-in dictionary of terms, light and dark themes, and a feedback form.
 
-The current student topic controls offer Induction, Set Theory, Recursion, Logic, Combinatorics, Graph Theory, and Data Structures. The backend additionally accepts `big-o`; the bundled collection and educator form include Big O puzzles. Bundled content covers four categories: Big O, Induction, Recursion, and Set Theory. Local filters match puzzle tags, so some topic/difficulty combinations have no results.
+<table>
+  <tr>
+    <td><img src=".github/assets/screenshots/student-challenge-light.png" alt="Challenge mode, timed rule, light theme"></td>
+    <td width="30%"><img src=".github/assets/screenshots/student-mobile.png" alt="Student page on a phone"></td>
+  </tr>
+</table>
 
-### Astra generation and Lean verification
+### For educators
 
-1. Look for an active database puzzle that was Lean-verified under the current verification policy, matches the selected difficulty/topics, and that this user has not seen or attempted.
-2. If none is available, request structured puzzle JSON from OpenAI, including student-facing proof blocks and a complete Lean theorem.
-3. Check the puzzle contract: required fields, block IDs, solution order, difficulty, category, and proof-step content. The Lean source must declare `lean.theoremName` as a top-level `theorem`, and each block's `leanFragment` must appear verbatim (ignoring whitespace) in the Lean source, in solution order, so the steps students arrange are the steps Lean checks.
-4. Send the Lean source to the local worker, which compiles it against Mathlib and checks the result (see below).
-5. Retry formatting or verification failures with repair feedback, within the configured attempt limit.
-6. Save successful puzzles, verification metadata (including the axioms used and the policy version), model/response details, and repair counters; then return the puzzle to the student.
+- Dashboard with puzzle counts by category and difficulty.
+- Write puzzles in LaTeX with a live preview, reorder steps, and try the puzzle as a student before publishing.
+- Add dropdown placeholders such as `{{op}}` or `{{complexity}}` to make students pick the right symbol.
 
-A proof only counts as verified when the worker reports that it:
+<table>
+  <tr>
+    <td><img src=".github/assets/screenshots/educator-dashboard.png" alt="Educator dashboard"></td>
+    <td><img src=".github/assets/screenshots/puzzle-creator.png" alt="Proof steps with a live LaTeX preview"></td>
+  </tr>
+</table>
 
-- compiles with no errors and no warnings (lint-style warnings such as unused variables or deprecated names are allowed);
-- declares the named theorem, and `#print axioms` (appended by the worker) shows it uses only `propext`, `Classical.choice` and `Quot.sound`, which rules out `sorry`, `native_decide` and custom axioms;
-- passes the source policy: Mathlib-only imports, an allowlist of ordinary attributes, and no `sorry`/`admit`, `axiom`, `unsafe`, `#eval`/`#print`/`#exit` and similar commands, macros/notation/elaborators or other metaprogramming, string literals, IO, or `debug.*` options. See the [worker README](lean-worker/README.md) for the full policy and its known limitation.
+### Lean-verified generation
 
-Generated puzzles target 4–7 blocks for Easy, 7–10 for Medium, and 9–12 for Hard. Content fingerprints help deduplicate generated records. OpenAI requests support background polling and timeouts.
+When a student asks for an AI-generated puzzle, the backend reuses a verified puzzle they haven't seen or asks OpenAI for a new one with a complete Lean proof. A Lean 4 + Mathlib worker compiles the proof and rejects `sorry`, extra axioms and warnings. Each student-facing step must match a fragment of that proof. Lean checks the maths, not the English wording, so generated puzzles still benefit from review. See [Generation and verification](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Generation-and-Verification).
 
-**Verification scope:** Lean checks the generated Lean theorem before publication through the generation flow. Student arrangements are checked against `solutionOrder` in the browser; each student arrangement is not separately compiled in Lean. The system checks that each block's Lean fragment is part of the verified proof, but it does not formally establish that the natural-language text of a block (or the puzzle statement) exactly expresses its Lean counterpart; that still needs human review. Educator-created and bundled puzzles are not automatically Lean-verified.
+## Quick start
 
-### Educator tools
-
-- Create puzzles with a title, statement, difficulty, tags, and at least two ordered LaTeX proof blocks.
-- Preview content and publish through the backend to MongoDB.
-- Keep browser-local backups and download a category JSON fallback for certain network failures.
-- View puzzle-count statistics and export available puzzle records.
-
-Normal successful server publication requires no manual JSON replacement, and the success dialog says so; if the server was unreachable it says the puzzle was only saved in this browser and how to follow up (see the [Educator guide](docs/educator-guide.md)). Local backups do not synchronize automatically. Export currently requests up to 1,000 server puzzles, or uses browser-local records if fetching fails; it is not a complete database backup.
-
-### Storage and reliability
-
-- MongoDB stores puzzle content, generation/verification metadata, usage counts, and per-user seen/attempt/completion history.
-- A stable anonymous ID is stored in browser local storage. History belongs to that browser identity; there is no account login or cross-device identity system.
-- The backend reconnects to MongoDB automatically, with configurable timeouts and DNS fallback for certain Atlas lookup failures.
-- The frontend polls backend health and can fall back to bundled content when the API is unavailable.
-- REST endpoints support puzzle creation, retrieval, filtering, updates, soft deletion, and statistics.
-- Security headers, configurable request limits (with stricter per-IP, per-user and daily limits on fresh AI generation), and CORS rules are implemented. Authentication and authorization are not implemented.
-
-## Architecture
-
-```text
-React/Vite frontend
-  ├── Bundled JSON puzzles → local practice
-  └── Express API
-        ├── MongoDB → puzzles and user history
-        └── Astra generation service
-              ├── OpenAI Responses API → candidate puzzle
-              └── Lean worker → Lean 4 + Mathlib verification
-```
-
-| Component | Local default | Location |
-| --- | --- | --- |
-| Frontend | http://localhost:5173 | `frontend/src/` |
-| Backend | http://localhost:5001/api | `backend/` |
-| Lean worker | http://127.0.0.1:3001 | `lean-worker/` |
-| Database | Local MongoDB or Atlas URI | Configured in `backend/.env` |
-
-## Set up from GitHub
-
-### 1. Prerequisites
-
-- Git and Node.js with npm. Use Node **22.12 or newer** for this guide; the current machine uses 26.7.0. The project uses [JSON import attributes](https://nodejs.org/api/esm.html#import-attributes), so the old Node 16 instructions no longer apply.
-- A running MongoDB instance or an Atlas cluster for server storage and Astra.
-- [Elan, Lean's toolchain manager](https://lean-lang.org/install/manual/), with `elan` and `lake` available in your terminal for proof verification.
-- An OpenAI API key and access to a model supporting the structured-output request used by this project, for generating new puzzles.
-- Internet access for dependency installation, Mathlib cache downloads, Atlas if used, and OpenAI. Allow several GB of disk space for Lean/Mathlib dependencies.
-
-The Lean worker pins **Lean 4.32.0 and Mathlib v4.32.0**. Use the checked-in toolchain and dependency files together.
-
-### 2. Clone and install dependencies
+Needs Node.js 22.12 or newer.
 
 ```bash
-git clone https://github.com/lav-22/AlgoKnit.git
-cd AlgoKnit
+git clone https://github.com/TimSeah/ParsonsPuzzleSUTD.git
+cd ParsonsPuzzleSUTD
 npm run setup
-```
-
-`npm run setup` installs the repo tooling (lint and scripts) at the root, then the `frontend/` and `backend/` packages. Each package has its own `package.json` and lockfile.
-
-If using a fork, replace the clone URL with your fork's URL and enter the directory Git creates. Subsequent commands assume the repository root unless stated otherwise.
-
-### 3. Configure the frontend
-
-Create `frontend/.env` from [frontend/.env.example](frontend/.env.example), or add these values to your existing file:
-
-```env
-VITE_API_BASE_URL=http://localhost:5001/api
-VITE_API_TIMEOUT_MS=30000
-VITE_GENERATION_TIMEOUT_MS=1200000
-```
-
-These settings are public browser configuration. Keep the OpenAI key and database credentials in `backend/.env`, never in a `VITE_` variable. Restart Vite after changing frontend settings.
-
-### 4. Configure the backend
-
-For a fresh checkout, copy the backend template:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-PowerShell equivalent:
-
-```powershell
-Copy-Item backend/.env.example backend/.env
-```
-
-Skip the copy if `backend/.env` already exists. Edit that file and replace placeholder values:
-
-```env
-MONGODB_URI=mongodb://127.0.0.1:27017/parsonspuzzle
-PORT=5001
-NODE_ENV=development
-FRONTEND_URL=http://localhost:5173
-
-OPENAI_API_KEY=replace-with-your-api-key
-OPENAI_MODEL=replace-with-an-accessible-model-id
-OPENAI_ASSISTANT_NAME=Astra
-OPENAI_SERVICE_TIER=auto
-OPENAI_BACKGROUND=true
-OPENAI_TIMEOUT_MS=300000
-OPENAI_POLL_INTERVAL_MS=2000
-OPENAI_REPAIR_ATTEMPTS=2
-
-LEAN_VERIFY_URL=http://127.0.0.1:3001/verify
-LEAN_TIMEOUT_MS=30000
-```
-
-`OPENAI_MODEL` overrides the model used by the service. The code/template currently default to `gpt-6-astra`; that string alone does not establish access for your API account. Configure a model available to your account. `OPENAI_ASSISTANT_NAME` is a display/prompt label, not an Assistants API resource ID.
-
-For Atlas, replace `MONGODB_URI` with the connection string from your cluster, including your database name. Create a database user and allow your machine's IP through Atlas network access. URI-encode special characters in the password. For local MongoDB, start the database service separately before running the backend.
-
-See [backend/.env.example](backend/.env.example) for optional rate-limit, database timeout, reconnect, and DNS settings. Environment files are excluded from Git.
-
-### 5. Install the Lean toolchain and Mathlib cache
-
-After installing Elan using the linked official instructions, open a terminal where `lake` is on PATH:
-
-```bash
-cd lean-worker
-elan toolchain install leanprover/lean4:v4.32.0
-npm run setup
-lake env lean --version
-cd ..
-```
-
-`npm run setup` runs `lake update` and `lake exe cache get`. It fetches dependency sources and compiled Mathlib artifacts; initial setup may take time. Review any change to `lake-manifest.json` before committing it. The worker uses Node's built-in modules and has no separate npm dependencies to install.
-
-The generated `.lake/` directory is excluded from Git. Its `config/1` and `config/5` folders currently cache configurations for Mathlib and ProofWidgets respectively; both are used and managed by Lake.
-
-### 6. Start the complete application
-
-From the repository root:
-
-```bash
-npm run dev:fullstack
-```
-
-This starts the frontend, backend, and Lean worker. It does not start MongoDB. Alternatively, use separate terminals from the root:
-
-```bash
 npm run dev
-npm run dev:backend
-npm run dev:lean
 ```
 
-Open:
-
-- Student mode: http://localhost:5173/student
-- Educator mode: http://localhost:5173/educator
-- Backend health: http://localhost:5001/api/health
-- Worker health: http://127.0.0.1:3001/health
-
-The backend health check returns HTTP 200 with `database: "connected"` when ready, or HTTP 503 while disconnected. The worker health check confirms compiler availability; the proof check below also exercises Mathlib.
-
-### 7. Check the first-run workflow
-
-1. Check both health endpoints.
-2. On a fresh empty database, publish a simple puzzle through Educator mode first, then reload Student mode. The current student page can otherwise stop at “No puzzles available” when the API is healthy but returns no puzzles.
-3. In Student mode, choose **AI generated** in the puzzle settings, pick a difficulty/topic, and click **New puzzle**. Generation requires the key, database, and worker; it can take several minutes.
-4. Arrange blocks and check the automatic feedback. Request another puzzle to exercise history-aware retrieval/generation.
-
-For a direct compiler check, run from `lean-worker` in a Bash-compatible terminal:
+Open http://localhost:5173. Without a backend the app uses its bundled puzzles. To run the API, MongoDB and the Lean worker, follow [Getting started](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Getting-Started), or use Docker:
 
 ```bash
-printf 'import Mathlib\nexample (n : Nat) : n + 0 = n := by simp\n' | lake env lean --stdin
+docker compose up --build                        # frontend, backend, MongoDB
+docker compose --profile generation up --build   # plus the Lean worker
 ```
 
-A successful check exits without errors. In PowerShell, pipe the same source using:
+## Repository
 
-```powershell
-"import Mathlib`nexample (n : Nat) : n + 0 = n := by simp" | lake env lean --stdin
-```
-
-### Local-only practice
-
-After installing the frontend dependencies, run `npm run dev` without the backend. Once the connection check falls back to bundled puzzles, choose **Bundled** in the puzzle settings and click **New puzzle**. This selects a bundled puzzle; it does not call OpenAI. MongoDB, an API key, and Lean are not required for this mode. Broaden the filters if no local puzzle matches.
-
-## Optional bundled-puzzle import
-
-The repository includes `npm --prefix backend run migrate`, which reads `frontend/src/data/puzzles/` and creates or updates MongoDB records by puzzle ID.
-
-The importer uses the model’s category keys: `big-o`, `induction`, `set-theory`, and `recursion`. This command is not a required installation step. Existing matching records can be overwritten and reactivated, and per-puzzle errors may not produce a failing process exit code. Back up edited records before re-importing and inspect the results.
-
-See [Database setup](docs/database-setup.md) for connection and import behavior.
-
-## Commands
-
-Run these from the repository root:
-
-| Command | Purpose |
+| Folder | Contents |
 | --- | --- |
-| `npm run setup` | Install root tooling, frontend and backend dependencies |
-| `npm run dev` | Start the frontend |
-| `npm run dev:backend` | Start the backend with automatic restarts |
-| `npm run dev:lean` | Start the Lean worker |
-| `npm run dev:fullstack` | Start all three application processes |
-| `npm test` | Run frontend, backend and Lean worker policy tests |
-| `npm run test:frontend` | Run frontend tests (Vitest + React Testing Library) |
-| `npm run test:watch` | Run frontend tests in watch mode |
-| `npm run test:backend` | Run backend tests (`node:test`) |
-| `npm run test:lean` | Run Lean worker policy tests (no Lean installation needed) |
-| `npm run lint` | Check JavaScript/React code in all three packages |
-| `npm run build` | Generate the production frontend in `frontend/dist/` |
-| `npm run preview` | Preview the built frontend; backend services remain separate |
+| [`frontend/`](frontend) | React + Vite app |
+| [`backend/`](backend) | Express API, MongoDB models, generation service |
+| [`lean-worker/`](lean-worker) | Lean 4 proof checker |
 
-Automated tests include contract validation, Lean-client response handling, OpenAI background polling, and generation repair counters. Mock-based tests do not establish live OpenAI, MongoDB, or Lean availability; use the first-run checks above.
+Common commands, run from the root: `npm run dev:fullstack`, `npm test`, `npm run lint`, `npm run build`. The full list is on [Development](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Development).
 
-## Repository map
+## Documentation
 
-```text
-package.json        Repo-level scripts (setup, dev, test, lint) and lint tooling
-eslint.config.js    One lint configuration for all three packages
-docker-compose.yml  Frontend, backend, MongoDB (and optional Lean worker) containers
-frontend/           React/Vite app
-  src/
-    components/     Student, educator, navigation, and shared UI
-    pages/          Student, educator and feedback screens
-    hooks/          Application state, puzzle loading, and API health
-    services/       Browser API clients, puzzle loading, and user identity
-    data/           Dictionary terms and bundled JSON puzzles (data/puzzles/)
-    styles/         Shared design system and base styles
-    utils/          Student proof-order validation
-    test/           Test setup and helpers
-  public/           Static assets copied unchanged into the build
-  Dockerfile        Build with Node, serve with Nginx (nginx.conf)
-backend/
-  server.js         Express startup and health endpoint
-  models/           Puzzle, history, feedback and usage schemas
-  routes/           Puzzle, generation and feedback endpoints
-  services/         Database, OpenAI, contract, prompt, limits and Lean integration
-  scripts/          Bundled-puzzle importer and feedback export
-  test/             Backend automated tests
-  Dockerfile        Production API image
-lean-worker/
-  server.js         Local HTTP service that invokes Lean
-  verifier.js       Proof acceptance policy (axioms, imports, warnings)
-  lean-toolchain    Pinned Lean version
-  lakefile.toml     Mathlib dependency declaration
-  lake-manifest.json  Resolved dependency revisions
-  .lake/            Generated dependencies and caches; ignored by Git
-docs/               Architecture, development, deployment, database and educator guides
-  archive/          Historical migration documentation
-```
-
-The active Student Astra flow calls the backend's `/api/generate`; proof verification happens through `backend/services/leanClient.js` and the separate worker. There is no browser-side generation or verification code.
-
-## API overview
-
-| Method and path | Purpose |
+| | |
 | --- | --- |
-| `GET /api/health` | Backend/database health |
-| `GET /api/puzzles` | Filtered, paginated active puzzles |
-| `GET /api/puzzles/:id` | One active puzzle |
-| `GET /api/puzzles/category/:category` | Puzzles in a category |
-| `GET /api/puzzles/stats/summary` | Puzzle counts |
-| `POST /api/puzzles` | Create a puzzle |
-| `PUT /api/puzzles/:id` | Update a puzzle |
-| `DELETE /api/puzzles/:id` | Mark a puzzle inactive |
-| `POST /api/generate` | Retrieve an unseen verified puzzle or generate one |
-| `POST /api/generate/:puzzleId/tried` | Record an attempt or completion |
-| `POST /api/feedback` | Store student feedback: `rating` (1–5), `comment` (≤ 2000 chars), optional `email`, `page`, `userId`. Limited to 5 per 15 minutes per IP (`FEEDBACK_RATE_LIMIT_MAX`, `FEEDBACK_RATE_LIMIT_WINDOW_MS`) |
+| Using the app | [Student guide](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Student-Guide) · [Educator guide](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Educator-Guide) · [Sample puzzles](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Sample-Puzzles) |
+| Running it | [Getting started](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Getting-Started) · [Configuration](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Configuration) · [Database](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Database) · [Deployment](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Deployment) · [Troubleshooting](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Troubleshooting) |
+| How it works | [Architecture](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Architecture) · [Generation and verification](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Generation-and-Verification) · [API reference](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/API-Reference) · [Puzzle format](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Puzzle-Format) |
 
-Feedback is stored in the MongoDB `feedbacks` collection. There is no admin screen yet; export it with `npm --prefix backend run feedback:export > feedback.json`.
-
-Generation requests contain `userId`, `requestId`, `difficulty`, and a `topics` array. Accepted category keys are `big-o`, `induction`, `set-theory`, `recursion`, `logic`, `combinatorics`, `graph-theory`, and `data-structures`.
-
-Serving a previously verified puzzle from the database is always allowed. A **fresh generation** (OpenAI + Lean) is limited because each one can make several paid OpenAI calls and Lean compiles:
-
-| Limit | Default | Setting | Response |
-| --- | --- | --- | --- |
-| `POST /api/generate` requests per IP | 10 per 15 minutes | `GENERATION_RATE_LIMIT_MAX`, `GENERATION_RATE_LIMIT_WINDOW_MS` | 429 `GENERATION_RATE_LIMITED` |
-| Fresh generations per user per UTC day | 10 | `GENERATION_DAILY_LIMIT_PER_USER` (0 = unlimited) | 429 `GENERATION_QUOTA_EXCEEDED` |
-| Fresh generations per IP per UTC day | 30 | `GENERATION_DAILY_LIMIT_PER_IP` (0 = unlimited) | 429 `GENERATION_QUOTA_EXCEEDED` |
-| Fresh generations running per user | 1 | none | 429 `GENERATION_IN_PROGRESS` |
-| Fresh generations running per backend process | 4 | `GENERATION_MAX_CONCURRENT` | 503 `GENERATION_BUSY` |
-
-Daily counters are stored in MongoDB (`generationusages`, expired automatically). Behind a reverse proxy, set `TRUST_PROXY` (for example `1`) so limits use the client's IP. The user ID is an anonymous browser ID chosen by the client, so per-user limits and `/tried` history are not a security boundary until authentication is added.
-
-The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. It runs `LEAN_MAX_CONCURRENT` compiles at once (default 1) with up to `LEAN_MAX_QUEUE` waiting (default 2), and answers 503 when full. Keep the worker internal; its default listener is `127.0.0.1:3001` (set `HOST` to change it, as the Docker image does).
-
-## Build and deployment
-
-For a production frontend, set `VITE_API_BASE_URL` to the deployed backend's `/api` address **before** running `npm run build`. Deploy `frontend/dist/` with an SPA fallback to `index.html`. The backend runs separately with `npm --prefix backend start`, its own environment variables, and `FRONTEND_URL` set to the deployed frontend origin. GitHub Pages can host static output but cannot run the backend, database, or Lean worker.
-
-To run the stack in containers, use `docker compose up --build` from the repository root, or `docker compose --profile generation up --build` to include the Lean worker for AI generation. See [Deployment](docs/deployment.md) for the services, settings and limits.
-
-Before exposing the application publicly, add authentication/authorization for puzzle writes and generation. Deploy the Lean worker with a separate execution sandbox and resource/network restrictions; its local process boundary is not a production sandbox. See the [worker README](lean-worker/README.md).
-
-## Troubleshooting
-
-| Symptom | Check |
-| --- | --- |
-| `lake` is not found | Install Elan and reopen a terminal with its bin directory on PATH |
-| Lean or Mathlib import fails | Run setup inside `lean-worker`; keep toolchain and Mathlib pins aligned |
-| Backend health returns 503 | Check MongoDB service/Atlas access, credentials, DNS, and backend logs |
-| OpenAI access/model error | Set the key and an accessible model in `backend/.env`; restart the backend |
-| Generation timeout | Check worker health and server logs; review OpenAI, Lean, and frontend generation timeouts separately |
-| Frontend cannot reach API | Check `VITE_API_BASE_URL`, port 5001, and restart Vite after environment changes |
-| No puzzles on a fresh database | Publish one through Educator mode and reload Student mode; see the first-run limitation above |
-| No local puzzle matches | Clear topic filters or choose another difficulty |
-| Published puzzle is missing | Reload Student mode and check the data source; a browser-local fallback is not a server save |
-| Port already in use | Stop the existing process or change the port and its corresponding client URL |
-
-## Further documentation
-
-All guides live in [docs/](docs/README.md):
-
-- [Architecture](docs/architecture.md)
-- [Development and bundled JSON reference](docs/development.md)
-- [Deployment (Docker Compose)](docs/deployment.md)
-- [Database setup and import](docs/database-setup.md)
-- [Educator guide](docs/educator-guide.md)
-- [Sample puzzles for testing](docs/sample-puzzles.md)
-- [Lean worker](lean-worker/README.md)
-- [Historical JavaScript-to-JSON migration](docs/archive/json-migration-guide.md)
-
-When contributing, create a branch, run the relevant tests/lint/build checks, and update documentation with behavior changes. Keep credentials and generated folders (`node_modules/`, `dist/`, and `lean-worker/.lake/`) out of commits. Preserve the npm lockfiles and Lean dependency pins.
+There is no login yet. Read [Deployment](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Deployment#before-going-public) before putting the app on a public server.
