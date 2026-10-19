@@ -317,13 +317,13 @@ Serving a previously verified puzzle from the database is always allowed. A **fr
 
 Daily counters are stored in MongoDB (`generationusages`, expired automatically). Behind a reverse proxy, set `TRUST_PROXY` (for example `1`) so limits use the client's IP. The user ID is an anonymous browser ID chosen by the client, so per-user limits and `/tried` history are not a security boundary until authentication is added.
 
-The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. It runs `LEAN_MAX_CONCURRENT` compiles at once (default 1) with up to `LEAN_MAX_QUEUE` waiting (default 2), and answers 503 when full. Keep the worker internal; its default listener is `127.0.0.1:3001`.
+The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. It runs `LEAN_MAX_CONCURRENT` compiles at once (default 1) with up to `LEAN_MAX_QUEUE` waiting (default 2), and answers 503 when full. Keep the worker internal; its default listener is `127.0.0.1:3001` (set `HOST` to change it, as the Docker image does).
 
 ## Build and deployment
 
 For a production frontend, set `VITE_API_BASE_URL` to the deployed backend's `/api` address **before** running `npm run build`. Deploy `frontend/dist/` with an SPA fallback to `index.html`. The backend runs separately with `npm --prefix backend start`, its own environment variables, and `FRONTEND_URL` set to the deployed frontend origin. GitHub Pages can host static output but cannot run the backend, database, or Lean worker.
 
-To run the stack in containers, use `docker compose up --build` from the repository root. See [Deployment](docs/deployment.md) for the services, settings and limits.
+To run the stack in containers, use `docker compose up --build` from the repository root, or `docker compose --profile generation up --build` to include the Lean worker for AI generation. See [Deployment](docs/deployment.md) for the services, settings and limits.
 
 Before exposing the application publicly, add authentication/authorization for puzzle writes and generation. Deploy the Lean worker with a separate execution sandbox and resource/network restrictions; its local process boundary is not a production sandbox. See the [worker README](lean-worker/README.md).
 

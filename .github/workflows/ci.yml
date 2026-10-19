@@ -56,6 +56,15 @@ jobs:
       - name: Lean worker policy tests
         run: npm run test:lean
 
+  compose:
+    name: Docker Compose config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml (all profiles)
+        run: docker compose --profile generation config --quiet
+
   docker:
     name: Docker images build (${{ matrix.service }})
     runs-on: ubuntu-latest

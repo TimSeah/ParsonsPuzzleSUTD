@@ -1,0 +1,74 @@
+name: Lean worker image
+
+# Builds the Lean 4 + Mathlib worker image and checks it accepts a correct proof
+# and rejects a wrong one. The image is several GB, so this only runs when the
+# worker changes (or on demand).
+on:
+  pull_request:
+    paths:
+      - 'lean-worker/**'
+      - '.github/workflows/lean-worker-image.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lean-worker/**'
+      - '.github/workflows/lean-worker-image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-smoke-test:
+    name: Build and smoke-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space for Mathlib
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: lean-worker
+          load: true
+          tags: parsons-lean-worker:ci
+
+      - name: Start worker
+        run: docker run -d --name lean -p 127.0.0.1:3001:3001 parsons-lean-worker:ci
+
+      - name: Wait until healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3001/health; then echo; exit 0; fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Accepts a correct proof
+        run: |
+          result=$(curl -sS -X POST http://127.0.0.1:3001/verify -H 'Content-Type: application/json' \
+            -d '{"source":"import Mathlib\n\ntheorem ci_smoke (n : Nat) : n + 0 = n := by simp\n","theoremName":"ci_smoke","timeoutMs":30000}')
+          echo "$result"
+          echo "$result" | jq -e '.status == "verified" and .valid == true'
+
+      - name: Rejects a wrong proof
+        run: |
+          result=$(curl -sS -X POST http://127.0.0.1:3001/verify -H 'Content-Type: application/json' \
+            -d '{"source":"import Mathlib\n\ntheorem ci_wrong (n : Nat) : n + 1 = n := by simp\n","theoremName":"ci_wrong","timeoutMs":30000}')
+          echo "$result"
+          echo "$result" | jq -e '.status == "rejected" and .valid == false'
+
+      - name: Worker logs
+        if: always()
+        run: docker logs lean || true

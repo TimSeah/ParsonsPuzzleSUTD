@@ -49,4 +49,6 @@ The worker runs `lake env lean --json` and parses Lean's structured messages. Th
 
 ## Deployment
 
+`Dockerfile` builds an image with the pinned Lean toolchain and the prebuilt Mathlib cache, running as a non-root user. It sets `HOST=0.0.0.0` so other containers can reach it. Outside Docker the worker listens on `127.0.0.1` unless `HOST` is set. In `docker-compose.yml` it runs under the `generation` profile on a private network and isn't published on the host; see [Deployment](../docs/deployment.md).
+
 For production, run this worker in a separate network-disabled container with filesystem, CPU, memory, process, and request limits. The local process boundary and source policy are defence in depth, not a complete security sandbox.
