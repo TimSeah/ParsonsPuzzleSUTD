@@ -7,7 +7,6 @@ This folder contains all React components organized by their purpose and functio
 ### `/ui`
 Basic UI components that can be reused across the application (shared classes such as `.btn`, `.card`, `.segmented`, `.chip` and `.notice` live in `src/styles/ui.css`):
 - `Dialog` - Accessible modal dialog; `variant="sheet"` docks to the bottom on mobile
-- `ErrorTooltip` - Error display with tooltip functionality
 - `LoadingState` - Loading state with spinner (`size="small"` for an inline spinner)
 - `StatusIndicator` - Online / offline / connecting status pill
 - `DictionaryModal` - Searchable notation dictionary, opened from the header
@@ -27,7 +26,11 @@ Components that handle page layout and structure:
 - `NavigationHeader` - App header (brand, Student/Educator links, Feedback, dictionary, theme) and the mobile bottom tab bar
 
 ### `/educator`
-Components for the educator puzzle-creation workflow.
+Components for the educator puzzle-creation workflow:
+- `PuzzleCreator` - Edit / Preview puzzle form with per-field validation, live LaTeX preview and sortable steps
+- `CustomTagInput` - Free-text tag entry (not a `<form>`, so it can sit inside other forms)
+- `PuzzleSuccessModal` - Published dialog; wording depends on whether the puzzle was saved to the server or locally
+- `educatorCategories.js` - Category names, descriptions and suggested tags
 
 ### `/renderers`
 Specialized rendering components:
@@ -42,7 +45,7 @@ Components can be imported in several ways:
 import { PuzzleDisplay, LoadingState } from './components';
 
 // Import from specific category
-import { ErrorTooltip } from './components/ui';
+import { Dialog } from './components/ui';
 
 // Direct import (less preferred)
 import PuzzleDisplay from './components/puzzle/PuzzleDisplay';

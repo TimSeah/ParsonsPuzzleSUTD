@@ -144,20 +144,26 @@ VITE_API_BASE_URL=http://localhost:5001/api
 #### `/src/pages/EducatorPage.jsx`
 **Purpose**: Educator dashboard for puzzle creation and management
 **Key Features**:
-- Statistics dashboard with async loading
-- Category-based puzzle creation buttons
-- Puzzle creation modal integration
-- Success feedback with next action suggestions
+- Page header with **Create puzzle** and **Export all**, plus an Online/Offline pill from the API health check
+- Statistics tiles (total, categories, easy/medium/hard) and a per-category summary of created puzzles
+- **Quick create** list that opens the creator with a category already chosen
+- Success dialog after publishing that says whether the puzzle went to the server or was saved locally
 
 **State Management**:
 - Statistics loading and error handling
-- Puzzle creation workflow management
-- Success modal state management
+- Puzzle creation workflow management (the creator replaces the dashboard while open)
+- Success modal state, including where the puzzle was saved (`savedTo`)
 
 **Integration**:
-- `puzzleManagerService` for server communication
+- `puzzleManagerService` for server communication (`savePuzzle` returns `savedTo: 'server' | 'local'`)
 - `PuzzleCreator` component for puzzle creation
 - `PuzzleSuccessModal` for completion feedback
+
+#### `/src/pages/FeedbackPage.jsx`
+**Purpose**: Student feedback form sent to `POST /api/feedback`
+**Key Features**:
+- 1–5 rating as a segmented radio group, comment (with character count) and optional email
+- Errors shown inline without losing the typed comment; thank-you card with a link back to the previous page
 
 ### Component System (`/src/components`)
 
@@ -171,11 +177,6 @@ The component system is organized by functionality with clear separation of conc
 
 **`DictionaryModal.jsx`**
 - **Purpose**: Searchable dictionary of maths and algorithms terms, opened from the header
-
-**`ErrorTooltip.jsx`**
-- **Purpose**: Error display with tooltip functionality
-- **Props**: `error`, `show`
-- **Features**: Graceful error presentation, conditional display
 
 **`LoadingState.jsx`**
 - **Purpose**: Consistent loading state (`size="small"` renders an inline spinner, e.g. inside a button)
@@ -230,37 +231,22 @@ The component system is organized by functionality with clear separation of conc
 #### Educator Components (`/src/components/educator`)
 
 **`PuzzleCreator.jsx`**
-- **Purpose**: Complete puzzle creation interface
+- **Purpose**: Complete puzzle creation interface (Edit / Preview)
 - **Features**:
-  - Category-based puzzle creation
-  - Drag-and-drop block ordering with @dnd-kit
-  - LaTeX editor with live preview
-  - Tag management system
-  - Form validation and submission
-  - Preview mode for student experience
-
-**Component Architecture**:
-- React 19 compatible drag-and-drop
-- Sortable proof blocks with visual feedback
-- Category-specific suggested tags
-- Real-time LaTeX preview
-- Comprehensive form validation
+  - Details, Tags and Proof steps cards; difficulty as a segmented control
+  - Live LaTeX preview under each LaTeX field and the new-step box (Ctrl+Enter adds a step)
+  - Steps reorder by dragging the grip (mouse, touch, keyboard) or with ↑ / ↓; delete per step
+  - Validation messages under each field (`aria-invalid` / `aria-describedby`) plus a summary; save errors keep the form
+  - Preview renders the puzzle with the student `PuzzleDisplay` so it can be solved before publishing
+  - Sticky Cancel / Publish footer (above the tab bar on mobile)
+- **Categories**: `educatorCategories.js` holds the category names, descriptions and suggested tags
 
 **`CustomTagInput.jsx`**
-- **Purpose**: Flexible tag input component
-- **Features**:
-  - Suggested tags from category
-  - Custom tag creation
-  - Tag validation and deduplication
-  - Keyboard navigation support
+- **Purpose**: Free-text tag entry (Enter or **Add**); lower-cases tags and blocks duplicates
 
 **`PuzzleSuccessModal.jsx`**
-- **Purpose**: Success feedback after puzzle creation
-- **Features**:
-  - Success confirmation display
-  - Next action suggestions
-  - Modal state management
-  - Clear user guidance
+- **Purpose**: Dialog shown after publishing
+- **Features**: Server saves say students can solve it now; local fallback saves explain which downloaded JSON file replaces `src/puzzles/data/<file>`
 
 #### Navigation Components (`/src/components/navigation`)
 
@@ -657,7 +643,7 @@ The system supports dynamic content through placeholders:
 App.jsx
 ├── Pages (StudentPage, EducatorPage)
 │   ├── Layout Components (PuzzleSettings)
-│   ├── UI Components (LoadingState, ErrorTooltip)
+│   ├── UI Components (Dialog, LoadingState, StatusIndicator)
 │   └── Feature Components (PuzzleDisplay, PuzzleCreator)
 └── Services (Data management and API calls)
 ```
@@ -873,6 +859,7 @@ npm install --production
 ### Pages (`/src/pages`)
 - `StudentPage.jsx` - Student puzzle solving interface
 - `EducatorPage.jsx` - Educator dashboard and management
+- `FeedbackPage.jsx` - Student feedback form
 - `StudentPage.module.css` - Student page styling
 - `EducatorPage.module.css` - Educator page styling
 - `index.js` - Page component exports
@@ -882,7 +869,6 @@ npm install --production
 - `README.md` - Component organization documentation
 
 ### UI Components (`/src/components/ui`)
-- `ErrorTooltip.jsx` - Error display component
 - `LoadingState.jsx` - Loading spinner component
 - `StatusIndicator.jsx` - Online / offline / connecting status pill
 - `Dialog.jsx` - Accessible dialog / mobile bottom sheet
@@ -910,8 +896,9 @@ npm install --production
 ### Educator Components (`/src/components/educator`)
 - `PuzzleCreator.jsx` - Complete puzzle creation interface
 - `CustomTagInput.jsx` - Tag input component
-- `PuzzleSuccessModal.jsx` - Success feedback modal
-- CSS Modules for styling
+- `PuzzleSuccessModal.jsx` - Success dialog (server vs. local save)
+- `educatorCategories.js` - Categories and suggested tags
+- `PuzzleCreator.module.css` - Creator styling
 - `index.js` - Educator component exports
 
 ### Navigation Components (`/src/components/navigation`)

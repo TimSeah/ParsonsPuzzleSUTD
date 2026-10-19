@@ -5,7 +5,8 @@ This guide explains how educators can use the puzzle creation system to create i
 ## Getting Started
 
 1. Navigate to the **Educator** section from the navigation menu
-2. Click on any of the **Quick Actions** buttons or use **Create New Puzzle** to start
+2. Click a category under **Quick create**, or use **Create puzzle** at the top of the dashboard, to start
+3. The dashboard also shows your puzzle counts (total, by category and by difficulty) and whether the server is **Online**
 
 ## Creating a Puzzle
 
@@ -29,15 +30,17 @@ Add at least one tag. Tags help students find and categorize puzzles:
 Add at least two proof blocks. Build your proof step by step:
 
 1. **Add Blocks**: Write each proof step in LaTeX format
-   - Use the preview to see how your LaTeX will render
-   - Press `Ctrl+Enter` to quickly add a block
-2. **Reorder Blocks**: Drag blocks to arrange them in the correct logical order
+   - A live preview appears under the box as you type
+   - Press `Ctrl+Enter` (or click **Add step**) to add it
+2. **Reorder Blocks**: Drag a step by its grip (⋮⋮), or use the ↑ / ↓ buttons, to arrange the steps in the correct logical order
 3. **Remove Blocks**: Click the trash icon to delete unwanted blocks
 
+If something is missing when you publish, the message appears under the field that needs fixing.
+
 ### Step 4: Preview & Publish
-- Use the **Preview** toggle to see how students will see your puzzle
+- Switch to **Preview** to see the puzzle exactly as students will, and try solving it
 - Review all information for accuracy
-- Click **Publish Puzzle** to save
+- Click **Publish puzzle** to save
 
 ## LaTeX Tips
 
@@ -68,17 +71,17 @@ Add at least two proof blocks. Build your proof step by step:
 
 Publishing sends the puzzle to the backend for storage in MongoDB and keeps a backup in this browser's local storage. You do not need to download or replace project files after a successful server save. Students using database content can load the published puzzle; refresh Student mode if it was already open.
 
-The current success dialog still displays older instructions about downloading and replacing JSON files. Those instructions do not describe a normal server save.
+The success dialog confirms that students can solve the puzzle now.
 
 ### When the server cannot be reached
 
-For certain network failures, the app saves the puzzle in this browser and downloads a category JSON file. This is a local backup, not confirmation that the puzzle reached the shared database. Other server or validation errors can fail publishing without this fallback.
+For certain network failures, the app saves the puzzle in this browser and downloads a category JSON file; the dialog then says the server was unavailable and that students can't see the puzzle yet. This is a local backup, not confirmation that the puzzle reached the shared database. Other server or validation errors can fail publishing without this fallback; the error is shown above the **Publish puzzle** button and your form is kept.
 
 Keep the downloaded file and ask the project maintainer to check or import it before relying on student access. Do not blindly replace a bundled category file: the download may contain only browser-stored puzzles and could omit existing bundled content. Browser-local saves do not automatically synchronize when the server returns.
 
 ### Export puzzles
 
-Use **Export All Puzzles** to download `all-puzzles-export.json`. With the server available, this exports the records returned by the server (currently requested with a limit of 1,000). If fetching fails, it exports puzzles stored in this browser instead. It is not a complete database backup and does not automatically include all bundled local puzzles.
+Use **Export all** to download `all-puzzles-export.json`. With the server available, this exports the records returned by the server (currently requested with a limit of 1,000). If fetching fails, it exports puzzles stored in this browser instead. It is not a complete database backup and does not automatically include all bundled local puzzles.
 
 Confirm that the download exists and inspect its `totalPuzzles` count. Keep a copy outside the browser before clearing browser data.
 
@@ -109,8 +112,8 @@ Confirm that the download exists and inspect its `totalPuzzles` count. Keep a co
 - **Text in math mode**: Use `\text{...}` for regular text within math
 
 ### Block Ordering
-- If drag-and-drop isn't working, try refreshing the page
-- Ensure you're dragging from the handle (⋮⋮) icon
+- If dragging isn't working, use the ↑ / ↓ buttons instead, or refresh the page
+- Ensure you're dragging from the grip (⋮⋮) icon; on touch screens, press and hold it briefly
 - The final order should represent the correct solution sequence
 
 ### Publishing issues
