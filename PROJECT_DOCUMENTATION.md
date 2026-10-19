@@ -139,7 +139,7 @@ VITE_API_BASE_URL=http://localhost:5001/api
 **Dependencies**:
 - `useAppState` hook for state management
 - `PuzzleDisplay` for interactive solving
-- `UnifiedControlPanel` for data source control
+- `LeftControlPanel` for data source, filters and puzzle generation
 - UI components for loading and status
 
 #### `/src/pages/EducatorPage.jsx`
@@ -166,16 +166,6 @@ The component system is organized by functionality with clear separation of conc
 
 #### UI Components (`/src/components/ui`)
 
-**`DataSourceBadge.jsx`**
-- **Purpose**: Visual indicator of current data source (API/Local)
-- **Props**: `isUsingApi`, `puzzleCount`
-- **Features**: Connection status display, puzzle count indicator
-
-**`DataSourceToggle.jsx`**
-- **Purpose**: Toggle between API and local data sources
-- **Props**: `useLocalData`, `onToggle`, `isLoading`
-- **Features**: Manual data source switching, loading states
-
 **`ErrorTooltip.jsx`**
 - **Purpose**: Error display with tooltip functionality
 - **Props**: `error`, `show`
@@ -185,31 +175,24 @@ The component system is organized by functionality with clear separation of conc
 - **Purpose**: Consistent loading spinner component
 - **Features**: Centered loading animation, semantic loading indication
 
-**`PuzzleSelector.jsx`**
-- **Purpose**: Dropdown for selecting puzzles
-- **Props**: `puzzles`, `currentPuzzle`, `onPuzzleChange`
-- **Features**: Puzzle navigation, category-aware display
-
 **`StatusIndicator.jsx`**
-- **Purpose**: General status indication component
-- **Features**: Success/error/loading status visualization
+- **Purpose**: Shows whether puzzles come from the API or the bundled data
+- **Features**: Connecting / online / local status visualization
+
+**`ThemeToggle.jsx`**
+- **Purpose**: Light/dark theme switch in the navigation header
 
 #### Layout Components (`/src/components/layout`)
 
-**`UnifiedControlPanel.jsx`**
-- **Purpose**: Main control panel combining data source and puzzle controls
-- **Props**: Complete application state props for data source management
+**`LeftControlPanel.jsx`**
+- **Purpose**: Student control panel
 - **Features**:
-  - Data source badge and toggle integration
-  - Puzzle selector integration
-  - Error tooltip positioning
-  - Responsive grid layout
+  - Generate Puzzle button with in-progress state
+  - Data source selection (bundled puzzles or MongoDB + OpenAI generation)
+  - Difficulty and proof-type filters
+  - Generation errors and API connection notices
 
-**CSS Architecture**: Uses CSS Modules (`UnifiedControlPanel.module.css`) with:
-- Grid-based responsive layout
-- Interactive hover states
-- GitHub-inspired design system
-- Accessibility-focused styling
+**CSS Architecture**: Uses CSS Modules (`LeftControlPanel.module.css`).
 
 #### Puzzle Components (`/src/components/puzzle`)
 
@@ -237,11 +220,7 @@ The component system is organized by functionality with clear separation of conc
   - Score and progress indication
   - Error highlighting and suggestions
 
-**`ValidatorDemo.jsx`**
-- **Purpose**: Standalone validation testing component
-- **Features**: Testing interface for proof validation logic
-
-#### Renderer Components (`/src/components/renderers`)
+  #### Renderer Components (`/src/components/renderers`)
 
 **`KatexRenderer.jsx`**
 - **Purpose**: LaTeX mathematical expression rendering
@@ -330,11 +309,10 @@ The component system is organized by functionality with clear separation of conc
 - Loading state management
 
 **Hook Variants**:
-- `usePuzzles(category, filters)` - Multiple puzzles
-- `usePuzzle(puzzleId)` - Single puzzle
-- `usePuzzleSearch()` - Search functionality
-- `usePuzzleStats()` - Statistics data
-- `useApiHealth()` - Health check
+- `usePuzzles(category, filters, { enabled })` - Multiple puzzles; retries every 5s on failure while enabled
+- `useApiHealth({ enabled })` - Health check polling
+
+Both hooks are disabled while the student has selected the bundled (local) puzzles.
 
 ### Services (`/src/services`)
 
@@ -373,20 +351,6 @@ The component system is organized by functionality with clear separation of conc
 - exportAllPuzzles()         // Export to JSON file
 ```
 
-#### `hybridPuzzleService.js`
-**Purpose**: Unified service combining JSON and server data
-**Features**:
-- Seamless integration of default (JSON) and created (MongoDB) puzzles
-- Server availability detection
-- Fallback mechanisms
-- Source tracking and attribution
-
-**Architecture**:
-- JSON files provide immediate default content
-- Server data adds educator-created puzzles
-- Transparent failover on server unavailability
-- Source information for debugging
-
 #### `puzzleLoader.js`
 **Purpose**: JSON-based puzzle loading service
 **Features**:
@@ -416,13 +380,7 @@ The component system is organized by functionality with clear separation of conc
 
 ### Puzzle Data (`/src/puzzles`)
 
-#### Legacy JavaScript Files
-- `bigOProofs.js` - Big O notation puzzles
-- `inductionProofs.js` - Mathematical induction puzzles  
-- `recursionProofs.js` - Recursion and algorithm puzzles
-- `setTheoryProofs.js` - Set theory puzzles
-
-#### Modern JSON Data (`/src/puzzles/data`)
+#### JSON Data (`/src/puzzles/data`)
 - `big-o-proofs.json` - Structured Big O puzzles
 - `induction-proofs.json` - Mathematical induction puzzles
 - `recursion-proofs.json` - Recursion puzzles
@@ -701,7 +659,7 @@ The system supports dynamic content through placeholders:
 ```
 App.jsx
 ├── Pages (StudentPage, EducatorPage)
-│   ├── Layout Components (UnifiedControlPanel)
+│   ├── Layout Components (LeftControlPanel)
 │   ├── UI Components (LoadingState, ErrorTooltip)
 │   └── Feature Components (PuzzleDisplay, PuzzleCreator)
 └── Services (Data management and API calls)
@@ -927,25 +885,23 @@ npm install --production
 - `README.md` - Component organization documentation
 
 ### UI Components (`/src/components/ui`)
-- `DataSourceBadge.jsx` - Connection status indicator
-- `DataSourceToggle.jsx` - Data source switcher
 - `ErrorTooltip.jsx` - Error display component
 - `LoadingState.jsx` - Loading spinner component
-- `PuzzleSelector.jsx` - Puzzle selection dropdown
-- `StatusIndicator.jsx` - General status indicator
+- `StatusIndicator.jsx` - API / bundled data status indicator
+- `FloatingHelpButton.jsx` / `DictionaryModal.jsx` - Notation dictionary
+- `ThemeToggle.jsx` - Light/dark theme switch
 - CSS Modules for each component
 - `index.js` - UI component exports
 
 ### Layout Components (`/src/components/layout`)
-- `UnifiedControlPanel.jsx` - Main application control panel
-- `UnifiedControlPanel.module.css` - Control panel styling
+- `LeftControlPanel.jsx` - Student control panel (generation, data source, filters)
+- `LeftControlPanel.module.css` - Control panel styling
 - `index.js` - Layout component exports
 
 ### Puzzle Components (`/src/components/puzzle`)
-- `PuzzleDisplay.jsx` - Main puzzle solving interface
+- `PuzzleDisplay.jsx` - Main puzzle solving interface (practice and challenge modes)
 - `ProofBlock.jsx` - Individual proof block component
 - `ProofValidationDisplay.jsx` - Validation feedback display
-- `ValidatorDemo.jsx` - Validation testing component
 - CSS files for styling
 - `index.js` - Puzzle component exports
 
@@ -971,16 +927,13 @@ npm install --production
 ### Services (`/src/services`)
 - `puzzleService.js` - Core API communication service
 - `puzzleManagerService.js` - High-level puzzle management
-- `hybridPuzzleService.js` - Unified JSON/server data service
 - `puzzleLoader.js` - JSON-based puzzle loading service
 
 ### Utilities (`/src/utils`)
 - `ProofValidator.js` - Proof validation logic and feedback
 
 ### Puzzle Data (`/src/puzzles`)
-- `index.js` - Puzzle export aggregation
-- Legacy JavaScript files (bigOProofs.js, etc.)
-- `/data/` - Modern JSON puzzle files
+- `/data/` - JSON puzzle files, loaded by `src/services/puzzleLoader.js`
 
 ### Styles (`/src/styles`)
 - `shared.css` - Shared styling utilities

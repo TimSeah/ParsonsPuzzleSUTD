@@ -1,15 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import puzzleService from '../services/puzzleService.js';
 
-// Custom hook for fetching puzzles with loading and error states
-export function usePuzzles(category = null, filters = {}) {
+// Fetches puzzles from the API, retrying every 5s on failure while enabled
+export function usePuzzles(category = null, filters = {}, { enabled = true } = {}) {
   const [puzzles, setPuzzles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState(null);
   const filtersKey = JSON.stringify(filters);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+
     let active = true;
     let retryTimer;
     let firstAttempt = true;
@@ -47,111 +53,13 @@ export function usePuzzles(category = null, filters = {}) {
       active = false;
       clearTimeout(retryTimer);
     };
-  }, [category, filtersKey]);
+  }, [category, filtersKey, enabled]);
 
   return { puzzles, loading, error, pagination };
 }
 
-// Custom hook for fetching a single puzzle
-export function usePuzzle(puzzleId) {
-  const [puzzle, setPuzzle] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    async function fetchPuzzle() {
-      if (!puzzleId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await puzzleService.getPuzzleById(puzzleId);
-        setPuzzle(response);
-      } catch (err) {
-        console.error('Error fetching puzzle:', err);
-        setError(err.message || 'Failed to fetch puzzle');
-        setPuzzle(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchPuzzle();
-  }, [puzzleId]);
-
-  return { puzzle, loading, error };
-}
-
-// Custom hook for puzzle search
-export function usePuzzleSearch() {
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const search = async (searchTerm, filters = {}) => {
-    if (!searchTerm.trim()) {
-      setResults([]);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await puzzleService.searchPuzzles(searchTerm, filters);
-      setResults(response.puzzles || []);
-    } catch (err) {
-      console.error('Error searching puzzles:', err);
-      setError(err.message || 'Search failed');
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearResults = () => {
-    setResults([]);
-    setError(null);
-  };
-
-  return { results, loading, error, search, clearResults };
-}
-
-// Custom hook for puzzle statistics
-export function usePuzzleStats() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await puzzleService.getPuzzleStats();
-        setStats(response);
-      } catch (err) {
-        console.error('Error fetching stats:', err);
-        setError(err.message || 'Failed to fetch statistics');
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchStats();
-  }, []);
-
-  return { stats, loading, error };
-}
-
-// Custom hook for API health check
-export function useApiHealth() {
+// Polls API health (every 30s when healthy, 3s when not) while enabled
+export function useApiHealth({ enabled = true } = {}) {
   const [isHealthy, setIsHealthy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastCheck, setLastCheck] = useState(null);
@@ -175,6 +83,10 @@ export function useApiHealth() {
   }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return undefined;
+    }
     let active = true;
     let timer;
     const poll = async () => {
@@ -186,7 +98,7 @@ export function useApiHealth() {
       active = false;
       clearTimeout(timer);
     };
-  }, [checkHealth]);
+  }, [checkHealth, enabled]);
 
   return { isHealthy, loading, lastCheck, checkHealth };
 }

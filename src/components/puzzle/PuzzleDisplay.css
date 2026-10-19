@@ -1,7 +1,7 @@
 .puzzle-container {
   width: 100%; /* Take full width of parent container */
   margin: 0 auto;
-  padding: 0; /* Remove horizontal padding to match UnifiedControlPanel width */
+  padding: 0; /* No horizontal padding so the puzzle aligns with the page header */
   font-family: inherit;
   animation: fadeIn 0.6s ease-out;
 }
