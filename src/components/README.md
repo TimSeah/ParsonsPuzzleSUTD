@@ -5,12 +5,13 @@ This folder contains all React components organized by their purpose and functio
 ## Folder Structure
 
 ### `/ui`
-Basic UI components that can be reused across the application:
+Basic UI components that can be reused across the application (shared classes such as `.btn`, `.card`, `.segmented`, `.chip` and `.notice` live in `src/styles/ui.css`):
+- `Dialog` - Accessible modal dialog; `variant="sheet"` docks to the bottom on mobile
 - `ErrorTooltip` - Error display with tooltip functionality
-- `LoadingState` - Loading state component with spinner
-- `StatusIndicator` - Shows whether puzzles come from the API or the bundled data
-- `FloatingHelpButton` / `DictionaryModal` - Help button that opens the notation dictionary
-- `ThemeToggle` - Light/dark theme switch used in the navigation header
+- `LoadingState` - Loading state with spinner (`size="small"` for an inline spinner)
+- `StatusIndicator` - Online / offline / connecting status pill
+- `DictionaryModal` - Searchable notation dictionary, opened from the header
+- `ThemeToggle` - Light/dark theme icon button used in the header
 
 ### `/puzzle`
 Components specifically related to puzzle functionality:
@@ -23,7 +24,7 @@ Components that handle page layout and structure:
 - `LeftControlPanel` - Student control panel: generate button, data source, difficulty and proof-type filters
 
 ### `/navigation`
-- `NavigationHeader` - Top navigation with student/educator tabs, theme toggle and feedback link
+- `NavigationHeader` - App header (brand, Student/Educator links, Feedback, dictionary, theme) and the mobile bottom tab bar
 
 ### `/educator`
 Components for the educator puzzle-creation workflow.

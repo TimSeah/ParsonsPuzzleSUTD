@@ -1,98 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { ArrowLeft, ExternalLink, Search } from 'lucide-react';
 import { DICTIONARY_TERMS } from '../../data/terms';
+import Dialog from './Dialog';
 import styles from './DictionaryModal.module.css';
+
+const onlineSearchUrl = (term) => `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(term)}`;
 
 const DictionaryModal = ({ isOpen, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [terms, setTerms] = useState([]);
-  const [filteredTerms, setFilteredTerms] = useState([]);
   const [selectedTerm, setSelectedTerm] = useState(null);
 
-  // Load terms on mount
-  useEffect(() => {
-    setTerms(DICTIONARY_TERMS);
-    setFilteredTerms(DICTIONARY_TERMS);
-  }, []);
+  const filteredTerms = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return DICTIONARY_TERMS;
+    return DICTIONARY_TERMS.filter((t) => t.term.toLowerCase().includes(query) || t.definition.toLowerCase().includes(query));
+  }, [searchTerm]);
 
-  // Filter terms based on search
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredTerms(terms);
-    } else {
-      const filtered = terms.filter(t => 
-        t.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.definition.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredTerms(filtered);
-    }
-  }, [searchTerm, terms]);
-
-  const handleQuickLookup = (term) => {
-    const found = terms.find(t => t.term.toLowerCase() === term.toLowerCase());
-    if (found) {
-      setSelectedTerm(found);
-    } else {
-      // Fallback to MDN search
-      window.open(`https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(term)}`, '_blank');
-    }
+  const handleKeyDown = (event) => {
+    if (event.key !== 'Enter' || !searchTerm.trim()) return;
+    const exact = DICTIONARY_TERMS.find((t) => t.term.toLowerCase() === searchTerm.trim().toLowerCase());
+    if (exact) setSelectedTerm(exact);
+    else if (filteredTerms.length === 1) setSelectedTerm(filteredTerms[0]);
+    else if (filteredTerms.length === 0) window.open(onlineSearchUrl(searchTerm.trim()), '_blank', 'noopener');
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && searchTerm.trim()) {
-      handleQuickLookup(searchTerm);
-    }
+  const close = () => {
+    setSelectedTerm(null);
+    onClose();
   };
-
-  if (!isOpen) return null;
 
   return (
-    <div className={styles['dictionary-modal-overlay']} onClick={onClose}>
-      <div className={styles['dictionary-modal']} onClick={e => e.stopPropagation()}>
-        <div className={styles['dictionary-header']}>
-          <h2>📚 Math & Programming Dictionary</h2>
-          <button className={styles['close-btn']} onClick={onClose}>×</button>
+    <Dialog isOpen={isOpen} onClose={close} title="Dictionary" variant="sheet">
+      {selectedTerm ? (
+        <div className={styles.detail}>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setSelectedTerm(null)}>
+            <ArrowLeft size={16} aria-hidden="true" /> All terms
+          </button>
+          <h3 className={styles.detailTerm}>{selectedTerm.term}</h3>
+          <p className={styles.detailDefinition}>{selectedTerm.definition}</p>
         </div>
-        
-        <div className={styles['dictionary-content']}>
-          <div className={styles['search-section']}>
+      ) : (
+        <div className="stack">
+          <label className={styles.search}>
+            <Search size={16} aria-hidden="true" className={styles.searchIcon} />
+            <span className="visually-hidden">Search terms</span>
             <input
-              type="text"
-              placeholder="Search terms or definitions..."
+              type="search"
+              className="input"
+              placeholder="Search terms or definitions"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className={styles['search-input']}
-              autoFocus
+              onKeyDown={handleKeyDown}
             />
-            <small>Press Enter to search online if term not found</small>
-          </div>
+          </label>
 
-          {selectedTerm && (
-            <div className={styles['selected-term']}>
-              <h3>{selectedTerm.term}</h3>
-              <p>{selectedTerm.definition}</p>
-              <button onClick={() => setSelectedTerm(null)}>← Back to list</button>
-            </div>
-          )}
+          <p className={styles.count} aria-live="polite">
+            {filteredTerms.length} term{filteredTerms.length !== 1 ? 's' : ''}
+          </p>
 
-          {!selectedTerm && (
-            <div className={styles['terms-list']}>
-              <div className={styles['terms-count']}>
-                {filteredTerms.length} term{filteredTerms.length !== 1 ? 's' : ''} found
-              </div>
-              <div className={styles['terms-grid']}>
-                {filteredTerms.map((term, index) => (
-                  <div key={index} className={styles['term-item']} onClick={() => setSelectedTerm(term)}>
-                    <strong>{term.term}</strong>
-                    <p>{term.definition.substring(0, 80)}...</p>
-                  </div>
-                ))}
-              </div>
+          {filteredTerms.length > 0 ? (
+            <ul className={styles.list}>
+              {filteredTerms.map((term, index) => (
+                <li key={`${term.term}-${index}`}>
+                  <button type="button" className={styles.item} onClick={() => setSelectedTerm(term)}>
+                    <span className={styles.itemTerm}>{term.term}</span>
+                    <span className={styles.itemDefinition}>{term.definition}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className={styles.empty}>
+              <p>No matching terms.</p>
+              <a className="btn btn--sm" href={onlineSearchUrl(searchTerm.trim())} target="_blank" rel="noopener noreferrer">
+                Search online <ExternalLink size={14} aria-hidden="true" />
+              </a>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      )}
+    </Dialog>
   );
 };
 

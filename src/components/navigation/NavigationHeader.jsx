@@ -1,58 +1,87 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { BookOpen, GraduationCap, MessageSquare, Presentation, Puzzle } from 'lucide-react';
+import useTheme from '../../hooks/useTheme';
+import ThemeToggle from '../ui/ThemeToggle';
+import DictionaryModal from '../ui/DictionaryModal';
 import styles from './NavigationHeader.module.css';
-import useTheme from "../../hooks/useTheme";
-import ThemeToggle from "../ui/ThemeToggle";
 
+const SECTIONS = [
+  { to: '/student', label: 'Student', icon: GraduationCap },
+  { to: '/educator', label: 'Educator', icon: Presentation },
+];
+
+const navClass = (base, active) => ({ isActive }) => `${base} ${isActive ? active : ''}`;
+
+// App header (all sizes) plus a bottom tab bar on small screens.
 const NavigationHeader = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const isStudentPage = location.pathname === '/' || location.pathname === '/student';
-  const isEducatorPage = location.pathname === '/educator';
   const { theme, toggleTheme } = useTheme();
+  const [isDictionaryOpen, setIsDictionaryOpen] = useState(false);
+  const feedbackState = location.pathname === '/feedback' ? location.state : { from: location.pathname };
 
   return (
     <>
-      <nav className={styles.navigationHeader}>
-        <div className={styles.navContainer}>
-          <div className={styles.logo}>
-            <h2>🧮 SUTD Parsons Puzzles</h2>
-            <span className={styles.subtitle}>50.004 Algorithms</span>
-          </div>
-          
-          <div className={styles.navTabs}>
-            <Link 
-              to="/student" 
-              className={`${styles.navTab} ${isStudentPage ? styles.active : ''}`}
+      <a href="#main-content" className={styles.skipLink}>Skip to content</a>
+
+      <header className={styles.header}>
+        <div className={styles.inner}>
+          <Link to="/student" className={styles.brand} aria-label="Parsons Puzzles home">
+            <span className={styles.brandMark} aria-hidden="true"><Puzzle size={18} /></span>
+            <span className={styles.brandText}>
+              <span className={styles.brandName}>Parsons Puzzles</span>
+              <span className={styles.brandCourse}>SUTD 50.004 Algorithms</span>
+            </span>
+          </Link>
+
+          <nav className={styles.desktopNav} aria-label="Main">
+            {SECTIONS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink key={item.to} to={item.to} className={navClass(styles.navLink, styles.navLinkActive)}>
+                  <Icon size={16} aria-hidden="true" />
+                  {item.label}
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          <div className={styles.actions}>
+            <NavLink
+              to="/feedback"
+              state={feedbackState}
+              className={navClass(`${styles.navLink} ${styles.feedbackLink}`, styles.navLinkActive)}
             >
-              <span className={styles.tabIcon}>🎓</span>
-              <span>Student Mode</span>
-            </Link>
-            <Link 
-              to="/educator" 
-              className={`${styles.navTab} ${isEducatorPage ? styles.active : ''}`}
+              <MessageSquare size={16} aria-hidden="true" />
+              Feedback
+            </NavLink>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => setIsDictionaryOpen(true)}
+              aria-label="Open dictionary"
+              title="Dictionary"
             >
-              <span className={styles.tabIcon}>👨‍🏫</span>
-              <span>Educator Mode</span>
-            </Link>
+              <BookOpen size={18} aria-hidden="true" />
+            </button>
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
-          <button
-            type="button"
-            onClick={() => navigate("/feedback", { state: { from: location.pathname } })}
-            style={{
-              marginLeft: 12,
-              padding: "8px 12px",
-              borderRadius: 999,
-              border: "1px solid var(--color-border-default)",
-              background: "var(--color-canvas-subtle)",
-              color: "var(--color-fg-default)",
-              cursor: "pointer",
-            }}
-          >
-            💬 Feedback
-          </button>
         </div>
+      </header>
+
+      <nav className={styles.tabBar} aria-label="Main">
+        {[...SECTIONS, { to: '/feedback', label: 'Feedback', icon: MessageSquare, state: feedbackState }].map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink key={item.to} to={item.to} state={item.state} className={navClass(styles.tab, styles.tabActive)}>
+              <Icon size={20} aria-hidden="true" />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
       </nav>
+
+      <DictionaryModal isOpen={isDictionaryOpen} onClose={() => setIsDictionaryOpen(false)} />
     </>
   );
 };

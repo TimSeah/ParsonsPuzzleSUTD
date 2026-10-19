@@ -162,9 +162,16 @@ VITE_API_BASE_URL=http://localhost:5001/api
 
 ### Component System (`/src/components`)
 
-The component system is organized by functionality with clear separation of concerns:
+The component system is organized by functionality with clear separation of concerns. Shared building blocks (buttons, cards, segmented controls, chips, badges, notices, form fields, dialogs/bottom sheets) are global classes in `src/styles/ui.css`, built on the `--color-*` theme tokens in `src/index.css`.
 
 #### UI Components (`/src/components/ui`)
+
+**`Dialog.jsx`**
+- **Purpose**: Accessible modal dialog; `variant="sheet"` becomes a bottom sheet on mobile
+- **Features**: Escape/backdrop/close button, focus moved in and restored on close, page scroll locked while open
+
+**`DictionaryModal.jsx`**
+- **Purpose**: Searchable dictionary of maths and algorithms terms, opened from the header
 
 **`ErrorTooltip.jsx`**
 - **Purpose**: Error display with tooltip functionality
@@ -172,15 +179,13 @@ The component system is organized by functionality with clear separation of conc
 - **Features**: Graceful error presentation, conditional display
 
 **`LoadingState.jsx`**
-- **Purpose**: Consistent loading spinner component
-- **Features**: Centered loading animation, semantic loading indication
+- **Purpose**: Consistent loading state (`size="small"` renders an inline spinner, e.g. inside a button)
 
 **`StatusIndicator.jsx`**
-- **Purpose**: Shows whether puzzles come from the API or the bundled data
-- **Features**: Connecting / online / local status visualization
+- **Purpose**: Inline status pill showing whether puzzles come from the API (Online), the bundled data (Offline) or are still connecting
 
 **`ThemeToggle.jsx`**
-- **Purpose**: Light/dark theme switch in the navigation header
+- **Purpose**: Light/dark theme icon button in the header
 
 #### Layout Components (`/src/components/layout`)
 
@@ -268,11 +273,11 @@ The component system is organized by functionality with clear separation of conc
 #### Navigation Components (`/src/components/navigation`)
 
 **`NavigationHeader.jsx`**
-- **Purpose**: Main application navigation
+- **Purpose**: App header and mobile navigation
 - **Features**:
-  - Student/Educator page navigation
-  - Active page highlighting
-  - Responsive navigation design
+  - Desktop: one header row with the brand, Student/Educator links, Feedback link, dictionary and theme buttons
+  - Mobile (< 768px): compact header (brand, dictionary, theme) plus a fixed bottom tab bar (Student, Educator, Feedback)
+  - Active page marked with `aria-current`, skip-to-content link, Feedback remembers the page you came from
 
 ### Hooks (`/src/hooks`)
 
@@ -887,8 +892,9 @@ npm install --production
 ### UI Components (`/src/components/ui`)
 - `ErrorTooltip.jsx` - Error display component
 - `LoadingState.jsx` - Loading spinner component
-- `StatusIndicator.jsx` - API / bundled data status indicator
-- `FloatingHelpButton.jsx` / `DictionaryModal.jsx` - Notation dictionary
+- `StatusIndicator.jsx` - Online / offline / connecting status pill
+- `Dialog.jsx` - Accessible dialog / mobile bottom sheet
+- `DictionaryModal.jsx` - Notation dictionary (opened from the header)
 - `ThemeToggle.jsx` - Light/dark theme switch
 - CSS Modules for each component
 - `index.js` - UI component exports

@@ -1,15 +1,18 @@
-import React from 'react';
 import styles from './LoadingState.module.css';
 
-const LoadingState = ({ title, message }) => (
-  <div className="App">
-    <div className="container">
-      <div className={styles.loadingState}>
-        <h2>{title}</h2>
-        <p>{message}</p>
-      </div>
+// `size="small"` renders just an inline spinner (e.g. inside a button).
+const LoadingState = ({ title, message, size = 'page' }) => {
+  if (size === 'small') {
+    return <span className={styles.spinner} role="status" aria-label={title || 'Loading'} />;
+  }
+
+  return (
+    <div className={styles.loadingState} role="status">
+      <span className={`${styles.spinner} ${styles.spinnerLarge}`} aria-hidden="true" />
+      {title && <h2 className={styles.title}>{title}</h2>}
+      {message && <p className={styles.message}>{message}</p>}
     </div>
-  </div>
-);
+  );
+};
 
 export default LoadingState;

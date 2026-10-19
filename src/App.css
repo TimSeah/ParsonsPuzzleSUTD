@@ -1,40 +1,31 @@
 .App {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: var(--color-canvas-default);
   color: var(--color-fg-default);
 }
 
-.container {
+.app-main {
   flex: 1;
-  width: var(--content-width-preferred, 85%);
-  max-width: var(--content-width-max, 87.5rem);
-  min-width: var(--content-width-min, 80%);
-  margin: 0 auto;
-  padding: var(--margin-lg, 1rem);
+  outline: none;
 }
 
 .app-footer {
-  margin-top: auto;
-  padding: 2rem 1rem 1rem;
-  border-top: 1px solid #30363d;
-  color: #8b949e;
-  font-size: 0.9rem;
+  padding: 1rem var(--page-padding);
+  border-top: 1px solid var(--color-border-default);
+  color: var(--color-fg-muted);
+  font-size: 0.8125rem;
   text-align: center;
-  background: var(--color-canvas-subtle);
 }
 
-.app-footer p {
-  margin: 0;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .container {
-    width: var(--content-width-min, 80%);
-    padding: var(--margin-lg, 1rem);
+@media (max-width: 767px) {
+  /* Leave room for the fixed bottom tab bar. */
+  .app-main {
+    padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + var(--page-padding));
   }
-  
+
   .app-footer {
-    padding: 1.5rem 0.5rem 1rem;
+    display: none;
   }
 }

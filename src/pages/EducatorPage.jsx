@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { StatusIndicator } from '../components/ui';
 import { PuzzleCreator, PuzzleSuccessModal } from '../components/educator';
 import puzzleManagerService from '../services/puzzleManagerService';
 import styles from './EducatorPage.module.css';
@@ -85,7 +84,7 @@ function EducatorPage() {
   };
 
   return (
-    <div className={styles['educator-page']}>
+    <div className={styles['educator-page']} aria-busy={isLoading}>
       {!showCreator ? (
         <>
           <header className={styles['page-header']}>
@@ -211,11 +210,6 @@ function EducatorPage() {
           initialPuzzle={{ category: selectedCategory }}
         />
       )}
-
-      <StatusIndicator 
-        isUsingApi={false} 
-        isLoading={isLoading}
-      />
 
       <PuzzleSuccessModal
         isOpen={showSuccessModal}
