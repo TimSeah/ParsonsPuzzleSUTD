@@ -11,7 +11,8 @@ const ProofBlock = ({
   isOverlay,
   isInWorkspace,
   blockSelections = {},
-  onSelectionChange
+  onSelectionChange,
+  disabled = false
 }) => {
   const {
     attributes,
@@ -20,14 +21,14 @@ const ProofBlock = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     boxShadow: isDragging ? '0 4px 12px rgba(0,0,0,0.25)' : '0 2px 4px rgba(0,0,0,0.1)',
     zIndex: isDragging || isOverlay ? 100 : 'auto',
-    cursor: isDragging ? 'grabbing' : 'grab',
+    cursor: disabled ? 'not-allowed' : isDragging ? 'grabbing' : 'grab',
     opacity: isDragging ? 0.8 : 1,
   };
 
