@@ -47,6 +47,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
 
   useEffect(() => {
     triedReported.current = false;
+    setSolutionShown(false);
   }, [puzzle]);
 
   // challenge-only state
@@ -117,7 +118,6 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
       setActiveId(null);
 
       setRevealResults(!isChallenge);
-      setSolutionShown(false);
 
       // ✅ close submit confirm on new puzzle / mode reset
       setShowSubmitConfirm(false);
@@ -382,7 +382,6 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
       setActiveId(null);
 
       if (isChallenge) setRevealResults(false);
-      setSolutionShown(false);
 
       if (isTimedMode) {
         setTimeLeft(TIMED_SECONDS);

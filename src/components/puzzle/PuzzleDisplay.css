@@ -44,7 +44,7 @@
 }
 
 .puzzle-header p strong {
-  color: #ffffff;
+  color: var(--color-fg-default);
   font-weight: 600;
 }
 
@@ -53,7 +53,7 @@
 .puzzle-header .katex-prose,
 .puzzle-header .katex,
 .puzzle-header .katex-error {
-  color: #ffffff !important;
+  color: var(--color-fg-default) !important;
 }
 
 .puzzle-header .katex-prose {

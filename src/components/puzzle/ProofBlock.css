@@ -21,14 +21,14 @@
   box-sizing: border-box; /* Include padding in width calculation */
   white-space: normal; /* Allow normal text flow */
   line-height: 1.5; /* Better line spacing for mixed content */
-  color: #ffffff;
+  color: var(--color-fg-default);
 }
 
 .proof-block .mixed-latex-content,
 .proof-block .katex-prose,
 .proof-block .katex,
 .proof-block .katex-error {
-  color: #ffffff !important;
+  color: var(--color-fg-default) !important;
 }
 
 .proof-block .katex-prose {
