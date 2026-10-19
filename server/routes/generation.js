@@ -1,10 +1,11 @@
 import express from 'express';
 import generationService from '../services/generationService.js';
+import { createGenerationRateLimiter } from '../services/generationLimits.js';
 import { waitForDatabase } from '../services/database.js';
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
+router.post('/', createGenerationRateLimiter(), async (req, res) => {
   try {
     const databaseReady = await waitForDatabase(Number(process.env.MONGODB_REQUEST_WAIT_MS || 30000));
     if (!databaseReady) {
@@ -13,7 +14,7 @@ router.post('/', async (req, res) => {
         message: 'MongoDB Atlas is still connecting, will retry automatically. Please try again later.',
       });
     }
-    return res.json(await generationService.generate(req.body));
+    return res.json(await generationService.generate(req.body, { ip: req.ip }));
   }
   catch (error) {
     console.error('Generation request failed:', error.code || error.name, error.message);
@@ -28,6 +29,7 @@ router.post('/', async (req, res) => {
       'OPENAI_EMPTY_RESPONSE',
       'OPENAI_INVALID_JSON',
       'LEAN_VERIFICATION_FAILED',
+      'GENERATION_BUSY',
     ];
     const message = databaseUnavailable
       ? 'MongoDB Atlas is temporarily unavailable. The backend is reconnecting automatically.'

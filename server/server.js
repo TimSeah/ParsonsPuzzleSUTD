@@ -20,12 +20,21 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL;
 // Security middleware
 app.use(helmet());
 
+// Set TRUST_PROXY (e.g. "1") when running behind a reverse proxy so rate
+// limits apply to the real client IP rather than the proxy's.
+if (process.env.TRUST_PROXY) {
+  const hops = Number(process.env.TRUST_PROXY);
+  app.set('trust proxy', Number.isFinite(hops) ? hops : process.env.TRUST_PROXY);
+}
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   skip: req => req.path === '/api/health',
-  message: 'Too many requests from this IP, please try again later.'
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'RATE_LIMITED', message: 'Too many requests from this IP, please try again later.' }
 });
 
 app.use(limiter);

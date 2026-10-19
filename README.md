@@ -52,7 +52,7 @@ Normal successful server publication requires no manual JSON replacement. The cu
 - The backend reconnects to MongoDB automatically, with configurable timeouts and DNS fallback for certain Atlas lookup failures.
 - The frontend polls backend health and can fall back to bundled content when the API is unavailable.
 - REST endpoints support puzzle creation, retrieval, filtering, updates, soft deletion, and statistics.
-- Security headers, configurable request limits, and CORS rules are implemented. Authentication and authorization are not implemented.
+- Security headers, configurable request limits (with stricter per-IP, per-user and daily limits on fresh AI generation), and CORS rules are implemented. Authentication and authorization are not implemented.
 
 ## Architecture
 
@@ -271,7 +271,7 @@ guides/             Current development, educator, and database guides
   archive/          Historical migration documentation
 ```
 
-Some older frontend generation and Lean-service files remain for legacy code/tests. The active Student Astra flow calls the backend's `/api/generate`; proof verification happens through `server/services/leanClient.js` and the separate worker.
+The active Student Astra flow calls the backend's `/api/generate`; proof verification happens through `server/services/leanClient.js` and the separate worker. There is no browser-side generation or verification code.
 
 ## API overview
 
@@ -290,7 +290,19 @@ Some older frontend generation and Lean-service files remain for legacy code/tes
 
 Generation requests contain `userId`, `requestId`, `difficulty`, and a `topics` array. Accepted category keys are `big-o`, `induction`, `set-theory`, `recursion`, `logic`, `combinatorics`, `graph-theory`, and `data-structures`.
 
-The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. Keep the worker internal; its default listener is `127.0.0.1:3001`.
+Serving a previously verified puzzle from the database is always allowed. A **fresh generation** (OpenAI + Lean) is limited because each one can make several paid OpenAI calls and Lean compiles:
+
+| Limit | Default | Setting | Response |
+| --- | --- | --- | --- |
+| `POST /api/generate` requests per IP | 10 per 15 minutes | `GENERATION_RATE_LIMIT_MAX`, `GENERATION_RATE_LIMIT_WINDOW_MS` | 429 `GENERATION_RATE_LIMITED` |
+| Fresh generations per user per UTC day | 10 | `GENERATION_DAILY_LIMIT_PER_USER` (0 = unlimited) | 429 `GENERATION_QUOTA_EXCEEDED` |
+| Fresh generations per IP per UTC day | 30 | `GENERATION_DAILY_LIMIT_PER_IP` (0 = unlimited) | 429 `GENERATION_QUOTA_EXCEEDED` |
+| Fresh generations running per user | 1 | none | 429 `GENERATION_IN_PROGRESS` |
+| Fresh generations running per backend process | 4 | `GENERATION_MAX_CONCURRENT` | 503 `GENERATION_BUSY` |
+
+Daily counters are stored in MongoDB (`generationusages`, expired automatically). Behind a reverse proxy, set `TRUST_PROXY` (for example `1`) so limits use the client's IP. The user ID is an anonymous browser ID chosen by the client, so per-user limits and `/tried` history are not a security boundary until authentication is added.
+
+The worker exposes `GET /health`, `POST /verify`, and `POST /syntax-check`. Both POST routes currently compile the submitted Lean source. It runs `LEAN_MAX_CONCURRENT` compiles at once (default 1) with up to `LEAN_MAX_QUEUE` waiting (default 2), and answers 503 when full. Keep the worker internal; its default listener is `127.0.0.1:3001`.
 
 ## Build and deployment
 
