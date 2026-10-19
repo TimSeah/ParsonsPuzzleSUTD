@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import Puzzle from '../models/Puzzle.js';
 import PuzzleHistory from '../models/PuzzleHistory.js';
 import openaiPuzzleService from './openaiPuzzleService.js';
-import leanClient from './leanClient.js';
+import leanClient, { LEAN_POLICY_VERSION } from './leanClient.js';
 import { buildPuzzlePrompt } from './promptBuilder.js';
 import { normalizeGenerationRequest, validateCandidate } from './puzzleContract.js';
 
@@ -37,7 +37,8 @@ export class GenerationService {
   async findUnseen({ userId, difficulty, topics }) {
     const history = await this.History.find({ userId, $or: [{ seenCount: { $gt: 0 } }, { attemptCount: { $gt: 0 } }] }).select('puzzleId -_id').lean();
     const excluded = history.map(item => item.puzzleId);
-    const filter = { isActive: true, difficulty, 'verification.status': 'verified', id: { $nin: excluded } };
+    // Only serve puzzles checked under the current verification policy.
+    const filter = { isActive: true, difficulty, 'verification.status': 'verified', 'verification.policyVersion': { $gte: LEAN_POLICY_VERSION }, id: { $nin: excluded } };
     if (topics.length) filter.category = { $in: topics };
     const count = await this.Puzzle.countDocuments(filter);
     if (!count) return null;
@@ -101,11 +102,11 @@ export class GenerationService {
           id,
           source: 'llm-generated',
           contentFingerprint,
-          verification: { ...lastVerification, status: 'verified', verifiedAt: new Date() },
+          verification: { ...lastVerification, status: 'verified', verifiedAt: new Date(), policyVersion: LEAN_POLICY_VERSION },
           generation: {
             model: generated.model,
             responseId: generated.responseId,
-            promptVersion: '1.1',
+            promptVersion: '1.2',
             repairAttemptCount: attempt,
             improperlyFormattedAttemptCount,
             leanRejectedAttemptCount,

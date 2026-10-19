@@ -65,7 +65,9 @@ const puzzleSchema = new mongoose.Schema({
     leanVersion: String,
     mathlibVersion: String,
     durationMs: Number,
-    policyChecks: mongoose.Schema.Types.Mixed
+    policyChecks: mongoose.Schema.Types.Mixed,
+    policyVersion: { type: Number, default: 1 },
+    axioms: [String]
   },
   generation: {
     model: String,

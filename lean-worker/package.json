@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "setup": "lake update && lake exe cache get",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
   }
 }

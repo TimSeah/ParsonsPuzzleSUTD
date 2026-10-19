@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GenerationService } from '../services/generationService.js';
+import { LEAN_POLICY_VERSION } from '../services/leanClient.js';
 
 function validCandidate() {
   return {
@@ -14,14 +15,19 @@ function validCandidate() {
     blocks: Array.from({ length: 4 }, (_, index) => ({
       id: `step${index + 1}`,
       latex: `Derived statement ${index + 1} by Assumption.`,
-      leanFragment: 'trivial',
+      leanFragment: `have h${index + 1} : True := trivial`,
       pedagogicalRole: 'derivation',
     })),
     solutionOrder: ['step1', 'step2', 'step3', 'step4'],
     lean: {
       theoremName: 'test_theorem',
       imports: ['Mathlib'],
-      source: 'import Mathlib\nexample : True := by trivial',
+      source: [
+        'import Mathlib',
+        'theorem test_theorem : True := by',
+        ...Array.from({ length: 4 }, (_, index) => `  have h${index + 1} : True := trivial`),
+        '  exact h4',
+      ].join('\n'),
     },
   };
 }
@@ -30,9 +36,10 @@ function dependencies({ generatedCandidates, leanResults }) {
   let generatedIndex = 0;
   let leanIndex = 0;
   let savedPuzzle;
+  let cacheFilter;
   return {
     PuzzleModel: {
-      countDocuments: async () => 0,
+      countDocuments: async filter => { cacheFilter = filter; return 0; },
       create: async puzzle => {
         savedPuzzle = puzzle;
         return { ...puzzle, toObject: () => puzzle };
@@ -52,6 +59,7 @@ function dependencies({ generatedCandidates, leanResults }) {
     },
     lean: { verify: async () => leanResults[leanIndex++] },
     saved: () => savedPuzzle,
+    cacheFilter: () => cacheFilter,
   };
 }
 
@@ -78,7 +86,7 @@ test('stores formatting and Lean rejection counts on the successful puzzle', asy
   assert.deepEqual(deps.saved().generation, {
     model: 'gpt-6-astra',
     responseId: 'response-3',
-    promptVersion: '1.1',
+    promptVersion: '1.2',
     repairAttemptCount: 2,
     improperlyFormattedAttemptCount: 1,
     leanRejectedAttemptCount: 1,
@@ -102,4 +110,30 @@ test('stores zero counters when the first attempt succeeds', async () => {
   assert.equal(deps.saved().generation.improperlyFormattedAttemptCount, 0);
   assert.equal(deps.saved().generation.leanRejectedAttemptCount, 0);
   assert.equal(deps.saved().generation.repairAttemptCount, 0);
+});
+
+test('only serves cached puzzles verified under the current Lean policy', async () => {
+  const deps = dependencies({
+    generatedCandidates: [validCandidate()],
+    leanResults: [{ valid: true, status: 'verified', diagnostics: [], axioms: ['propext'] }],
+  });
+  await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
+
+  assert.deepEqual(deps.cacheFilter()['verification.policyVersion'], { $gte: LEAN_POLICY_VERSION });
+  assert.equal(deps.cacheFilter()['verification.status'], 'verified');
+  assert.equal(deps.saved().verification.policyVersion, LEAN_POLICY_VERSION);
+  assert.deepEqual(deps.saved().verification.axioms, ['propext']);
+});
+
+test('asks the model to repair blocks that are not tied to the Lean proof', async () => {
+  const untied = validCandidate();
+  untied.blocks[2].leanFragment = 'simp';
+  const deps = dependencies({
+    generatedCandidates: [untied, validCandidate()],
+    leanResults: [{ valid: true, status: 'verified', diagnostics: [] }],
+  });
+  await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
+
+  assert.equal(deps.saved().generation.improperlyFormattedAttemptCount, 1);
+  assert.equal(deps.saved().generation.repairAttemptCount, 1);
 });
