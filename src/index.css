@@ -278,46 +278,38 @@ input:focus, textarea:focus, select:focus {
   outline-offset: -0.125rem; /* ~-2px */
 }
 
-/* KaTeX overrides for dark theme */
+/* KaTeX: theme colours, and let long legacy \text{...} lines wrap between
+   words (KatexRenderer swaps KaTeX's non-breaking spaces for normal ones).
+   katex.min.css loads after this file and makes each .base an inline-block
+   of min-content width, so these layout overrides need !important. */
 .katex {
-  color: var(--color-fg-default) !important;
-  max-width: 100% !important;
-  overflow-wrap: anywhere !important; /* More aggressive wrapping */
-  word-wrap: break-word !important;
-  word-break: break-all !important; /* Break anywhere if needed */
-  display: inline !important; /* Changed from default to prevent excessive wrapping */
+  color: var(--color-fg-default);
+  white-space: normal;
 }
 
-.katex .mord {
-  color: var(--color-fg-default) !important;
-}
-
-.katex .mbin, .katex .mrel {
-  color: var(--color-accent-fg) !important;
-  white-space: nowrap !important; /* Keep operators together */
-}
-
-.katex .mopen, .katex .mclose {
-  color: var(--color-fg-muted) !important;
-  white-space: nowrap !important; /* Keep brackets together */
-}
-
-/* Ensure KaTeX content can wrap properly but preserve operators */
-.katex .katex-html {
-  white-space: normal !important;
-  overflow-wrap: anywhere !important;
-  word-break: break-all !important;
-  display: inline !important;
-}
-
+.katex .katex-html,
 .katex .base {
   display: inline !important;
-  max-width: 100% !important;
-  overflow-wrap: anywhere !important;
-  word-break: break-all !important;
+  width: auto !important;
+  white-space: normal !important;
 }
 
-/* Prevent dropdowns from breaking unnecessarily */
+.katex .mord.text,
+.katex .mtext {
+  white-space: normal !important;
+}
+
+.katex .mbin,
+.katex .mrel {
+  color: var(--color-accent-fg);
+}
+
+.katex .mopen,
+.katex .mclose {
+  color: var(--color-fg-muted);
+}
+
+/* Interactive dropdowns inside formulas stay on one line. */
 .katex select,
 select.dropdown-op,
 select.dropdown-quantifier,
@@ -325,55 +317,9 @@ select.dropdown-set,
 select.dropdown-setop,
 select.dropdown-logic,
 select.dropdown-complexity {
-  white-space: nowrap !important;
-  display: inline-block !important;
+  white-space: nowrap;
+  display: inline-block;
 }
-
-/* Force wrapping for any overly long content */
-* {
-  word-wrap: break-word;
-}
-
-/* Special handling for mathematical content */
-.katex .mord,
-.katex .mrel,
-.katex .mbin {
-  word-break: break-all !important;
-  overflow-wrap: anywhere !important;
-}
-
-/* Critical fix for KaTeX text elements with non-breaking spaces */
-.katex .mord.text,
-.katex .mord.text .mord,
-.katex .mtext {
-  white-space: normal !important; /* Override non-breaking spaces */
-  word-break: break-all !important;
-  overflow-wrap: anywhere !important;
-  word-spacing: normal !important;
-  max-width: 100% !important;
-}
-
-/* Handle the specific nested structure that causes issues */
-.katex .katex-html .base .mord.text .mord {
-  white-space: pre-wrap !important; /* Allow wrapping while preserving some spacing */
-  word-break: break-word !important;
-  overflow-wrap: anywhere !important;
-  max-width: 100% !important;
-  display: inline !important;
-}
-
-/* CSS to convert non-breaking spaces to regular spaces for wrapping */
-.katex .mord.text .mord::before {
-  white-space: normal !important;
-}
-
-/* Force all KaTeX text to be breakable */
-.katex * {
-  word-break: break-word !important;
-  overflow-wrap: anywhere !important;
-  white-space: normal !important;
-}
-
 /* Animation utilities */
 @keyframes fadeIn {
   from {

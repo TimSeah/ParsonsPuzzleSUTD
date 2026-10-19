@@ -131,16 +131,15 @@ VITE_API_BASE_URL=http://localhost:5001/api
 #### `/src/pages/StudentPage.jsx`
 **Purpose**: Main student interface for solving puzzles
 **Key Features**:
-- Unified control panel integration
-- Puzzle display with drag-and-drop
-- Loading states and error handling
-- Floating help button for guidance
+- Puzzle-first layout: toolbar with **Practice | Challenge**, status pill and **New puzzle**
+- Puzzle settings in a side panel on desktop, or a bottom sheet behind a summary button on phones
+- Generation/connection notices and loading states
 
 **Dependencies**:
 - `useAppState` hook for state management
 - `PuzzleDisplay` for interactive solving
-- `LeftControlPanel` for data source, filters and puzzle generation
-- UI components for loading and status
+- `PuzzleSettings` for puzzle source, difficulty and topics
+- `useMediaQuery` to choose the desktop or mobile settings layout
 
 #### `/src/pages/EducatorPage.jsx`
 **Purpose**: Educator dashboard for puzzle creation and management
@@ -189,34 +188,27 @@ The component system is organized by functionality with clear separation of conc
 
 #### Layout Components (`/src/components/layout`)
 
-**`LeftControlPanel.jsx`**
-- **Purpose**: Student control panel
-- **Features**:
-  - Generate Puzzle button with in-progress state
-  - Data source selection (bundled puzzles or MongoDB + OpenAI generation)
-  - Difficulty and proof-type filters
-  - Generation errors and API connection notices
-
-**CSS Architecture**: Uses CSS Modules (`LeftControlPanel.module.css`).
+**`PuzzleSettings.jsx`**
+- **Purpose**: Puzzle source (Bundled / AI generated), difficulty and topic choices for the next puzzle
+- **Features**: Segmented radio groups and topic chips; option lists and `describeSettings()` live in `puzzleSettingsOptions.js`
 
 #### Puzzle Components (`/src/components/puzzle`)
 
 **`PuzzleDisplay.jsx`**
 - **Purpose**: Main puzzle solving interface
 - **Features**:
-  - Drag-and-drop proof block arrangement
-  - LaTeX rendering for mathematical content
-  - Interactive element handling (dropdowns, inputs)
-  - Proof validation and feedback
-  - Solution state management
+  - Proof board: **Available steps** and **Your proof** side by side on desktop (the proof column stays in view while scrolling), stacked with the proof first on phones
+  - Drag and drop (mouse, keyboard, and touch with a short press) plus tap controls: **+** to add, ↑ / ↓ to reorder, ✕ to remove. Both paths share the same move rules (Limited Moves counting, timer start, history reporting)
+  - Practice mode with live feedback; Challenge mode (Lockout, Timed, Limited moves) with a rules/status banner and Submit
+  - LaTeX rendering and interactive dropdown placeholders
 
 **`ProofBlock.jsx`**
 - **Purpose**: Individual proof statement blocks
 - **Features**:
   - Drag-and-drop functionality with @dnd-kit
+  - Step numbers and tap action buttons (which don't start a drag)
   - LaTeX rendering with interactive placeholders
-  - Dropdown rendering for mathematical operators
-  - Block highlighting and selection states
+  - Learner-friendly transitions for generated blocks with a pedagogical role
 
 **`ProofValidationDisplay.jsx`**
 - **Purpose**: Validation results and feedback display
@@ -664,7 +656,7 @@ The system supports dynamic content through placeholders:
 ```
 App.jsx
 ├── Pages (StudentPage, EducatorPage)
-│   ├── Layout Components (LeftControlPanel)
+│   ├── Layout Components (PuzzleSettings)
 │   ├── UI Components (LoadingState, ErrorTooltip)
 │   └── Feature Components (PuzzleDisplay, PuzzleCreator)
 └── Services (Data management and API calls)
@@ -900,8 +892,8 @@ npm install --production
 - `index.js` - UI component exports
 
 ### Layout Components (`/src/components/layout`)
-- `LeftControlPanel.jsx` - Student control panel (generation, data source, filters)
-- `LeftControlPanel.module.css` - Control panel styling
+- `PuzzleSettings.jsx` - Puzzle source, difficulty and topic settings
+- `puzzleSettingsOptions.js` - Settings options and summary text
 - `index.js` - Layout component exports
 
 ### Puzzle Components (`/src/components/puzzle`)

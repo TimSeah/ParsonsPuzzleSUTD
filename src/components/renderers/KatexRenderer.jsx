@@ -3,12 +3,28 @@ import katex from 'katex';
 
 const MATH_DELIMITER_PATTERN = /(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\$(?!\$)[^$]+?\$)/g;
 
+// KaTeX renders spaces inside \text{...} as non-breaking spaces, so long
+// sentences could only wrap mid-word. Swap them for normal spaces in the
+// visual output (the MathML copy for screen readers is left untouched).
+// Explicit math spaces (\ , ~, \space) live in inline-block .mspace spans,
+// where a normal space would collapse to zero width, so those are skipped.
+const allowWordWrapping = (element) => {
+  element.querySelectorAll('.katex-html').forEach((html) => {
+    const walker = document.createTreeWalker(html, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!node.nodeValue.includes('\u00a0') || node.parentElement?.closest('.mspace')) continue;
+      node.nodeValue = node.nodeValue.replace(/\u00a0/g, ' ');
+    }
+  });
+};
+
 const renderLatex = (latex, element, displayMode = false) => {
   katex.render(latex, element, {
     throwOnError: false,
     displayMode,
     strict: false,
   });
+  allowWordWrapping(element);
 };
 
 const normalizeLatexInput = (value) => String(value ?? '')
@@ -149,7 +165,10 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
       onChange(uniqueKey, e.target.value);
     });
     
-    select.addEventListener('pointerdown', (e) => e.stopPropagation());
+    // Using a dropdown must never start dragging the block it sits in.
+    ['pointerdown', 'mousedown', 'touchstart'].forEach((type) => {
+      select.addEventListener(type, (e) => e.stopPropagation());
+    });
     
     return select;
   }, []);

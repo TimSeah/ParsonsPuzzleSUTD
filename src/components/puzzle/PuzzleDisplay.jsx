@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
-  PointerSensor,
   KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCorners,
@@ -12,8 +13,10 @@ import {
 import {
   SortableContext,
   arrayMove,
+  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { Clock, Eye, Footprints, Lock, RotateCcw, Send } from 'lucide-react';
 
 import ProofBlock from './ProofBlock';
 import ProofValidationDisplay from './ProofValidationDisplay';
@@ -27,14 +30,40 @@ const LOCK_SECONDS = 10;
 // Timed challenge duration
 const TIMED_SECONDS = 5 * 60;
 
-// ✅ NEW: Limited-moves rule
+// Limited-moves rule
 const MAX_MOVES = 20;
 
 const CHALLENGE_SUBMODES = [
-  { type: 'lockout', label: '🔒 Lockout mode' },
-  { type: 'timed', label: '⏱ Timed mode' },
-  { type: 'limited', label: '🎯 Limited moves' },
+  { type: 'lockout', label: 'Lockout', icon: Lock },
+  { type: 'timed', label: 'Timed', icon: Clock },
+  { type: 'limited', label: 'Limited moves', icon: Footprints },
 ];
+
+const formatTime = (secs) => {
+  const m = String(Math.floor(secs / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  return `${m}:${s}`;
+};
+
+// Most bundled titles are "\text{Prove } <statement>", so only show the
+// statement separately when it says something the title doesn't.
+const mathOnly = (latex) => String(latex ?? '').replace(/\\text\{[^}]*\}/g, '').replace(/\s+/g, '');
+const statementAddsInfo = (title, statement) => {
+  if (!statement || !statement.trim()) return false;
+  const core = mathOnly(statement);
+  return !core || !mathOnly(title).endsWith(core);
+};
+
+// Drop zones are module-level components so they keep their identity (and
+// the blocks inside them) across renders.
+function DropZone({ id, className, children }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={`${className}${isOver ? ' drop-zone--over' : ''}`}>
+      {children}
+    </div>
+  );
+}
 
 const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode = 'practice' }) => {
   const isChallenge = mode === 'challenge';
@@ -43,7 +72,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
   const [challengeModeType, setChallengeModeType] = useState('lockout');
   const isLockoutMode = isChallenge && challengeModeType === 'lockout';
   const isTimedMode = isChallenge && challengeModeType === 'timed';
-  const isLimitedMovesMode = isChallenge && challengeModeType === 'limited'; // ✅ NEW
+  const isLimitedMovesMode = isChallenge && challengeModeType === 'limited';
 
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [proofBlocks, setProofBlocks] = useState([]);
@@ -61,7 +90,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
   // Once the solution is revealed, submitting it would bypass the challenge rules
   const [solutionShown, setSolutionShown] = useState(false);
 
-  // ✅ NEW: submit confirmation (Lockout mode only)
+  // submit confirmation (Lockout mode only)
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   // lockout-only state
@@ -76,7 +105,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerFinished, setTimerFinished] = useState(false);
 
-  // ✅ NEW: limited-moves state
+  // limited-moves state
   const [movesLeft, setMovesLeft] = useState(MAX_MOVES);
   const [movesFinished, setMovesFinished] = useState(false);
 
@@ -125,7 +154,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
 
       setRevealResults(!isChallenge);
 
-      // ✅ close submit confirm on new puzzle / mode reset
+      // close submit confirm on new puzzle / mode reset
       setShowSubmitConfirm(false);
 
       // reset lockout state
@@ -137,7 +166,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
       setTimerRunning(false);
       setTimerFinished(false);
 
-      // ✅ reset limited-moves state
+      // reset limited-moves state
       setMovesLeft(MAX_MOVES);
       setMovesFinished(false);
 
@@ -196,7 +225,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
     setRevealResults(false);
   }, [isLocked, lockedUntil]);
 
-  // ✅ close confirm when lockout begins (avoid stale confirm popup)
+  // close confirm when lockout begins (avoid stale confirm popup)
   useEffect(() => {
     if (isLocked) setShowSubmitConfirm(false);
   }, [isLocked]);
@@ -223,9 +252,12 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
     return () => clearInterval(id);
   }, [isTimedMode, timerRunning, timerFinished]);
 
+  // Mouse drags start after a small movement; touch drags need a short press
+  // so that swiping still scrolls the page on phones.
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor)
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const interactionDisabled =
@@ -244,123 +276,104 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
     return null;
   };
 
-  const getBlockById = (id) => {
-    return (
-      availableBlocks.find(b => b.id === id) ||
-      proofBlocks.find(b => b.id === id)
-    );
+  const getBlockById = (id) => (
+    availableBlocks.find(b => b.id === id) ||
+    proofBlocks.find(b => b.id === id)
+  );
+
+  // Shared by drag-and-drop and the tap controls.
+  const startInteraction = () => {
+    if (isTimedMode && !timerRunning && timeLeft > 0) setTimerRunning(true);
   };
 
-  const handleDragStart = (event) => {
-    if (interactionDisabled) return;
-
-    // auto-start timer on first interaction
-    if (isTimedMode && !timerRunning && timeLeft > 0) {
-      setTimerRunning(true);
-    }
-
-    const { active } = event;
-    setActiveId(active.id);
-  };
-
-  const handleDragEnd = (event) => {
-    if (interactionDisabled) {
-      setActiveId(null);
-      return;
-    }
-
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (!over) return;
-
+  const reportTried = () => {
     if (!triedReported.current && onPuzzleTried) {
       triedReported.current = true;
       onPuzzleTried(puzzle.id, false);
     }
+  };
 
-    const activeId = active.id;
-    const overId = over.id;
-
-    const activeContainer = findContainer(activeId);
-    const overContainer = findContainer(overId) || over.id;
-
-    if (!activeContainer || !overContainer) return;
-
-    // ✅ track whether a real move happened (for Limited Moves Mode)
-    let didMove = false;
-
-    if (activeContainer === overContainer) {
-      if (activeContainer === 'palette') {
-        if (activeId !== overId) {
-          didMove = true;
-          setAvailableBlocks(items => {
-            const oldIndex = items.findIndex(item => item.id === activeId);
-            const newIndex = items.findIndex(item => item.id === overId);
-            return arrayMove(items, oldIndex, newIndex);
-          });
-        }
-      } else if (activeContainer === 'workspace') {
-        if (activeId !== overId) {
-          didMove = true;
-          setProofBlocks(items => {
-            const oldIndex = items.findIndex(item => item.id === activeId);
-            const newIndex = items.findIndex(item => item.id === overId);
-            return arrayMove(items, oldIndex, newIndex);
-          });
-        }
+  const countMove = () => {
+    if (!isLimitedMovesMode) return;
+    setMovesLeft(prev => {
+      const next = prev - 1;
+      if (next <= 0) {
+        setMovesFinished(true);
+        setRevealResults(true); // auto-grade when moves are used up
+        return 0;
       }
-    } else {
-      let itemToMove;
-      if (activeContainer === 'palette') {
-        itemToMove = availableBlocks.find(item => item.id === activeId);
-        if (!itemToMove) return;
+      return next;
+    });
+  };
 
-        didMove = true;
-        setAvailableBlocks(prev => prev.filter(item => item.id !== activeId));
-        setProofBlocks(prev => {
-          const overIndex = prev.findIndex(item => item.id === overId);
-          if (overIndex !== -1) {
-            return [
-              ...prev.slice(0, overIndex),
-              itemToMove,
-              ...prev.slice(overIndex),
-            ];
-          }
-          return [...prev, itemToMove];
-        });
-      } else {
-        itemToMove = proofBlocks.find(item => item.id === activeId);
-        if (!itemToMove) return;
+  const insertAt = (list, item, beforeId) => {
+    const index = beforeId ? list.findIndex(entry => entry.id === beforeId) : -1;
+    return index === -1 ? [...list, item] : [...list.slice(0, index), item, ...list.slice(index)];
+  };
 
-        didMove = true;
-        setProofBlocks(prev => prev.filter(item => item.id !== activeId));
-        setAvailableBlocks(prev => {
-          const overIndex = prev.findIndex(item => item.id === overId);
-          if (overIndex !== -1) {
-            return [
-              ...prev.slice(0, overIndex),
-              itemToMove,
-              ...prev.slice(overIndex),
-            ];
-          }
-          return [...prev, itemToMove];
-        });
-      }
-    }
+  // Moves a block between/within the palette and the proof. Returns true if
+  // anything changed.
+  const moveBlock = (blockId, target, beforeId = null) => {
+    const source = findContainer(blockId);
+    if (!source) return false;
 
-    // ✅ Limited Moves deduction (only if a real move happened)
-    if (isLimitedMovesMode && didMove) {
-      setMovesLeft(prev => {
-        const next = prev - 1;
-        if (next <= 0) {
-          setMovesFinished(true);
-          setRevealResults(true); // auto-grade when moves are used up
-          return 0;
-        }
-        return next;
+    if (source === target) {
+      if (!beforeId || beforeId === blockId) return false;
+      const setList = target === 'palette' ? setAvailableBlocks : setProofBlocks;
+      setList(items => {
+        const oldIndex = items.findIndex(item => item.id === blockId);
+        const newIndex = items.findIndex(item => item.id === beforeId);
+        return newIndex === -1 ? items : arrayMove(items, oldIndex, newIndex);
       });
+      return true;
     }
+
+    const block = getBlockById(blockId);
+    if (source === 'palette') {
+      setAvailableBlocks(prev => prev.filter(item => item.id !== blockId));
+      setProofBlocks(prev => insertAt(prev, block, beforeId));
+    } else {
+      setProofBlocks(prev => prev.filter(item => item.id !== blockId));
+      setAvailableBlocks(prev => insertAt(prev, block, beforeId));
+    }
+    return true;
+  };
+
+  const tapMove = (apply) => {
+    if (interactionDisabled) return;
+    startInteraction();
+    reportTried();
+    if (apply()) countMove();
+  };
+
+  const addToProof = (blockId) => tapMove(() => moveBlock(blockId, 'workspace'));
+  const removeFromProof = (blockId) => tapMove(() => moveBlock(blockId, 'palette'));
+  const shiftInProof = (blockId, delta) => tapMove(() => {
+    const index = proofBlocks.findIndex(item => item.id === blockId);
+    const target = index + delta;
+    if (index === -1 || target < 0 || target >= proofBlocks.length) return false;
+    setProofBlocks(items => arrayMove(items, index, target));
+    return true;
+  });
+
+  const handleDragStart = (event) => {
+    if (interactionDisabled) return;
+    startInteraction();
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event) => {
+    setActiveId(null);
+    if (interactionDisabled) return;
+
+    const { active, over } = event;
+    if (!over) return;
+    reportTried();
+
+    const overContainer = findContainer(over.id) || over.id;
+    if (overContainer !== 'palette' && overContainer !== 'workspace') return;
+    const beforeId = over.id === overContainer ? null : over.id;
+    if (moveBlock(active.id, overContainer, beforeId)) countMove();
   };
 
   const handleSelectionChange = (blockId, varType, value) => {
@@ -377,7 +390,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
     // keep lockout restriction (don’t allow bypass)
     if (isLockoutMode && isLocked) return;
 
-    // ✅ close confirm on reset
+    // close confirm on reset
     setShowSubmitConfirm(false);
 
     if (puzzle && puzzle.blocks) {
@@ -402,14 +415,15 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
     }
   };
 
-  const handleShowSolution = () => {
-    if (isLockoutMode && isLocked) return;
-    // only allow solution after time is up in timed mode
-    if (isTimedMode && !timerFinished) return;
-    // only allow solution after moves end (or after submit) in limited mode
-    if (isLimitedMovesMode && !movesFinished && !revealResults) return;
+  const solutionLocked =
+    (isLockoutMode && isLocked) ||
+    (isTimedMode && !timerFinished) ||
+    (isLimitedMovesMode && !movesFinished && !revealResults);
 
-    // ✅ close confirm if they show solution
+  const handleShowSolution = () => {
+    if (solutionLocked) return;
+
+    // close confirm if they show solution
     setShowSubmitConfirm(false);
 
     if (puzzle && puzzle.blocks && puzzle.solutionOrder) {
@@ -438,7 +452,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
     if (isLockoutMode && isLocked) return;
     if (isLimitedMovesMode && movesFinished) return;
 
-    // ✅ Lockout mode requires confirmation first
+    // Lockout mode requires confirmation first
     if (isLockoutMode && !showSubmitConfirm) {
       setShowSubmitConfirm(true);
       return;
@@ -473,35 +487,15 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
     }
   };
 
-  const PaletteDroppable = ({ children }) => {
-    const { setNodeRef } = useDroppable({ id: 'palette' });
-    return (
-      <div ref={setNodeRef} className="puzzle-palette droppable-area">
-        {children}
-      </div>
-    );
-  };
-
-  const WorkspaceDroppable = ({ children }) => {
-    const { setNodeRef } = useDroppable({ id: 'workspace' });
-    return (
-      <div ref={setNodeRef} className="puzzle-workspace droppable-area">
-        {children}
-      </div>
-    );
-  };
-
   const activeBlock = activeId ? getBlockById(activeId) : null;
 
   if (!puzzle) {
     return <p>Loading puzzle...</p>;
   }
 
-  const formatTime = (secs) => {
-    const m = String(Math.floor(secs / 60)).padStart(2, '0');
-    const s = String(secs % 60).padStart(2, '0');
-    return `${m}:${s}`;
-  };
+  const showStatement = statementAddsInfo(puzzle.title, puzzle.statement);
+  const showSubmit = isLockoutMode || isLimitedMovesMode;
+  const isLockedOut = isLockoutMode && isLocked;
 
   return (
     <DndContext
@@ -509,222 +503,156 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveId(null)}
     >
-      <div className="puzzle-container">
-        <div className="puzzle-header">
-          <h2><KatexRenderer latex={puzzle.title} /></h2>
-          <p><strong><KatexRenderer latex={puzzle.statement} /></strong></p>
+      <section className="puzzle" aria-labelledby="puzzle-title">
+        <div className="card puzzle__header">
+          <h2 id="puzzle-title" className="puzzle__title"><KatexRenderer latex={puzzle.title} /></h2>
+          {showStatement && (
+            <p className="puzzle__statement"><KatexRenderer latex={puzzle.statement} /></p>
+          )}
 
-          {/* challenge sub-mode selector */}
           {isChallenge && (
-            <div style={{ marginBottom: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {CHALLENGE_SUBMODES.map(({ type, label }) => {
-                const active = challengeModeType === type;
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setChallengeModeType(type)}
-                    className="control-button"
-                    aria-pressed={active}
-                    style={{
-                      fontWeight: active ? 700 : 400,
-                      color: active ? 'var(--color-accent-fg)' : 'var(--color-fg-default)',
-                      background: active ? 'var(--color-accent-subtle)' : 'var(--color-canvas-subtle)',
-                      border: `1px solid ${active ? 'var(--color-accent-muted)' : 'var(--color-border-default)'}`,
-                    }}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            <div className="puzzle__challenge">
+              <div className="segmented" role="radiogroup" aria-label="Challenge type">
+                {CHALLENGE_SUBMODES.map((submode) => {
+                  const Icon = submode.icon;
+                  const active = challengeModeType === submode.type;
+                  return (
+                    <button
+                      key={submode.type}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      className="segmented__option"
+                      onClick={() => setChallengeModeType(submode.type)}
+                    >
+                      <Icon size={15} aria-hidden="true" />
+                      {submode.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className={`notice ${isLockedOut ? 'notice--danger' : 'notice--info'} puzzle__rules`} role="status">
+                {isLockoutMode && (isLocked ? (
+                  <span><strong>Lockout Mode:</strong> Locked. Try again in <strong>{secondsLeftLockout}s</strong>.</span>
+                ) : (
+                  <span>
+                    <strong>Lockout Mode:</strong> results appear only when you press Submit.
+                    Consecutive wrong submits: <strong>{wrongStreak}/{MAX_CONSEC_WRONG}</strong>.
+                  </span>
+                ))}
+                {isTimedMode && (
+                  <span>
+                    <strong>Timed Mode:</strong> Time left <strong className="puzzle__timer">{formatTime(timeLeft)}</strong>.{' '}
+                    {timerFinished
+                      ? 'Time is up. Your last attempt has been graded automatically.'
+                      : 'The timer starts with your first move.'}
+                  </span>
+                )}
+                {isLimitedMovesMode && (
+                  <span>
+                    <strong>Limited Moves Mode:</strong> You have <strong>{movesLeft}</strong> move(s) left.{' '}
+                    {movesFinished
+                      ? 'Moves are over. Your attempt has been graded automatically.'
+                      : 'Plan before moving steps.'}
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
-          {/* controls */}
-          <div className="puzzle-controls">
-            <button
-              className="control-button reset"
-              onClick={handleReset}
-              disabled={isLockoutMode && isLocked}
-              style={(isLockoutMode && isLocked) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            >
-              🔄 Reset
+          <div className="puzzle__actions">
+            <button type="button" className="btn btn--sm" onClick={handleReset} disabled={isLockedOut}>
+              <RotateCcw size={15} aria-hidden="true" /> Reset
             </button>
-
-            <button
-              className="control-button solution"
-              onClick={handleShowSolution}
-              disabled={
-                (isLockoutMode && isLocked) ||
-                (isTimedMode && !timerFinished) ||
-                (isLimitedMovesMode && !movesFinished && !revealResults)
-              }
-              style={
-                (isLockoutMode && isLocked) ||
-                (isTimedMode && !timerFinished) ||
-                (isLimitedMovesMode && !movesFinished && !revealResults)
-                  ? { opacity: 0.5, cursor: 'not-allowed' }
-                  : undefined
-              }
-            >
-              💡 Show Solution
+            <button type="button" className="btn btn--sm" onClick={handleShowSolution} disabled={solutionLocked}>
+              <Eye size={15} aria-hidden="true" /> Show solution
             </button>
-
-            {/* Submit in lockout OR limited-moves (practice is graded live; timed auto-grades) */}
-            {(isLockoutMode || isLimitedMovesMode) && (
+            {showSubmit && (
               <button
-                className="control-button"
+                type="button"
+                className="btn btn--sm btn--success puzzle__submit"
                 onClick={handleSubmit}
                 disabled={submitBlocked || (isLockoutMode && showSubmitConfirm)}
-
-                style={{
-                  marginLeft: 8,
-                  background: submitBlocked ? 'var(--color-canvas-subtle)' : 'var(--color-success-emphasis)',
-                  border: '1px solid var(--color-border-default)',
-                  color: submitBlocked ? 'var(--color-fg-muted)' : 'var(--color-fg-on-emphasis)',
-                  cursor: submitBlocked ? 'not-allowed' : 'pointer',
-                  fontWeight: 700,
-                }}
               >
-                ✅ Submit
+                <Send size={15} aria-hidden="true" /> Submit
               </button>
             )}
           </div>
 
-          {/* ✅ NEW: Lockout-only Submit confirmation prompt */}
           {isLockoutMode && showSubmitConfirm && !isLocked && (
-            <div
-              style={{
-                marginTop: 10,
-                padding: '12px 12px',
-                borderRadius: 10,
-                border: '1px solid var(--color-danger-fg)',
-                background: 'var(--color-danger-subtle)',
-                color: 'var(--color-fg-default)',
-                fontSize: 14,
-                lineHeight: 1.35,
-              }}
-            >
-              <strong>Are you sure you want to submit?</strong>
-              <div style={{ marginTop: 6, opacity: 0.9 }}>
-                Submitting an incorrect answer counts toward lockout.
-              </div>
-
-              <div style={{ marginTop: 10 }}>
-                <button
-                  className="control-button"
-                  style={{
-                    marginRight: 8,
-                    color: 'var(--color-fg-default)',
-                    background: 'var(--color-success-subtle)',
-                    border: '1px solid var(--color-success-fg)',
-                    fontWeight: 800,
-                  }}
-                  onClick={() => handleSubmit()}
-                >
-                  ✅ Yes, submit
-                </button>
-
-                <button
-                  className="control-button"
-                  style={{
-                    color: 'var(--color-fg-default)',
-                    background: 'var(--color-canvas-subtle)',
-                    border: '1px solid var(--color-border-default)',
-                  }}
-                  onClick={() => setShowSubmitConfirm(false)}
-                >
-                  ❌ Cancel
-                </button>
+            <div className="notice notice--warning puzzle__confirm" role="alertdialog" aria-label="Confirm submission">
+              <div>
+                <strong>Are you sure you want to submit?</strong>
+                <p className="puzzle__confirm-text">Submitting an incorrect answer counts toward lockout.</p>
+                <div className="cluster">
+                  <button type="button" className="btn btn--sm btn--success" onClick={() => handleSubmit()}>
+                    Yes, submit
+                  </button>
+                  <button type="button" className="btn btn--sm" onClick={() => setShowSubmitConfirm(false)}>
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* challenge banner */}
-          {isChallenge && (
-            <div
-              style={{
-                marginTop: 10,
-                padding: '10px 12px',
-                borderRadius: 10,
-                border: (isLockoutMode && isLocked)
-                  ? '1px solid var(--color-danger-fg)'
-                  : '1px solid var(--color-accent-muted)',
-                background: (isLockoutMode && isLocked)
-                  ? 'var(--color-danger-subtle)'
-                  : 'var(--color-accent-subtle)',
-                color: 'var(--color-fg-default)',
-                fontSize: 14,
-                lineHeight: 1.35,
-              }}
-            >
-              {isLockoutMode ? (
-                isLocked ? (
-                  <>
-                    <strong>Lockout Mode:</strong> Locked. Try again in{' '}
-                    <strong>{secondsLeftLockout}s</strong>.
-                  </>
-                ) : (
-                  <>
-                    <strong>Lockout Mode:</strong> No progress shown until you press{' '}
-                    <strong>Submit</strong>. Consecutive wrong submits:{' '}
-                    {wrongStreak}/{MAX_CONSEC_WRONG}.
-                  </>
-                )
-              ) : isTimedMode ? (
-                <>
-                  <strong>Timed Mode:</strong> Time left{' '}
-                  <strong>{formatTime(timeLeft)}</strong>.{' '}
-                  {timerFinished
-                    ? 'Time is up. Your last attempt has been graded automatically.'
-                    : 'Build your proof before the timer reaches zero.'}
-                </>
-              ) : (
-                <>
-                  <strong>Limited Moves Mode:</strong> You have{' '}
-                  <strong>{movesLeft}</strong> move(s) left.{' '}
-                  {movesFinished
-                    ? 'Moves are over. Your attempt has been graded automatically.'
-                    : 'Plan before dragging to avoid wasting moves.'}
-                </>
-              )}
-            </div>
-          )}
-
-          {/* results */}
           {isChallenge && revealResults && evaluation.canEvaluate && (
-            <div
-              style={{
-                marginTop: 10,
-                padding: '10px 12px',
-                borderRadius: 10,
-                border: '1px solid var(--color-border-default)',
-                background: 'var(--color-canvas-subtle)',
-                color: 'var(--color-fg-default)',
-                fontSize: 14,
-                lineHeight: 1.35,
-              }}
-            >
-              <strong>Result:</strong> {evaluation.percent}% correct (
-              {evaluation.correct}/{evaluation.total} steps in correct position)
-              {evaluation.missing > 0
-                ? ` • Missing ${evaluation.missing} step(s)`
-                : ''}
-              {evaluation.isFullyCorrect ? ' • ✅ Fully correct!' : ''}
+            <div className={`notice ${evaluation.isFullyCorrect ? 'notice--success' : 'notice--warning'} puzzle__result`} role="status">
+              <span>
+                <strong>Result:</strong> {evaluation.percent}% correct ({evaluation.correct}/{evaluation.total} steps in correct position)
+                {evaluation.missing > 0 ? ` • Missing ${evaluation.missing} step(s)` : ''}
+                {evaluation.isFullyCorrect ? ' • Fully correct!' : ''}
+              </span>
             </div>
           )}
         </div>
 
-        <div className="dnd-columns-container">
-          <div className="puzzle-palette-container">
-            <h3>Available Steps:</h3>
-            <SortableContext
-              items={availableBlocks.map(b => b.id)}
-              strategy={verticalListSortingStrategy}
-              id="palette"
-            >
-              <PaletteDroppable>
+        <div className="puzzle__board">
+          <section className="board-column board-column--proof" aria-labelledby="proof-heading">
+            <div className="board-column__header">
+              <h3 id="proof-heading" className="board-column__title">Your proof</h3>
+              <span className="badge">{proofBlocks.length}/{puzzle.blocks.length}</span>
+            </div>
+            <SortableContext items={proofBlocks.map(b => b.id)} strategy={verticalListSortingStrategy} id="workspace">
+              <DropZone id="workspace" className="drop-zone puzzle-workspace">
+                {proofBlocks.map((block, index) => (
+                  <ProofBlock
+                    key={block.id}
+                    id={block.id}
+                    latexContent={block.latex}
+                    pedagogicalRole={block.pedagogicalRole}
+                    isInWorkspace
+                    stepNumber={index + 1}
+                    blockSelections={blockSelections[block.id] || {}}
+                    onSelectionChange={handleSelectionChange}
+                    disabled={interactionDisabled}
+                    onMoveUp={() => shiftInProof(block.id, -1)}
+                    onMoveDown={() => shiftInProof(block.id, 1)}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < proofBlocks.length - 1}
+                    onRemove={() => removeFromProof(block.id)}
+                  />
+                ))}
+                {proofBlocks.length === 0 && (
+                  <p className="drop-zone__empty">
+                    <span className="drop-zone__hint--touch">Tap + on a step to add it here.</span>
+                    <span className="drop-zone__hint--pointer">Drag steps here, or use + to add them.</span>
+                  </p>
+                )}
+              </DropZone>
+            </SortableContext>
+          </section>
+
+          <section className="board-column board-column--steps" aria-labelledby="steps-heading">
+            <div className="board-column__header">
+              <h3 id="steps-heading" className="board-column__title">Available steps</h3>
+              <span className="badge">{availableBlocks.length}</span>
+            </div>
+            <SortableContext items={availableBlocks.map(b => b.id)} strategy={verticalListSortingStrategy} id="palette">
+              <DropZone id="palette" className="drop-zone puzzle-palette">
                 {availableBlocks.map(block => (
                   <ProofBlock
                     key={block.id}
@@ -735,45 +663,15 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
                     blockSelections={blockSelections[block.id] || {}}
                     onSelectionChange={handleSelectionChange}
                     disabled={interactionDisabled}
+                    onAdd={() => addToProof(block.id)}
                   />
                 ))}
                 {availableBlocks.length === 0 && (
-                  <div className="empty-message">All blocks are in use</div>
+                  <p className="drop-zone__empty">All blocks are in use</p>
                 )}
-              </PaletteDroppable>
+              </DropZone>
             </SortableContext>
-          </div>
-
-          <div className="puzzle-workspace-container">
-            <h3>Your Proof:</h3>
-            <SortableContext
-              items={proofBlocks.map(b => b.id)}
-              strategy={verticalListSortingStrategy}
-              id="workspace"
-            >
-              <WorkspaceDroppable>
-                {proofBlocks.map((block, index) => (
-                  <div key={block.id} className="proof-step">
-                    <span className="step-number">{index + 1}.</span>
-                    <ProofBlock
-                      id={block.id}
-                      latexContent={block.latex}
-                      pedagogicalRole={block.pedagogicalRole}
-                      isInWorkspace={true}
-                      blockSelections={blockSelections[block.id] || {}}
-                      onSelectionChange={handleSelectionChange}
-                      disabled={interactionDisabled}
-                    />
-                  </div>
-                ))}
-                {proofBlocks.length === 0 && (
-                  <div className="empty-message">
-                    Drag steps here to build your proof
-                  </div>
-                )}
-              </WorkspaceDroppable>
-            </SortableContext>
-          </div>
+          </section>
         </div>
 
         {!isChallenge && (
@@ -786,7 +684,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
             onPuzzleTried={onPuzzleTried}
           />
         )}
-      </div>
+      </section>
 
       <DragOverlay dropAnimation={null}>
         {activeId && activeBlock ? (
@@ -794,7 +692,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
             id={activeBlock.id}
             latexContent={activeBlock.latex}
             pedagogicalRole={activeBlock.pedagogicalRole}
-            isOverlay={true}
+            isOverlay
           />
         ) : null}
       </DragOverlay>
@@ -803,10 +701,3 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
 };
 
 export default PuzzleDisplay;
-
-//Challenge mode introduces structured constraints to encourage deeper reasoning and disciplined problem-solving. Lockout mode limits repeated incorrect submissions, prompting students to pause and reflect between attempts rather than relying on rapid trial-and-error. Timed mode imposes a time constraint that promotes fluency and retrieval of proof structure under pressure, similar to assessment conditions. Limited moves mode restricts the number of allowed actions, encouraging students to plan their proof carefully before manipulating steps, thereby shifting focus from exploratory dragging to deliberate, expert-like reasoning. Together, these modes assess complementary skills while discouraging brute-force strategies.
-
-  //Lockout mode discourages repeated incorrect submissions by limiting how often students can retry, while limited moves mode discourages trial-and-error construction by restricting how many actions students can take. Together, they target different forms of unproductive problem-solving behavior.
-
-    //Confirm submission ("Are you sure you want to submit?") in Lockout Mode to encourage reflection and avoid accidental lockouts
-
