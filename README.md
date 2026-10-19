@@ -226,8 +226,9 @@ Run these from the repository root:
 | `npm run dev:lean` | Start the Lean worker |
 | `npm run dev:fullstack` | Start all three application processes |
 | `npm test` | Run frontend and backend tests |
-| `npm run test:frontend` | Run frontend tests |
-| `npm run test:server` | Run backend tests |
+| `npm run test:frontend` | Run frontend tests (Vitest + React Testing Library) |
+| `npm run test:watch` | Run frontend tests in watch mode |
+| `npm run test:server` | Run backend tests (`node:test`) |
 | `npm run lint` | Check JavaScript/React code |
 | `npm run build` | Generate the production frontend in `dist/` |
 | `npm run preview` | Preview the built frontend; backend services remain separate |

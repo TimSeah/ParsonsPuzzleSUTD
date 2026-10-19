@@ -828,18 +828,22 @@ npm run dev:fullstack # Both servers concurrently
 
 ### Testing Strategy
 
-1. **Manual Testing**:
+1. **Automated Testing** (run in CI on every pull request; see `guides/DEVELOPMENT.md`):
+   - Frontend: Vitest + React Testing Library (`npm run test:frontend`) covering LaTeX rendering of every bundled puzzle, proof blocks, practice/challenge modes, puzzle generation flow and the API client
+   - Backend: `node:test` (`npm run test:server`) covering the generation service, puzzle contract, OpenAI client and Lean client
+
+2. **Manual Testing**:
    - Educator puzzle creation workflow
    - Student puzzle solving experience
    - Data source switching functionality
    - Mobile responsiveness
 
-2. **Integration Testing**:
+3. **Integration Testing**:
    - Frontend-backend API integration
    - Database migration and data integrity
    - Error handling and fallback mechanisms
 
-3. **Sample Data**: 
+4. **Sample Data**: 
    - `SAMPLE.md` provides comprehensive test scenarios
    - Multiple categories and difficulty levels
    - LaTeX rendering validation

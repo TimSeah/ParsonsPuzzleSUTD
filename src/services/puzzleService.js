@@ -33,6 +33,7 @@ class PuzzleService {
       throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
     }
 
+    if (response.status === 204) return null;
     return response.json();
   }
 

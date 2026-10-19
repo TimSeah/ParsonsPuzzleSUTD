@@ -86,6 +86,10 @@ npm run build
 
 `npm test` runs the frontend and backend test suites. It does not replace checking the running services.
 
+- Frontend tests use [Vitest](https://vitest.dev/) with React Testing Library in a jsdom environment. They live next to the code they test as `*.test.js` / `*.test.jsx`; shared setup is in `src/test/`. Use `npm run test:watch` while developing.
+- Backend tests use Node's built-in `node:test` runner and live in `server/test/`.
+- GitHub Actions (`.github/workflows/ci.yml`) runs lint, build and both test suites on Node 22 and 24 for every pull request and for pushes to `main` and `refactor`. The frontend tests need Node 22.22+ or 24.15+.
+
 ## How puzzle loading works
 
 `src/App.jsx` handles routes. `src/hooks/useAppState.js` chooses API puzzles or the bundled `PuzzleLoader` data based on the selected source, API health, and fetch errors. Educator publishing uses `src/services/puzzleManagerService.js` to save through the backend, with a browser-local fallback for certain network failures.

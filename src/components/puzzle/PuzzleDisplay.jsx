@@ -499,7 +499,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
 
   return (
     <DndContext
-      sensors={interactionDisabled ? [] : sensors}
+      sensors={sensors}
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
