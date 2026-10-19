@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Puzzle Generation</title>
+</head>
+<body>
+    <h1>Test Puzzle Generation</h1>
+    <button id="testBtn">Test Generate</button>
+    <div id="output"></div>
+    
+    <script type="module">
+        import puzzleGenerator from './src/services/puzzleGenerator.js';
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Testing...';
+            
+            try {
+                console.log('Starting test generation...');
+                const result = await puzzleGenerator.generatePuzzle({
+                    difficulty: 'easy',
+                    proofTypes: ['induction']
+                });
+                output.innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                console.log('Success:', result);
+            } catch (error) {
+                output.innerHTML = '<pre style="color: red;">Error: ' + error.message + '</pre>';
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

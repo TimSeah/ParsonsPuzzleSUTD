@@ -1,0 +1,83 @@
+/* Generate Puzzle Button Styling */
+.generateButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem; /* ~10px 20px */
+  background-color: var(--color-btn-primary-bg);
+  color: var(--color-btn-primary-text);
+  border: 0.0625rem solid var(--color-btn-primary-border); /* ~1px */
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: var(--text-md, 0.875rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-smooth, all 0.2s cubic-bezier(0.3, 0, 0.5, 1));
+  white-space: nowrap;
+  min-height: 2.5rem; /* ~40px - consistent with other buttons */
+}
+
+.generateButton:hover:not(:disabled) {
+  background-color: var(--color-btn-primary-hover-bg);
+  border-color: var(--color-btn-primary-hover-border);
+  transform: translateY(-0.0625rem); /* ~1px */
+}
+
+.generateButton:active:not(:disabled) {
+  background-color: var(--color-btn-primary-active-bg);
+  transform: translateY(0);
+}
+
+.generateButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading state styling */
+.generateButton.generating {
+  background-color: var(--color-btn-primary-active-bg);
+  cursor: wait;
+}
+
+.generateButton.generating:hover {
+  background-color: var(--color-btn-primary-active-bg);
+  transform: none;
+}
+
+/* Loading spinner */
+.loadingSpinner {
+  display: inline-block;
+  width: 1rem; /* ~16px */
+  height: 1rem; /* ~16px */
+  border: 0.125rem solid transparent; /* ~2px */
+  border-top: 0.125rem solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Button text */
+.buttonText {
+  display: inline-block;
+  line-height: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .generateButton {
+    padding: 0.5rem 1rem; /* ~8px 16px */
+    font-size: var(--text-sm, 0.75rem);
+    min-height: 2.25rem; /* ~36px */
+  }
+  
+  .loadingSpinner {
+    width: 0.875rem; /* ~14px */
+    height: 0.875rem; /* ~14px */
+  }
+}

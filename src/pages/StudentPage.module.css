@@ -1,0 +1,57 @@
+/* Container for left panel + main content */
+.student-page-container {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-canvas-default, #0d1117);
+}
+
+.student-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.page-header {
+  text-align: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border-default);
+  margin-bottom: 1rem;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-accent-fg);
+  font-weight: 700;
+}
+
+.page-header p {
+  font-size: 1.1rem;
+  color: var(--color-fg-muted);
+  margin: 0;
+}
+
+.main-content {
+  flex: 1;
+  max-width: 87.5rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .student-page-container {
+    flex-direction: column;
+  }
+  
+  .student-page {
+    padding: 0.5rem;
+  }
+  
+  .page-header h1 {
+    font-size: 2rem;
+  }
+}

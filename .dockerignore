@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+server/node_modules
+
+# Build outputs
+dist
+build
+
+# Environment files (will be passed at runtime)
+.env
+.env.local
+.env.*.local
+server/.env
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (not needed in container)
+*.md
+guides/
+
+# Test files
+coverage
+.nyc_output

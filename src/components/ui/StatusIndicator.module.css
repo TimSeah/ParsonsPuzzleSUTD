@@ -1,0 +1,166 @@
+.statusIndicator {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 900;
+  cursor: help;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.statusIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: var(--color-canvas-subtle);
+  border: 2px solid var(--color-border-default);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.statusIndicator:hover .statusIcon {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Status type colors */
+.statusIndicator.online .statusIcon {
+  border-color: var(--color-success-fg);
+  background: var(--color-success-subtle);
+}
+
+.statusIndicator.offline .statusIcon {
+  border-color: var(--color-attention-fg);
+  background: var(--color-attention-subtle);
+}
+
+.statusIndicator.loading .statusIcon {
+  border-color: var(--color-accent-fg);
+  background: var(--color-accent-subtle);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Tooltip */
+.statusTooltip {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  min-width: 280px;
+  background: var(--color-canvas-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+}
+
+.statusIndicator:hover .statusTooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.tooltipContent strong {
+  display: block;
+  color: var(--color-fg-default);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.tooltipContent p {
+  color: var(--color-fg-default);
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.tooltipContent small {
+  color: var(--color-fg-muted);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .statusIndicator {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+  
+  .statusIcon {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+  
+  .statusTooltip {
+    min-width: 240px;
+    right: -10px;
+  }
+}
+
+/* Ensure tooltip appears above other elements */
+.statusTooltip::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 15px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid var(--color-border-default);
+}
+
+.statusTooltip::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  right: 15px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid var(--color-canvas-default);
+}
+
+/* Accessibility: reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .statusIndicator {
+    transition: none;
+  }
+  
+  .statusIcon {
+    transition: none;
+  }
+  
+  .statusTooltip {
+    transition: none;
+  }
+  
+  .statusIndicator.loading .statusIcon {
+    animation: none;
+  }
+  
+  .statusIndicator:hover .statusIcon {
+    transform: none;
+  }
+}
