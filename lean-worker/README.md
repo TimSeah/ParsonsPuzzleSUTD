@@ -10,6 +10,8 @@ npm test   # verification policy unit tests (no Lean installation needed)
 
 The worker listens only on `127.0.0.1:3001`, limits request/source size, invokes Lake without a shell, enforces a timeout, and deletes each temporary proof file.
 
+Each compile loads Mathlib and can use a lot of memory, so the worker runs at most `LEAN_MAX_CONCURRENT` compiles at once (default `1`) with up to `LEAN_MAX_QUEUE` more waiting (default `2`). Further requests get `503` with `Retry-After`, and queued requests whose client has disconnected are skipped. `GET /health` reports the current `compiles` counts. Time spent queued counts against the backend's `LEAN_TIMEOUT_MS`.
+
 ## API
 
 `POST /verify` with `{ "source": "<Lean file>", "theoremName": "<name>", "timeoutMs": 30000 }`.

@@ -6,10 +6,15 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { buildCheckedSource, evaluate, validateSource } from './verifier.js';
+import { createLimiter } from './limiter.js';
 
 const PORT = Number(process.env.PORT || 3001);
 const MAX_SOURCE_BYTES = Number(process.env.MAX_SOURCE_BYTES || 20000);
 const DEFAULT_TIMEOUT_MS = Number(process.env.LEAN_TIMEOUT_MS || 30000);
+const compileLimiter = createLimiter({
+  maxConcurrent: Number(process.env.LEAN_MAX_CONCURRENT) || 1,
+  maxQueue: Number(process.env.LEAN_MAX_QUEUE ?? 2),
+});
 const WORKER_DIR = fileURLToPath(new URL('.', import.meta.url));
 const leanVersion = readFileSync(join(WORKER_DIR, 'lean-toolchain'), 'utf8').match(/v([0-9.]+)/)?.[1] || 'unknown';
 const mathlibVersion = JSON.parse(readFileSync(join(WORKER_DIR, 'lake-manifest.json'), 'utf8'))
@@ -90,15 +95,28 @@ http.createServer(async (req, res) => {
       leanVersion,
       mathlibVersion,
       error: compiler.error,
+      compiles: compileLimiter.stats(),
     });
   }
   const isVerificationRoute = req.url === '/verify' || req.url === '/syntax-check';
   if (req.method !== 'POST' || !isVerificationRoute) return json(res, 404, { error: 'NOT_FOUND' });
+  let clientGone = false;
+  res.on('close', () => { if (!res.writableEnded) clientGone = true; });
   try {
     const body = await readJson(req);
     const error = validateSource(body.source, body.theoremName, { maxBytes: MAX_SOURCE_BYTES });
     if (error) return json(res, 422, { status: 'rejected', valid: false, diagnostics: [{ severity: 'error', message: error }] });
-    const result = await compile(body.source, body.theoremName, Number(body.timeoutMs || DEFAULT_TIMEOUT_MS));
+    let result;
+    try {
+      result = await compileLimiter.run(() => (clientGone
+        ? { status: 'cancelled', valid: false, diagnostics: [] }
+        : compile(body.source, body.theoremName, Number(body.timeoutMs || DEFAULT_TIMEOUT_MS))));
+    } catch (limitError) {
+      if (limitError.code !== 'BUSY') throw limitError;
+      res.setHeader('Retry-After', '30');
+      return json(res, 503, { status: 'infrastructure_error', valid: false, diagnostics: [{ severity: 'error', message: 'Lean worker is busy; please retry shortly' }] });
+    }
+    if (clientGone) return undefined;
     return json(res, result.status === 'infrastructure_error' ? 503 : 200, result);
   } catch (error) {
     return json(res, error.message === 'REQUEST_TOO_LARGE' ? 413 : 400, { status: 'rejected', valid: false, diagnostics: [{ severity: 'error', message: 'Invalid verification request' }] });
