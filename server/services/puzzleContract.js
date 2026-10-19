@@ -79,5 +79,59 @@ export function validateCandidate(candidate, requested) {
     throw error;
   }
   if (!candidate.lean?.source || !candidate.lean?.theoremName || !Array.isArray(candidate.lean?.imports)) throw new Error('A complete Lean proof is required');
+  if (!declaresTheorem(candidate.lean.source, candidate.lean.theoremName)) {
+    throw Object.assign(new Error(`lean.source must declare a top-level theorem named ${candidate.lean.theoremName}`), { code: 'THEOREM_NOT_DECLARED' });
+  }
+  checkFragmentsInSource(candidate);
   return candidate;
+}
+
+const normalizeLean = text => String(text ?? '').replace(/\s+/g, ' ').trim();
+
+// Removes Lean comments (-- line and nested /- -/ block comments).
+export function stripLeanComments(source) {
+  let out = '';
+  let depth = 0;
+  for (let i = 0; i < source.length; i++) {
+    const two = source.slice(i, i + 2);
+    if (depth > 0) {
+      if (two === '/-') { depth += 1; i += 1; }
+      else if (two === '-/') { depth -= 1; i += 1; }
+      continue;
+    }
+    if (two === '/-') { depth = 1; i += 1; continue; }
+    if (two === '--') { while (i < source.length && source[i] !== '\n') i += 1; out += '\n'; continue; }
+    out += source[i];
+  }
+  return out;
+}
+
+export function declaresTheorem(source, theoremName) {
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(theoremName)) return false;
+  const pattern = new RegExp(`^\\s*(?:@\\[[^\\]\\n]*\\]\\s*)*(?:(?:private|protected|noncomputable)\\s+)*(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`, 'm');
+  return pattern.test(stripLeanComments(source));
+}
+
+// Ties the student-facing blocks to the verified proof: each block's Lean
+// fragment must occur verbatim (modulo whitespace, outside comments) in the
+// Lean source, in solution order, so the steps students arrange are the steps
+// Lean checked.
+export function checkFragmentsInSource(candidate) {
+  const source = normalizeLean(stripLeanComments(candidate.lean.source));
+  const blocksById = new Map(candidate.blocks.map(block => [block.id, block]));
+  let cursor = 0;
+  for (const id of candidate.solutionOrder) {
+    const fragment = normalizeLean(blocksById.get(id)?.leanFragment);
+    if (fragment.length < 2) {
+      throw Object.assign(new Error(`Block ${id} needs a non-trivial leanFragment`), { code: 'LEAN_FRAGMENT_MISMATCH' });
+    }
+    const index = source.indexOf(fragment, cursor);
+    if (index === -1) {
+      throw Object.assign(
+        new Error(`The leanFragment of block ${id} must be copied verbatim from lean.source, after the fragments of the blocks before it in solutionOrder`),
+        { code: 'LEAN_FRAGMENT_MISMATCH' },
+      );
+    }
+    cursor = index + fragment.length;
+  }
 }

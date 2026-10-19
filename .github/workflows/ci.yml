@@ -48,3 +48,6 @@ jobs:
 
       - name: Server tests
         run: npm run test:server
+
+      - name: Lean worker policy tests
+        run: npm run test:lean

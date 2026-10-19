@@ -19,16 +19,22 @@ The current student topic controls offer Induction, Set Theory, Recursion, Logic
 
 ### Astra generation and Lean verification
 
-1. Look for an active, Lean-verified database puzzle matching the selected difficulty/topics that this user has not seen or attempted.
+1. Look for an active database puzzle that was Lean-verified under the current verification policy, matches the selected difficulty/topics, and that this user has not seen or attempted.
 2. If none is available, request structured puzzle JSON from OpenAI, including student-facing proof blocks and a complete Lean theorem.
-3. Check the puzzle contract: required fields, block IDs, solution order, difficulty, category, and proof-step content.
-4. Send the Lean source to the local worker for compilation against Mathlib.
+3. Check the puzzle contract: required fields, block IDs, solution order, difficulty, category, and proof-step content. The Lean source must declare `lean.theoremName` as a top-level `theorem`, and each block's `leanFragment` must appear verbatim (ignoring whitespace) in the Lean source, in solution order, so the steps students arrange are the steps Lean checks.
+4. Send the Lean source to the local worker, which compiles it against Mathlib and checks the result (see below).
 5. Retry formatting or verification failures with repair feedback, within the configured attempt limit.
-6. Save successful puzzles, verification metadata, model/response details, and repair counters; then return the puzzle to the student.
+6. Save successful puzzles, verification metadata (including the axioms used and the policy version), model/response details, and repair counters; then return the puzzle to the student.
+
+A proof only counts as verified when the worker reports that it:
+
+- compiles with no errors and no warnings (lint-style warnings such as unused variables or deprecated names are allowed);
+- declares the named theorem, and `#print axioms` (appended by the worker) shows it uses only `propext`, `Classical.choice` and `Quot.sound`, which rules out `sorry`, `native_decide` and custom axioms;
+- passes the source policy: Mathlib-only imports, an allowlist of ordinary attributes, and no `sorry`/`admit`, `axiom`, `unsafe`, `#eval`/`#print`/`#exit` and similar commands, macros/notation/elaborators or other metaprogramming, string literals, IO, or `debug.*` options. See the [worker README](lean-worker/README.md) for the full policy and its known limitation.
 
 Generated puzzles target 4–7 blocks for Easy, 7–10 for Medium, and 9–12 for Hard. Content fingerprints help deduplicate generated records. OpenAI requests support background polling and timeouts.
 
-**Verification scope:** Lean checks the generated Lean theorem before publication through the generation flow. Student arrangements are checked against `solutionOrder` in the browser; each student arrangement is not separately compiled in Lean. The system does not formally establish that every natural-language block exactly expresses its Lean fragment. Educator-created and bundled puzzles are not automatically Lean-verified.
+**Verification scope:** Lean checks the generated Lean theorem before publication through the generation flow. Student arrangements are checked against `solutionOrder` in the browser; each student arrangement is not separately compiled in Lean. The system checks that each block's Lean fragment is part of the verified proof, but it does not formally establish that the natural-language text of a block (or the puzzle statement) exactly expresses its Lean counterpart; that still needs human review. Educator-created and bundled puzzles are not automatically Lean-verified.
 
 ### Educator tools
 
