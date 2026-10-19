@@ -1,118 +1,171 @@
-.navigationHeader {
-  background: var(--color-canvas-subtle);
-  border-bottom: 1px solid var(--color-border-default);
-  padding: 0.75rem 0;
+.skipLink {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 200;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-emphasis);
+  color: var(--color-fg-on-emphasis);
+}
+
+.skipLink:focus {
+  top: 0.5rem;
+  color: var(--color-fg-on-emphasis);
+}
+
+.header {
   position: sticky;
   top: 0;
   z-index: 50;
-  backdrop-filter: blur(8px);
+  height: var(--header-height);
+  background: var(--color-canvas-subtle);
+  border-bottom: 1px solid var(--color-border-default);
 }
 
-.navContainer {
-  max-width: 87.5rem;
+.inner {
+  height: 100%;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 var(--page-padding);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
 
-.logo {
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--color-fg-default);
+  text-decoration: none;
+  min-width: 0;
+}
+
+.brand:hover {
+  color: var(--color-fg-default);
+  text-decoration: none;
+}
+
+.brandMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-emphasis);
+  color: var(--color-fg-on-emphasis);
+  flex-shrink: 0;
+}
+
+.brandText {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  line-height: 1.15;
+  min-width: 0;
 }
 
-.logo h2 {
-  margin: 0;
-  color: var(--color-accent-fg);
-  font-size: 1.5rem;
+.brandName {
   font-weight: 700;
-  line-height: 1.2;
+  font-size: 1rem;
+  white-space: nowrap;
 }
 
-.subtitle {
+.brandCourse {
   color: var(--color-fg-muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  margin-left: 0.25rem;
+  white-space: nowrap;
 }
 
-.navTabs {
+.desktopNav {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  margin-left: 1rem;
 }
 
-.navTab {
-  display: flex;
+.navLink {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.5rem;
-  text-decoration: none;
+  gap: 0.375rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-md);
   color: var(--color-fg-muted);
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+  font-weight: 600;
+  text-decoration: none;
 }
 
-.navTab:hover {
+.navLink:hover {
   color: var(--color-fg-default);
-  background: var(--color-canvas-default);
-  border-color: var(--color-border-default);
+  background: var(--color-neutral-muted);
   text-decoration: none;
 }
 
-.navTab.active {
-  color: var(--color-accent-fg);
+.navLinkActive,
+.navLinkActive:hover {
+  color: var(--color-fg-default);
   background: var(--color-accent-subtle);
-  border-color: var(--color-accent-fg);
+  box-shadow: inset 0 -2px 0 var(--color-accent-fg);
 }
 
-.navTab.active:hover {
-  color: var(--color-accent-fg);
-  background: var(--color-accent-muted);
-}
-
-.tabIcon {
-  font-size: 1.1rem;
+.actions {
+  margin-left: auto;
   display: flex;
   align-items: center;
+  gap: 0.25rem;
 }
 
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .navContainer {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 0 0.5rem;
-  }
-  
-  .logo h2 {
-    font-size: 1.25rem;
-    text-align: center;
-  }
-  
-  .navTabs {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .navTab {
-    flex: 1;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-  }
+.feedbackLink {
+  margin-right: 0.25rem;
 }
 
-@media (max-width: 480px) {
-  .navTab span:not(.tabIcon) {
+/* Bottom tab bar: mobile only */
+.tabBar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .desktopNav,
+  .feedbackLink,
+  .brandCourse {
     display: none;
   }
-  
-  .tabIcon {
-    font-size: 1.3rem;
+
+  .tabBar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--color-canvas-subtle);
+    border-top: 1px solid var(--color-border-default);
+  }
+
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: var(--color-fg-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tab:hover {
+    color: var(--color-fg-default);
+    text-decoration: none;
+  }
+
+  .tabActive,
+  .tabActive:hover {
+    color: var(--color-accent-fg);
   }
 }

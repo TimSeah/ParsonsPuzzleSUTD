@@ -1,8 +1,7 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { NavigationHeader } from './components/navigation';
 import { StudentPage, EducatorPage } from './pages';
-import FeedbackPage from "./pages/FeedbackPage";
+import FeedbackPage from './pages/FeedbackPage';
 import './App.css';
 
 function App() {
@@ -10,8 +9,8 @@ function App() {
     <Router>
       <div className="App">
         <NavigationHeader />
-        
-        <div className="container">
+
+        <main id="main-content" className="app-main page" tabIndex={-1}>
           <Routes>
             <Route path="/" element={<Navigate to="/student" replace />} />
             <Route path="/student" element={<StudentPage />} />
@@ -19,10 +18,10 @@ function App() {
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="*" element={<Navigate to="/student" replace />} />
           </Routes>
-        </div>
+        </main>
 
         <footer className="app-footer">
-          <p>SUTD 50.004 Algorithms - Interactive Learning Tool</p>
+          SUTD 50.004 Algorithms · Parsons Puzzles for mathematical proofs
         </footer>
       </div>
     </Router>

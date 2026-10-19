@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PuzzleDisplay, LeftControlPanel, LoadingState } from '../components';
-import { FloatingHelpButton, StatusIndicator } from '../components/ui';
+import { StatusIndicator } from '../components/ui';
 import { useAppState } from '../hooks/useAppState';
 import puzzleService from '../services/puzzleService.js';
 import { PuzzleLoader } from '../services/puzzleLoader.js';
@@ -196,6 +196,7 @@ function StudentPage() {
         <header className={styles['page-header']}>
           <h1>Parsons Puzzles for Math Proofs</h1>
           <p>Practice formal mathematical proofs through interactive drag-and-drop puzzles</p>
+          <StatusIndicator isUsingApi={isUsingApi} isLoading={isLoading || healthLoading} />
 
           <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
             <button
@@ -215,7 +216,7 @@ function StudentPage() {
           </div>
         </header>
 
-        <main className={styles['main-content']}>
+        <div className={styles['main-content']}>
           <PuzzleDisplay 
             key={`${displayPuzzle.id}:${submode}`} 
             puzzle={displayPuzzle} 
@@ -224,13 +225,7 @@ function StudentPage() {
             onPuzzleTried={handlePuzzleTried}
             mode={submode}
           />
-        </main>
-
-        <StatusIndicator 
-          isUsingApi={isUsingApi} 
-          isLoading={isLoading || healthLoading}
-        />
-        <FloatingHelpButton />
+        </div>
       </div>
     </div>
   );

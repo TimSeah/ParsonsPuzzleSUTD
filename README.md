@@ -11,7 +11,7 @@ This README describes the current source checkout. The configured GitHub reposit
 - Drag proof blocks between the available-block panel and proof workspace, reorder them, and reset the puzzle.
 - Receive automatic order-based feedback, scores, hints, and completion feedback against the stored solution order.
 - Render mathematical notation with KaTeX and use interactive placeholders in puzzles that include them.
-- Open the built-in dictionary and help panel for mathematical terminology.
+- Open the built-in dictionary of mathematical terminology from the book icon in the header.
 - Select Easy, Medium, or Hard difficulty and multiple proof-topic filters.
 - Choose **Local Database** for bundled JSON puzzles or **Astra (MongoDB + OpenAI)** for verified-puzzle retrieval and generation.
 - Switch between **Practice** mode (live feedback while arranging) and **Challenge** mode with three variants: **Lockout** (results only on Submit; five wrong submissions in a row lock the puzzle for 10 seconds), **Timed** (5 minutes, graded automatically) and **Limited moves** (20 moves). Showing the solution disables Submit for that puzzle. Challenge state is kept in the browser, so it is a practice aid rather than an enforced assessment.
