@@ -5,7 +5,7 @@ This folder contains all React components organized by their purpose and functio
 ## Folder Structure
 
 ### `/ui`
-Basic UI components that can be reused across the application (shared classes such as `.btn`, `.card`, `.segmented`, `.chip` and `.notice` live in `src/styles/ui.css`):
+Basic UI components that can be reused across the application (shared classes such as `.btn`, `.card`, `.segmented`, `.chip` and `.notice` live in `frontend/src/styles/ui.css`):
 - `Dialog` - Accessible modal dialog; `variant="sheet"` docks to the bottom on mobile
 - `LoadingState` - Loading state with spinner (`size="small"` for an inline spinner)
 - `StatusIndicator` - Online / offline / connecting status pill
@@ -61,4 +61,4 @@ Legacy CSS files (`.css`) are also maintained for components that haven't been m
 
 ## Theming
 
-Light and dark themes are driven by the `--color-*` tokens defined in `src/index.css` (`:root[data-theme="light"]` / `:root[data-theme="dark"]`); `useTheme` sets `data-theme` on `<html>`. Use these tokens, for example `var(--color-fg-default)`, `var(--color-canvas-subtle)`, `var(--color-accent-subtle)` or `var(--color-danger-fg)`, instead of hard-coded colours so components stay readable in both themes.
+Light and dark themes are driven by the `--color-*` tokens defined in `frontend/src/index.css` (`:root[data-theme="light"]` / `:root[data-theme="dark"]`); `useTheme` sets `data-theme` on `<html>`. Use these tokens, for example `var(--color-fg-default)`, `var(--color-canvas-subtle)`, `var(--color-accent-subtle)` or `var(--color-danger-fg)`, instead of hard-coded colours so components stay readable in both themes.

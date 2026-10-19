@@ -27,7 +27,7 @@ The response includes `status` (`verified`, `rejected`, `timeout` or `infrastruc
 | `allowedAxioms` | The theorem only uses `propext`, `Classical.choice` and `Quot.sound` |
 | `allowedImports` | Every imported module is `Mathlib` or `Mathlib.*` |
 
-A proof is `verified` only if every check is true. The backend (`server/services/leanClient.js`) also requires each check to be reported explicitly, so an older worker that doesn't run them is treated as a rejection.
+A proof is `verified` only if every check is true. The backend (`backend/services/leanClient.js`) also requires each check to be reported explicitly, so an older worker that doesn't run them is treated as a rejection.
 
 ## Source policy
 

@@ -1,4 +1,4 @@
-> Archived on 18 September 2026. Historical migration notes; paths and workflows below may be obsolete. For current setup and the JSON reference, see [Development](../DEVELOPMENT.md).
+> Archived on 18 September 2026. Historical migration notes; paths and workflows below may be obsolete. For current setup and the JSON reference, see [Development](../development.md).
 
 # Migration Guide: JavaScript to JSON Puzzle System
 

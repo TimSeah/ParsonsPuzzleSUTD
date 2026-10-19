@@ -14,7 +14,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parson
 
 // Function to load JSON puzzle data
 function loadPuzzleData() {
-  const puzzleDataPath = path.join(__dirname, '../../src/puzzles/data');
+  const puzzleDataPath = path.join(__dirname, '../../frontend/src/data/puzzles');
   
   const bigOData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'big-o-proofs.json'), 'utf8'));
   const inductionData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'induction-proofs.json'), 'utf8'));

@@ -4,10 +4,10 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist', 'server/node_modules'] },
+  { ignores: ['**/dist', '**/node_modules', 'lean-worker/.lake'] },
   // Frontend configuration
   {
-    files: ['src/**/*.{js,jsx}'],
+    files: ['frontend/src/**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser, 
@@ -32,14 +32,14 @@ export default [
     },
   },
   {
-    files: ['src/test/**/*.js'],
+    files: ['frontend/src/test/**/*.js'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
     },
   },
   // Backend and Lean worker configuration
   {
-    files: ['server/**/*.js', 'lean-worker/**/*.js'],
+    files: ['backend/**/*.js', 'lean-worker/**/*.js', '*.config.js', 'frontend/*.config.js'],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.node,

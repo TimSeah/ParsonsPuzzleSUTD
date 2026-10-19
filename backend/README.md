@@ -22,7 +22,7 @@ This is the backend API service for the Parsons Puzzle SUTD application, built w
 ### 1. Install Dependencies
 
 ```bash
-cd server
+cd backend
 npm install
 ```
 
@@ -142,7 +142,7 @@ The server will start on `http://localhost:5001`
 ### Project Structure
 
 ```
-server/
+backend/
 ├── models/           # MongoDB schemas
 ├── routes/           # API route handlers
 ├── scripts/          # Utility scripts (migration, etc.)

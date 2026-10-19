@@ -2,8 +2,7 @@ services:
   # Frontend service - React app served by Nginx
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ./frontend
       args:
         VITE_API_BASE_URL: http://localhost:5000/api
     ports:
@@ -17,8 +16,7 @@ services:
   # Backend service - Node.js/Express API
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ./backend
     ports:
       - "5000:5000"
     environment:
