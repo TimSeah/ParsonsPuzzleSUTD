@@ -17,7 +17,10 @@ const LeftControlPanel = ({
   // Generate
   onGeneratePuzzle,
   isGenerating,
-  generationError
+  generationError,
+
+  // API connection problem (puzzles fall back to the bundled set)
+  connectionError
 }) => {
   const proofTypes = [
     { value: 'induction', label: 'Induction' },
@@ -59,6 +62,12 @@ const LeftControlPanel = ({
       {generationError && (
         <div className={styles.error}>
           {generationError}
+        </div>
+      )}
+
+      {connectionError && (
+        <div className={styles.notice} role="status">
+          Can&apos;t load puzzles from the server ({connectionError}). Showing the bundled puzzles while it reconnects.
         </div>
       )}
 

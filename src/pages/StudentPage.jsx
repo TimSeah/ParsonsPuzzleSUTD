@@ -34,6 +34,7 @@ function StudentPage() {
     isUsingApi,
     isLoading,
     healthLoading,
+    puzzlesError,
     toggleDataSource
   } = useAppState();
 
@@ -87,12 +88,6 @@ function StudentPage() {
     
     try {
       if (dataSource === 'local') {
-        // Local Database - filter from JSON files
-        console.log('✅ Filtering local puzzles:', {
-          difficulty: selectedDifficulty,
-          proofTypes: selectedProofTypes
-        });
-        
         let filteredPuzzles = PuzzleLoader.getAllPuzzles();
         
         // Filter by difficulty
@@ -124,13 +119,6 @@ function StudentPage() {
         // Select random puzzle from filtered results
         const randomIndex = Math.floor(Math.random() * candidates.length);
         const selectedPuzzle = candidates[randomIndex];
-        
-        console.log('🎉 Selected puzzle from local database:', {
-          id: selectedPuzzle.id,
-          title: selectedPuzzle.displayTitle,
-          difficulty: selectedPuzzle.difficulty,
-          tags: selectedPuzzle.tags
-        });
         
         setGeneratedPuzzle(selectedPuzzle);
       } else {
@@ -201,6 +189,7 @@ function StudentPage() {
         onGeneratePuzzle={handleGeneratePuzzle}
         isGenerating={isGenerating}
         generationError={generationError}
+        connectionError={dataSource === 'smart' ? puzzlesError : null}
       />
 
       <div className={styles['student-page']}>

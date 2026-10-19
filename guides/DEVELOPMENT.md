@@ -137,7 +137,7 @@ Use unique puzzle IDs, unique block IDs within each puzzle, and a `solutionOrder
 - `getPuzzlesByDifficulty(difficulty)`, `getPuzzlesByTags(tags)`, and `searchPuzzles(text)`.
 - `getCategories()`, `getCategoryNames()`, `getRandomPuzzle()`, and `getRandomPuzzleFromCategory(category)`.
 
-For loader category arguments, use the category names in the JSON files. Database imports use category keys such as `big-o` and `set-theory`; these are a separate convention. Existing named puzzle exports are re-exported through `src/puzzles/index.js`.
+For loader category arguments, use the category names in the JSON files. Database imports use category keys such as `big-o` and `set-theory`; these are a separate convention.
 
 Changing bundled JSON affects local content; it does not automatically update MongoDB. The [database import](MIGRATION_GUIDE.md#import-bundled-puzzles) is a separate operation. The earlier JavaScript-to-JSON transition is preserved in the [archive](archive/JSON_MIGRATION_GUIDE.md).
 

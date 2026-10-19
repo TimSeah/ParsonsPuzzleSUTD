@@ -6,6 +6,7 @@ import puzzleService from '../services/puzzleService.js';
 import { ALL_PUZZLES } from '../services/puzzleLoader.js';
 
 const toggleDataSource = vi.fn();
+const appState = { puzzlesError: null };
 
 vi.mock('../hooks/useAppState', () => ({
   useAppState: () => ({
@@ -14,6 +15,7 @@ vi.mock('../hooks/useAppState', () => ({
     isUsingApi: true,
     isLoading: false,
     healthLoading: false,
+    puzzlesError: appState.puzzlesError,
     toggleDataSource,
   }),
 }));
@@ -47,6 +49,18 @@ describe('StudentPage', () => {
   beforeEach(() => {
     vi.mocked(puzzleService.generatePuzzle).mockReset();
     toggleDataSource.mockReset();
+    appState.puzzlesError = null;
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  it('tells the student when server puzzles are unavailable', async () => {
+    const user = userEvent.setup();
+    appState.puzzlesError = 'Cannot reach the API';
+    render(<StudentPage />);
+    expect(screen.getByText(/Can't load puzzles from the server/)).toHaveTextContent('Cannot reach the API');
+
+    await user.click(screen.getByRole('radio', { name: 'Local Database' }));
+    expect(screen.queryByText(/Can't load puzzles from the server/)).toBeNull();
   });
 
   it('switches between practice and challenge mode and remembers the choice', async () => {

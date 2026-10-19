@@ -1,31 +1,36 @@
 # Component Organization
 
-This folder contains all React components organized by their purpose and functionality.
+This folder contains all React components organized by their purpose and functionality. Tests live next to the component they cover (`ComponentName.test.jsx`).
 
 ## Folder Structure
 
 ### `/ui`
 Basic UI components that can be reused across the application:
-- `DataSourceBadge` - Badge showing current data source status
-- `DataSourceToggle` - Toggle button for switching data sources
 - `ErrorTooltip` - Error display with tooltip functionality
 - `LoadingState` - Loading state component with spinner
-- `PuzzleSelector` - Dropdown for selecting puzzles
+- `StatusIndicator` - Shows whether puzzles come from the API or the bundled data
+- `FloatingHelpButton` / `DictionaryModal` - Help button that opens the notation dictionary
+- `ThemeToggle` - Light/dark theme switch used in the navigation header
 
 ### `/puzzle`
 Components specifically related to puzzle functionality:
-- `PuzzleDisplay` - Main puzzle display with drag-and-drop
+- `PuzzleDisplay` - Main puzzle display with drag-and-drop, practice mode and challenge modes
 - `ProofBlock` - Individual proof statement blocks
-- `ProofValidationDisplay` - Shows validation results and feedback
-- `ValidatorDemo` - Demo component for testing validation
+- `ProofValidationDisplay` - Shows validation results and feedback (practice mode)
 
 ### `/layout`
 Components that handle page layout and structure:
-- `UnifiedControlPanel` - Main control panel combining data source and puzzle controls
+- `LeftControlPanel` - Student control panel: generate button, data source, difficulty and proof-type filters
+
+### `/navigation`
+- `NavigationHeader` - Top navigation with student/educator tabs, theme toggle and feedback link
+
+### `/educator`
+Components for the educator puzzle-creation workflow.
 
 ### `/renderers`
 Specialized rendering components:
-- `KatexRenderer` - LaTeX mathematical expression renderer
+- `KatexRenderer` - Renders bundled LaTeX puzzles and generated prose with delimited math, including interactive dropdown placeholders
 
 ## Usage
 
@@ -36,7 +41,7 @@ Components can be imported in several ways:
 import { PuzzleDisplay, LoadingState } from './components';
 
 // Import from specific category
-import { DataSourceBadge, ErrorTooltip } from './components/ui';
+import { ErrorTooltip } from './components/ui';
 
 // Direct import (less preferred)
 import PuzzleDisplay from './components/puzzle/PuzzleDisplay';
