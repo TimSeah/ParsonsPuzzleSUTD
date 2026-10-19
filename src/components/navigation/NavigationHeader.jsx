@@ -1,10 +1,7 @@
-//import React from 'react';
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import styles from './NavigationHeader.module.css';
 import useTheme from "../../hooks/useTheme";
 import ThemeToggle from "../ui/ThemeToggle";
-import React, { useState } from "react";
-import FeedbackModal from "../ui/FeedbackModal";
 
 const NavigationHeader = () => {
   const location = useLocation();
@@ -12,8 +9,6 @@ const NavigationHeader = () => {
   const isStudentPage = location.pathname === '/' || location.pathname === '/student';
   const isEducatorPage = location.pathname === '/educator';
   const { theme, toggleTheme } = useTheme();
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-
 
   return (
     <>

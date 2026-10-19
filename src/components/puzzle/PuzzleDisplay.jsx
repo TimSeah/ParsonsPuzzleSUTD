@@ -24,8 +24,8 @@ import './PuzzleDisplay.css';
 const MAX_CONSEC_WRONG = 5;
 const LOCK_SECONDS = 10;
 
-// Timed challenge duration (10s now, later 5 * 60)
-const TIMED_SECONDS = 10;
+// Timed challenge duration
+const TIMED_SECONDS = 5 * 60;
 
 // ✅ NEW: Limited-moves rule
 const MAX_MOVES = 20;
@@ -46,6 +46,8 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
   // challenge-only state
   const [revealResults, setRevealResults] = useState(!isChallenge);
+  // Once the solution is revealed, submitting it would bypass the challenge rules
+  const [solutionShown, setSolutionShown] = useState(false);
 
   // ✅ NEW: submit confirmation (Lockout mode only)
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -110,6 +112,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       setActiveId(null);
 
       setRevealResults(!isChallenge);
+      setSolutionShown(false);
 
       // ✅ close submit confirm on new puzzle / mode reset
       setShowSubmitConfirm(false);
@@ -217,6 +220,11 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
   const interactionDisabled =
     (isLockoutMode && isLocked) ||
     (isTimedMode && timerFinished) ||
+    (isLimitedMovesMode && movesFinished);
+
+  const submitBlocked =
+    solutionShown ||
+    (isLockoutMode && isLocked) ||
     (isLimitedMovesMode && movesFinished);
 
   const findContainer = (id) => {
@@ -364,6 +372,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       setActiveId(null);
 
       if (isChallenge) setRevealResults(false);
+      setSolutionShown(false);
 
       if (isTimedMode) {
         setTimeLeft(TIMED_SECONDS);
@@ -396,7 +405,10 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
       setProofBlocks(solutionBlocks);
       setAvailableBlocks([]);
 
-      if (isChallenge) setRevealResults(true);
+      if (isChallenge) {
+        setRevealResults(true);
+        setSolutionShown(true);
+      }
     }
   };
 
@@ -405,6 +417,8 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
 
     // no manual submit in timed mode
     if (isTimedMode) return;
+
+    if (solutionShown) return;
 
     if (isLockoutMode && isLocked) return;
     if (isLimitedMovesMode && movesFinished) return;
@@ -565,30 +579,19 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, mode = 'practice' }
               💡 Show Solution
             </button>
 
-            {/* Submit in practice OR lockout OR limited-moves (NOT timed) */}
-            {(!isChallenge || isLockoutMode || isLimitedMovesMode) && (
+            {/* Submit in lockout OR limited-moves (practice is graded live; timed auto-grades) */}
+            {(isLockoutMode || isLimitedMovesMode) && (
               <button
                 className="control-button"
                 onClick={handleSubmit}
-                disabled={
-                  (isLockoutMode && (isLocked || showSubmitConfirm)) ||(isLimitedMovesMode && movesFinished)
-                }
+                disabled={submitBlocked || (isLockoutMode && showSubmitConfirm)}
 
                 style={{
                   marginLeft: 8,
-                  background:
-                    (isLockoutMode && isLocked) || (isLimitedMovesMode && movesFinished)
-                      ? 'var(--color-canvas-subtle)'
-                      : '#15803d',
+                  background: submitBlocked ? 'var(--color-canvas-subtle)' : '#15803d',
                   border: '1px solid var(--color-border-default)',
-                  color:
-                    (isLockoutMode && isLocked) || (isLimitedMovesMode && movesFinished)
-                      ? 'var(--color-fg-muted)'
-                      : '#ffffff',
-                  cursor:
-                    (isLockoutMode && isLocked) || (isLimitedMovesMode && movesFinished)
-                      ? 'not-allowed'
-                      : 'pointer',
+                  color: submitBlocked ? 'var(--color-fg-muted)' : '#ffffff',
+                  cursor: submitBlocked ? 'not-allowed' : 'pointer',
                   fontWeight: 700,
                 }}
               >
