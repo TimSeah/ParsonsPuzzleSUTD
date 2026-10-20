@@ -16,11 +16,11 @@
         },
         {
           "id": "block1-2",
-          "latex": "f(n) = {{complexity}}(g(n)) \\text{ if there exist positive constants } c_1 \\text{ and } n_0 \\text{ such that } 0 {{op}} f(n) {{op}} c_1g(n) \\text{ for all } n {{op}} n_0."
+          "latex": "f(n) = {{complexity:O}}(g(n)) \\text{ if there exist positive constants } c_1 \\text{ and } n_0 \\text{ such that } 0 {{op:\\leq}} f(n) {{op:\\leq}} c_1g(n) \\text{ for all } n {{op:\\geq}} n_0."
         },
         {
           "id": "block1-3",
-          "latex": "f(n) = {{complexity}}(g(n)) \\text{ if there exist positive constants } c_2 \\text{ and } n_0 \\text{ such that } 0 {{op}} c_2g(n) {{op}} f(n) \\text{ for all } n {{op}} n_0."
+          "latex": "f(n) = {{complexity:\\Omega}}(g(n)) \\text{ if there exist positive constants } c_2 \\text{ and } n_0 \\text{ such that } 0 {{op:\\leq}} c_2g(n) {{op:\\leq}} f(n) \\text{ for all } n {{op:\\geq}} n_0."
         },
         {
           "id": "block1-4",
@@ -28,11 +28,11 @@
         },
         {
           "id": "block1-5",
-          "latex": "\\text{For O-notation: } n^2 + n^3 {{op}} n^3 + n^3 \\text{ (for } n {{op}} 1 \\text{)}"
+          "latex": "\\text{For O-notation: } n^2 + n^3 {{op:\\leq}} n^3 + n^3 \\text{ (for } n {{op:\\geq}} 1 \\text{)}"
         },
         {
           "id": "block1-6",
-          "latex": "n^2 + n^3 {{op}} 2n^3"
+          "latex": "n^2 + n^3 {{op:\\leq}} 2n^3"
         },
         {
           "id": "block1-7",
@@ -52,7 +52,7 @@
         },
         {
           "id": "block1-11",
-          "latex": "\\text{Therefore, } n^2 + n^3 = {{complexity}}(n^3)."
+          "latex": "\\text{Therefore, } n^2 + n^3 = {{complexity:\\Theta}}(n^3)."
         }
       ],
       "solutionOrder": [
@@ -70,7 +70,7 @@
       "blocks": [
         {
           "id": "block2-1",
-          "latex": "\\text{To show } f(n) = {{complexity}}(g(n)) \\text{, we need to find positive constants } c \\text{ and } n_0 \\text{ such that } 0 {{op}} f(n) {{op}} cg(n) \\text{ for all } n {{op}} n_0."
+          "latex": "\\text{To show } f(n) = {{complexity:O}}(g(n)) \\text{, we need to find positive constants } c \\text{ and } n_0 \\text{ such that } 0 {{op:\\leq}} f(n) {{op:\\leq}} cg(n) \\text{ for all } n {{op:\\geq}} n_0."
         },
         {
           "id": "block2-2",
@@ -78,7 +78,7 @@
         },
         {
           "id": "block2-3",
-          "latex": "\\text{We know that } \\log n {{op}} n \\text{ for all } n {{op}} 1."
+          "latex": "\\text{We know that } \\log n {{op:\\leq|<}} n \\text{ for all } n {{op:\\geq}} 1."
         },
         {
           "id": "block2-4",

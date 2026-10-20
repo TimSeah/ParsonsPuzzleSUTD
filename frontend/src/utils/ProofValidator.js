@@ -2,9 +2,12 @@
  * ProofValidator - Validates proof sequences for Parsons puzzles
  * 
  * This utility provides functionality to validate whether a user's arrangement
- * of proof blocks matches the correct solution order, with support for
+ * of proof blocks matches the correct solution order, and whether the symbols
+ * chosen for placeholders such as {{op:\leq}} are right, with support for
  * partial validation, hint generation, and detailed feedback.
  */
+
+import { checkSymbols } from './placeholders';
 
 export class ProofValidator {
   constructor(puzzle) {
@@ -15,9 +18,10 @@ export class ProofValidator {
   /**
    * Validates the complete proof sequence
    * @param {Array} userOrder - Array of block IDs in user's order
+   * @param {Object} selections - Chosen symbols per block: { [blockId]: { op_0: '\\leq', ... } }
    * @returns {Object} Validation result with score, feedback, and details
    */
-  validateProof(userOrder) {
+  validateProof(userOrder, selections = {}) {
     if (!userOrder || userOrder.length === 0) {
       return {
         isCorrect: false,
@@ -60,7 +64,7 @@ export class ProofValidator {
       };
     }
 
-    const result = this._analyzeSequence(userOrder);
+    const result = this._analyzeSequence(userOrder, selections);
     const feedback = this._generateFeedback(result);
 
     return {
@@ -158,7 +162,7 @@ export class ProofValidator {
    * Analyzes the complete sequence and returns detailed results
    * @private
    */
-  _analyzeSequence(userOrder) {
+  _analyzeSequence(userOrder, selections = {}) {
     const solutionSet = new Set(this.solutionOrder);
     const userSet = new Set(userOrder);
     
@@ -173,9 +177,18 @@ export class ProofValidator {
     
     const isComplete = userOrder.length === this.solutionOrder.length && 
                       missingBlocks === 0 && extraBlocks === 0;
+
+    // Placed steps whose symbols are wrong or not chosen yet
+    const symbolErrors = userOrder
+      .map((blockId, position) => ({ blockId, position }))
+      .filter(({ blockId }) => {
+        const block = this.blockMap.get(blockId);
+        return block && !checkSymbols(block.latex, selections[blockId]).isCorrect;
+      });
     
     const correctSequence = isComplete && 
-                           this._isCorrectSequence(userOrder, 0, userOrder.length);
+                           this._isCorrectSequence(userOrder, 0, userOrder.length) &&
+                           symbolErrors.length === 0;
 
     // Find correctly positioned blocks
     const correctlyPositioned = [];
@@ -206,6 +219,7 @@ export class ProofValidator {
       correctSequence,
       correctlyPositioned,
       incorrectlyPositioned,
+      symbolErrors,
       duplicates: this._findDuplicates(userOrder)
     };
   }
@@ -251,14 +265,17 @@ export class ProofValidator {
       return 100;
     }
 
-    // Partial scoring based on correct positions and presence of correct blocks
-    const positionScore = (result.correctlyPositioned.length / result.totalBlocks) * 60;
+    // Partial scoring based on correct positions (with the right symbols) and presence of correct blocks
+    const symbolErrorIds = new Set((result.symbolErrors || []).map(error => error.blockId));
+    const fullyRight = result.correctlyPositioned.filter(item => !symbolErrorIds.has(item.blockId)).length;
+    const positionScore = (fullyRight / result.totalBlocks) * 60;
     const presenceScore = (result.correctBlocks / result.totalBlocks) * 40;
     
     // Penalty for extra blocks
     const extraPenalty = Math.min(result.extraBlocks * 5, 20);
     
-    return Math.max(0, Math.round(positionScore + presenceScore - extraPenalty));
+    // Only a fully correct proof scores 100
+    return Math.min(99, Math.max(0, Math.round(positionScore + presenceScore - extraPenalty)));
   }
 
   /**
@@ -292,6 +309,10 @@ export class ProofValidator {
       feedback.push(`✅ ${result.correctlyPositioned.length} block(s) are correctly positioned.`);
     }
 
+    if (result.symbolErrors?.length > 0) {
+      feedback.push(`🔣 ${result.symbolErrors.length} step(s) have a symbol to fix.`);
+    }
+
     return feedback.length > 0 ? feedback.join(' ') : "Keep working on your proof!";
   }  /**
    * Generates specific hints for improvement
@@ -315,6 +336,18 @@ export class ProofValidator {
         latex: '',
         blockId: null
       }];
+    }
+
+    // Hint about the first placed step with a wrong or missing symbol. Only
+    // point at the step; showing its LaTeX would give the symbol away.
+    if (result.symbolErrors?.length > 0) {
+      const firstSymbolError = result.symbolErrors[0];
+      hints.push({
+        type: 'symbol',
+        message: `Check the symbols in step ${firstSymbolError.position + 1}. Click a symbol to change it.`,
+        latex: '',
+        blockId: firstSymbolError.blockId
+      });
     }
 
     // Hint about first incorrect position

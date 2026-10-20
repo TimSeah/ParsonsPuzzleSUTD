@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import PuzzleLoader, { ALL_PUZZLES, CATEGORIES } from './puzzleLoader.js';
+import { answerSelections, checkSymbols, placeholderProblems } from '../utils/placeholders.js';
 
 describe('bundled puzzle data', () => {
   it('loads every bundled puzzle with a unique id', () => {
@@ -26,6 +27,21 @@ describe('bundled puzzle data', () => {
       expect(puzzle.statement).toBeTruthy();
     },
   );
+
+  it.each(ALL_PUZZLES.map((puzzle) => [puzzle.id, puzzle]))(
+    '%s gives every symbol placeholder a valid answer',
+    (_id, puzzle) => {
+      for (const block of puzzle.blocks) {
+        expect(placeholderProblems(block.latex), `${block.id}: ${block.latex}`).toEqual([]);
+        expect(checkSymbols(block.latex, answerSelections(block.latex)).isCorrect).toBe(true);
+      }
+    },
+  );
+
+  it('has symbol placeholders to grade', () => {
+    const graded = ALL_PUZZLES.flatMap((puzzle) => puzzle.blocks).filter((block) => checkSymbols(block.latex).total > 0);
+    expect(graded.length).toBeGreaterThan(0);
+  });
 });
 
 describe('PuzzleLoader', () => {

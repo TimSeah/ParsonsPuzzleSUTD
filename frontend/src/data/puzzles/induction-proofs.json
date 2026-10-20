@@ -24,7 +24,7 @@
         },
         {
           "id": "ind1-4",
-          "latex": "\\text{RHS: } \\frac{1(1+1)}{2} = \\frac{2}{2} {{op}} 1"
+          "latex": "\\text{RHS: } \\frac{1(1+1)}{2} = \\frac{2}{2} {{op:=}} 1"
         },
         {
           "id": "ind1-5",
@@ -32,11 +32,11 @@
         },
         {
           "id": "ind1-6",
-          "latex": "\\textbf{Inductive step: } \\text{Assume the statement holds for } n = k \\text{, i.e., } \\sum_{i=1}^{k} i {{op}} \\frac{k(k+1)}{2}"
+          "latex": "\\textbf{Inductive step: } \\text{Assume the statement holds for } n = k \\text{, i.e., } \\sum_{i=1}^{k} i {{op:=}} \\frac{k(k+1)}{2}"
         },
         {
           "id": "ind1-7",
-          "latex": "\\text{We need to prove it holds for } n = k+1 \\text{, i.e., } \\sum_{i=1}^{k+1} i {{op}} \\frac{(k+1)(k+2)}{2}"
+          "latex": "\\text{We need to prove it holds for } n = k+1 \\text{, i.e., } \\sum_{i=1}^{k+1} i {{op:=}} \\frac{(k+1)(k+2)}{2}"
         },
         {
           "id": "ind1-8",
@@ -56,7 +56,7 @@
         },
         {
           "id": "ind1-12",
-          "latex": "\\text{Therefore, by mathematical induction,} \\text{ the statement holds for } {{quantifier}} n {{op}} 1."
+          "latex": "\\text{Therefore, by mathematical induction,} \\text{ the statement holds for } {{quantifier:\\forall}} n {{op:\\geq}} 1."
         }
       ],
       "solutionOrder": [
@@ -118,7 +118,7 @@
         },
         {
           "id": "ind2-12",
-          "latex": "\\text{Therefore, by mathematical induction,} \\text{ the statement holds for } {{quantifier}} n {{op}} 0."
+          "latex": "\\text{Therefore, by mathematical induction,} \\text{ the statement holds for } {{quantifier:\\forall}} n {{op:\\geq}} 0."
         }
       ],
       "solutionOrder": [

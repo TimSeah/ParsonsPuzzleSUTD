@@ -16,23 +16,23 @@
         },
         {
           "id": "set1-2",
-          "latex": "\\textbf{Part 1: } A \\cap (B \\cup C) {{setop}} (A \\cap B) \\cup (A \\cap C)"
+          "latex": "\\textbf{Part 1: } A \\cap (B \\cup C) {{setop:\\subseteq}} (A \\cap B) \\cup (A \\cap C)"
         },
         {
           "id": "set1-3",
-          "latex": "\\text{Let } x {{setop}} A {{logic}} (B {{setop}} C)."
+          "latex": "\\text{Let } x {{setop:\\in}} A {{cupcap:\\cap}} (B {{cupcap:\\cup}} C)."
         },
         {
           "id": "set1-4",
-          "latex": "\\text{Then } x {{setop}} A \\text{ and } x {{setop}} (B \\cup C)."
+          "latex": "\\text{Then } x {{setop:\\in}} A \\text{ and } x {{setop:\\in}} (B \\cup C)."
         },
         {
           "id": "set1-5",
-          "latex": "\\text{Since } x {{setop}} (B {{logic}} C) \\text{, either } x {{setop}} B \\text{ or } x {{setop}} C \\text{ (or both).}"
+          "latex": "\\text{Since } x {{setop:\\in}} (B {{cupcap:\\cup}} C) \\text{, either } x {{setop:\\in}} B \\text{ or } x {{setop:\\in}} C \\text{ (or both).}"
         },
         {
           "id": "set1-6",
-          "latex": "\\text{Case 1: If } x {{setop}} B \\text{, then since } x {{setop}} A \\text{, we have } x {{setop}} A \\cap B."
+          "latex": "\\text{Case 1: If } x {{setop:\\in}} B \\text{, then since } x {{setop:\\in}} A \\text{, we have } x {{setop:\\in}} A \\cap B."
         },
         {
           "id": "set1-7",

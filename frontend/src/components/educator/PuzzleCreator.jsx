@@ -23,6 +23,7 @@ import { LoadingState } from '../ui';
 import PuzzleDisplay from '../puzzle/PuzzleDisplay';
 import CustomTagInput from './CustomTagInput';
 import { CATEGORIES } from './educatorCategories';
+import { placeholderProblems } from '../../utils/placeholders';
 import styles from './PuzzleCreator.module.css';
 
 const DIFFICULTY_LEVELS = ['easy', 'medium', 'hard'];
@@ -41,7 +42,7 @@ function LatexPreview({ latex }) {
   return (
     <div className={styles.preview} aria-label="Preview">
       <span className={styles.previewLabel}>Preview</span>
-      <KatexRenderer latex={latex} />
+      <KatexRenderer latex={latex} revealAnswers />
     </div>
   );
 }
@@ -66,7 +67,7 @@ function SortableBlockItem({ block, index, total, onRemove, onMove }) {
         <GripVertical size={16} aria-hidden="true" />
       </span>
       <span className={styles.blockNumber} aria-hidden="true">{index + 1}</span>
-      <div className={styles.blockContent}><KatexRenderer latex={block.latex} /></div>
+      <div className={styles.blockContent}><KatexRenderer latex={block.latex} revealAnswers /></div>
       <div className={styles.blockActions}>
         <button ref={upRef} type="button" className="icon-btn" onClick={() => move(-1)} disabled={index === 0} aria-label={`Move ${step} up`}>
           <ArrowUp size={16} aria-hidden="true" />
@@ -179,7 +180,14 @@ function PuzzleCreator({ onSave, onCancel, initialPuzzle = null }) {
     if (!puzzleData.title.trim()) newErrors.title = 'Title is required';
     if (!puzzleData.displayTitle.trim()) newErrors.displayTitle = 'Display title is required';
     if (!puzzleData.statement.trim()) newErrors.statement = 'Statement is required';
-    if (puzzleData.blocks.length < 2) newErrors.blocks = 'Add at least 2 proof steps';
+    if (puzzleData.blocks.length < 2) {
+      newErrors.blocks = 'Add at least 2 proof steps';
+    } else {
+      const stepWithProblem = puzzleData.blocks.findIndex(block => placeholderProblems(block.latex).length > 0);
+      if (stepWithProblem >= 0) {
+        newErrors.blocks = `Step ${stepWithProblem + 1}: ${placeholderProblems(puzzleData.blocks[stepWithProblem].latex)[0]}`;
+      }
+    }
     if (puzzleData.tags.length === 0) newErrors.tags = 'At least one tag is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -365,6 +373,9 @@ function PuzzleCreator({ onSave, onCancel, initialPuzzle = null }) {
           <section className="card" aria-labelledby={fieldId('blocks-heading')}>
             <h2 id={fieldId('blocks-heading')} className="card-title">Proof steps</h2>
             <p className="field__hint">Add the steps in the correct order. Students receive them shuffled.</p>
+            <p className="field__hint">
+              To make students pick a symbol, write a placeholder with its answer, for example <code>{'{{op:\\leq}}'}</code> or <code>{'{{complexity:\\Theta}}'}</code>. Students click it to cycle through the symbols.
+            </p>
 
             <div className="field">
               <label className="field__label" htmlFor={fieldId('currentBlock')}>New step (LaTeX)</label>
@@ -384,6 +395,11 @@ function PuzzleCreator({ onSave, onCancel, initialPuzzle = null }) {
                 }}
               />
               <LatexPreview latex={currentBlock} />
+              {[...new Set(placeholderProblems(currentBlock))].map(problem => (
+                <p key={problem} className="field__error">
+                  <AlertCircle size={14} aria-hidden="true" /> {problem}
+                </p>
+              ))}
               <div>
                 <button type="button" className="btn btn--sm" onClick={addBlock} disabled={!currentBlock.trim()}>
                   <Plus size={16} aria-hidden="true" /> Add step <kbd className={styles.kbd}>Ctrl+Enter</kbd>

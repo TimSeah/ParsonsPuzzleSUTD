@@ -78,7 +78,9 @@ const ProofBlock = ({
     if (onSelectionChange) onSelectionChange(id, varType, value);
   };
 
-  const isInteractive = !isOverlay && !isDragging && !isInWorkspace;
+  // Symbols can be changed in either column, but not mid-drag or while the
+  // puzzle is locked.
+  const isInteractive = !isOverlay && !isDragging && !disabled;
   const content = addLearnerFriendlyTransition(latexContent, pedagogicalRole);
   const hasActions = !isOverlay && (onAdd || onRemove || onMoveUp || onMoveDown);
   const stepLabel = stepNumber ? `step ${stepNumber}` : 'step';
