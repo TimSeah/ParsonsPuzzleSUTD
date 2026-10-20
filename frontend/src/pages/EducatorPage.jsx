@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BarChart3, Binary, Dices, Download, FunctionSquare, KeyRound, Layers, ListOrdered, LogOut, Network, Plus, Repeat, Shapes, Sigma } from 'lucide-react';
 import { StatusIndicator } from '../components/ui';
-import { EducatorSignInDialog, PuzzleCreator, PuzzleSuccessModal } from '../components/educator';
+import { EducatorSignInDialog, PuzzleCreator, PuzzleSuccessModal, ReviewQueue } from '../components/educator';
 import { CATEGORIES } from '../components/educator/educatorCategories';
 import { useApiHealth } from '../hooks/usePuzzles';
 import puzzleManagerService from '../services/puzzleManagerService';
@@ -37,10 +37,10 @@ function EducatorPage() {
   const signInWaiter = useRef(null);
 
   // Opens the sign-in dialog; resolves true once signed in, false if cancelled.
-  const requestSignIn = () => new Promise((resolve) => {
+  const requestSignIn = useCallback(() => new Promise((resolve) => {
     signInWaiter.current = resolve;
     setIsSignInOpen(true);
-  });
+  }), []);
 
   const handleSignInClosed = (signedIn) => {
     setIsSignInOpen(false);
@@ -49,10 +49,16 @@ function EducatorPage() {
     signInWaiter.current = null;
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = useCallback(() => {
     clearEducatorKey();
     setIsSignedIn(false);
-  };
+  }, []);
+
+  // The stored key was rejected (changed on the server): sign out and ask again.
+  const handleAuthExpired = useCallback(() => {
+    handleSignOut();
+    requestSignIn();
+  }, [handleSignOut, requestSignIn]);
 
   // Load statistics on component mount
   useEffect(() => {
@@ -193,6 +199,8 @@ function EducatorPage() {
               </div>
             </dl>
           </section>
+
+          <ReviewQueue isSignedIn={isSignedIn} onSignIn={requestSignIn} onAuthExpired={handleAuthExpired} />
 
           <div className={styles.columns}>
             <section className="card" aria-labelledby="created-heading">

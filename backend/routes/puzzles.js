@@ -1,6 +1,7 @@
 import express from 'express';
 import Puzzle from '../models/Puzzle.js';
 import { educatorAuthLimiter, requireEducator as defaultRequireEducator } from '../services/educatorAuth.js';
+import { SERVABLE } from '../services/review.js';
 
 // Fields an educator may set. Everything else (source, verification, usage
 // counters, Lean data) is owned by the server.
@@ -46,7 +47,7 @@ export function createPuzzlesRouter({
   router.get('/', async (req, res) => {
     try {
       const { category, difficulty, tags, search, limit = 50, offset = 0 } = req.query;
-      const filter = { isActive: true };
+      const filter = { ...SERVABLE, isActive: true };
       if (category) {
         filter.category = category;
       }
@@ -92,6 +93,7 @@ export function createPuzzlesRouter({
   router.get('/:id', async (req, res) => {
     try {
       const puzzle = await PuzzleModel.findOne({ 
+        ...SERVABLE,
         id: req.params.id, 
         isActive: true 
       }).select('-__v');
@@ -110,7 +112,7 @@ export function createPuzzlesRouter({
     try {
       const { category } = req.params;
       const { difficulty, limit = 50, offset = 0 } = req.query;
-      const filter = { category, isActive: true };
+      const filter = { ...SERVABLE, category, isActive: true };
       if (difficulty) {
         filter.difficulty = difficulty;
       }
@@ -224,7 +226,7 @@ export function createPuzzlesRouter({
   router.get('/stats/summary', async (req, res) => {
     try {
       const stats = await PuzzleModel.aggregate([
-        { $match: { isActive: true } },
+        { $match: { ...SERVABLE, isActive: true } },
         {
           $group: {
             _id: null,

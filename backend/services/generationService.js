@@ -6,6 +6,7 @@ import leanClient, { LEAN_POLICY_VERSION } from './leanClient.js';
 import generationQuota from './generationLimits.js';
 import { buildPuzzlePrompt } from './promptBuilder.js';
 import { normalizeGenerationRequest, validateCandidate } from './puzzleContract.js';
+import { SERVABLE } from './review.js';
 
 const OPENAI_FORMAT_ERROR_CODES = new Set(['OPENAI_EMPTY_RESPONSE', 'OPENAI_INVALID_JSON']);
 
@@ -27,7 +28,7 @@ function fingerprint(candidate) {
 
 function safePuzzle(puzzle, source) {
   const obj = puzzle.toObject ? puzzle.toObject() : puzzle;
-  return { id: obj.id, title: obj.title, displayTitle: obj.displayTitle, statement: obj.statement, category: obj.category, difficulty: obj.difficulty, tags: obj.tags, blocks: obj.blocks, solutionOrder: obj.solutionOrder, source, verification: { status: obj.verification?.status || 'verified' } };
+  return { id: obj.id, title: obj.title, displayTitle: obj.displayTitle, statement: obj.statement, category: obj.category, difficulty: obj.difficulty, tags: obj.tags, blocks: obj.blocks, solutionOrder: obj.solutionOrder, source, verification: { status: obj.verification?.status || 'verified' }, review: obj.review?.status || 'approved' };
 }
 
 export class GenerationService {
@@ -48,8 +49,9 @@ export class GenerationService {
   async findUnseen({ userId, difficulty, topics }) {
     const history = await this.History.find({ userId, $or: [{ seenCount: { $gt: 0 } }, { attemptCount: { $gt: 0 } }] }).select('puzzleId -_id').lean();
     const excluded = history.map(item => item.puzzleId);
-    // Only serve puzzles checked under the current verification policy.
-    const filter = { isActive: true, difficulty, 'verification.status': 'verified', 'verification.policyVersion': { $gte: LEAN_POLICY_VERSION }, id: { $nin: excluded } };
+    // Only reuse puzzles checked under the current verification policy and
+    // not waiting for (or rejected in) educator review.
+    const filter = { ...SERVABLE, isActive: true, difficulty, 'verification.status': 'verified', 'verification.policyVersion': { $gte: LEAN_POLICY_VERSION }, id: { $nin: excluded } };
     if (topics.length) filter.category = { $in: topics };
     const count = await this.Puzzle.countDocuments(filter);
     if (!count) return null;
@@ -143,11 +145,23 @@ export class GenerationService {
             improperlyFormattedAttemptCount,
             leanRejectedAttemptCount,
           },
+          // Lean checks the maths, not that the theorem matches the English
+          // statement, so an educator approves it before anyone else gets it.
+          review: { status: 'pending' },
           isActive: true,
         };
         let puzzle;
         try { puzzle = await this.Puzzle.create(puzzleData); }
-        catch (error) { if (error.code !== 11000) throw error; puzzle = await this.Puzzle.findOne({ contentFingerprint }); }
+        catch (error) {
+          if (error.code !== 11000) throw error;
+          // Same statement and proof as an existing puzzle: reuse it only if
+          // it may be served, never one that is rejected or awaiting review.
+          puzzle = await this.Puzzle.findOne({ contentFingerprint, isActive: true, ...SERVABLE });
+          if (!puzzle) {
+            diagnostics = 'This exact puzzle already exists and was rejected by an educator or is awaiting review. Produce a different puzzle.';
+            continue;
+          }
+        }
         await this.recordSeen(request.userId, puzzle.id);
         return safePuzzle(puzzle, 'generated');
       }

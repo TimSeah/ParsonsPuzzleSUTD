@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Shuffle, SlidersHorizontal, WifiOff } from 'lucide-react';
+import { AlertCircle, Info, Shuffle, SlidersHorizontal, WifiOff } from 'lucide-react';
 import { PuzzleDisplay } from '../components';
 import { Dialog, LoadingState, StatusIndicator } from '../components/ui';
 import PuzzleSettings from '../components/layout/PuzzleSettings';
@@ -235,6 +235,16 @@ function StudentPage() {
           <div className="notice notice--warning" role="status">
             <WifiOff size={16} aria-hidden="true" />
             <span>Can&apos;t load puzzles from the server ({connectionError}). Showing the bundled puzzles while it reconnects.</span>
+          </div>
+        )}
+
+        {displayPuzzle?.review === 'pending' && (
+          <div className="notice notice--info" role="status">
+            <Info size={16} aria-hidden="true" />
+            <span>
+              This puzzle was just generated for you. Lean has checked the proof, but an educator hasn&apos;t reviewed the
+              wording yet. If something reads oddly, tell us on the Feedback page.
+            </span>
           </div>
         )}
 

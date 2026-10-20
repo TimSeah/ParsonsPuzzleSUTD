@@ -114,6 +114,20 @@ class PuzzleService {
     return this.fetchWithError('/educator/session', { headers: { Authorization: `Bearer ${key}` } });
   }
 
+  // AI-generated puzzles waiting for an educator: { puzzles, total }.
+  async getReviewQueue() {
+    return this.fetchWithError('/educator/review', { educator: true });
+  }
+
+  // decision: 'approve' or 'reject'
+  async reviewPuzzle(id, decision, note = '') {
+    return this.fetchWithError(`/educator/review/${encodeURIComponent(id)}`, {
+      method: 'POST',
+      educator: true,
+      body: JSON.stringify({ decision, note }),
+    });
+  }
+
   async getPuzzleStats() {
     return this.fetchWithError('/puzzles/stats/summary');
   }

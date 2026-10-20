@@ -75,6 +75,10 @@ describe('EducatorPage', () => {
   });
 
   describe('educator sign-in', () => {
+    beforeEach(() => {
+      vi.spyOn(puzzleService, 'getReviewQueue').mockResolvedValue({ puzzles: [], total: 0 });
+    });
+
     afterEach(() => {
       vi.restoreAllMocks();
       sessionStorage.clear();
@@ -152,5 +156,16 @@ describe('EducatorPage', () => {
       expect(screen.getByRole('heading', { name: 'Create a puzzle' })).toBeInTheDocument();
       expect(puzzleManagerService.savePuzzle).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('shows the review queue and loads it once signed in', async () => {
+    setEducatorKey('k');
+    const load = vi.spyOn(puzzleService, 'getReviewQueue').mockResolvedValue({ puzzles: [], total: 0 });
+    render(<EducatorPage />);
+
+    expect(await screen.findByText('Nothing to review.')).toBeInTheDocument();
+    expect(load).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
+    sessionStorage.clear();
   });
 });
