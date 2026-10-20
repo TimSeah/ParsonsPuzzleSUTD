@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import PuzzleLoader, { ALL_PUZZLES, CATEGORIES } from './puzzleLoader.js';
+import { ALL_PUZZLES, PUZZLES_BY_CATEGORY } from './puzzleLoader.js';
 import { answerSelections, checkSymbols, placeholderProblems } from '../utils/placeholders.js';
 
 describe('bundled puzzle data', () => {
@@ -44,22 +44,11 @@ describe('bundled puzzle data', () => {
   });
 });
 
-describe('PuzzleLoader', () => {
-  it('looks puzzles up by id', () => {
-    const [first] = ALL_PUZZLES;
-    expect(PuzzleLoader.getPuzzleById(first.id)).toBe(first);
-    expect(PuzzleLoader.getPuzzleById('does-not-exist')).toBeFalsy();
-  });
-
-  it('filters by difficulty', () => {
-    const easy = PuzzleLoader.getPuzzlesByDifficulty('easy');
-    expect(easy.length).toBeGreaterThan(0);
-    expect(easy.every((puzzle) => puzzle.difficulty === 'easy')).toBe(true);
-  });
-
-  it('exposes puzzles for every category', () => {
-    for (const category of Object.keys(CATEGORIES)) {
-      expect(PuzzleLoader.getPuzzlesByCategory(category).length).toBeGreaterThan(0);
-    }
+describe('PUZZLES_BY_CATEGORY', () => {
+  it('has puzzles for every bundled category and covers them all', () => {
+    const categories = Object.values(PUZZLES_BY_CATEGORY);
+    expect(categories).toHaveLength(8);
+    for (const puzzles of categories) expect(puzzles.length).toBeGreaterThan(0);
+    expect(categories.flat()).toHaveLength(ALL_PUZZLES.length);
   });
 });

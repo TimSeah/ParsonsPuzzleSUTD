@@ -7,7 +7,7 @@ import { describeSettings } from '../components/layout/puzzleSettingsOptions';
 import { useAppState } from '../hooks/useAppState';
 import useMediaQuery, { MOBILE_QUERY } from '../hooks/useMediaQuery';
 import puzzleService from '../services/puzzleService.js';
-import { PuzzleLoader } from '../services/puzzleLoader.js';
+import { ALL_PUZZLES } from '../services/puzzleLoader.js';
 import { getStableUserId } from '../services/userIdentity.js';
 import styles from './StudentPage.module.css';
 
@@ -82,7 +82,7 @@ function StudentPage() {
     
     try {
       if (dataSource === 'local') {
-        let filteredPuzzles = PuzzleLoader.getAllPuzzles();
+        let filteredPuzzles = ALL_PUZZLES;
         
         // Filter by difficulty
         if (selectedDifficulty) {

@@ -119,8 +119,6 @@ export const parsePlaceholders = (latex) => [...String(latex ?? '').matchAll(PLA
   };
 });
 
-export const hasPlaceholders = (latex) => parsePlaceholders(latex).length > 0;
-
 // Unselected → first symbol → … → last symbol → first symbol again.
 export const nextChoice = (type, current) => {
   const choices = getChoices(type);
