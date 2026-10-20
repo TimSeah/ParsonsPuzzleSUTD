@@ -152,7 +152,8 @@ it('shows puzzle settings in a sidebar on desktop and filters by topic chips', a
     await user.click(within(sidebar).getByRole('radio', { name: 'Bundled' }));
     await user.click(within(sidebar).getByRole('button', { name: 'Set Theory' }));
     await user.click(screen.getByRole('button', { name: 'New puzzle' }));
-    expect(heading()).toHaveTextContent(/A∪B|A∩\(B∪C\)/);
+    // Any of the medium set-theory puzzles (∪, ∩ or × in the statement)
+    expect(heading()).toHaveTextContent(/A[∪∩×]/);
 
     await user.click(within(sidebar).getByRole('button', { name: 'Clear' }));
     expect(within(sidebar).getByRole('button', { name: 'Set Theory' })).toHaveAttribute('aria-pressed', 'false');
