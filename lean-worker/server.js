@@ -1,11 +1,11 @@
 import http from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { buildCheckedSource, evaluate, validateSource } from './verifier.js';
+import { CANDIDATE_MODULE, evaluate, parseCheckerOutput, validateSource } from './verifier.js';
 import { createLimiter } from './limiter.js';
 
 const PORT = Number(process.env.PORT || 3001);
@@ -13,11 +13,14 @@ const PORT = Number(process.env.PORT || 3001);
 const HOST = process.env.HOST || '127.0.0.1';
 const MAX_SOURCE_BYTES = Number(process.env.MAX_SOURCE_BYTES || 20000);
 const DEFAULT_TIMEOUT_MS = Number(process.env.LEAN_TIMEOUT_MS || 30000);
+// Each stage (compile, trusted check) gets at most this long.
+const STAGE_CAP_MS = 30000;
 const compileLimiter = createLimiter({
   maxConcurrent: Number(process.env.LEAN_MAX_CONCURRENT) || 1,
   maxQueue: Number(process.env.LEAN_MAX_QUEUE ?? 2),
 });
 const WORKER_DIR = fileURLToPath(new URL('.', import.meta.url));
+const CHECKER = join(WORKER_DIR, 'Checker.lean');
 const leanVersion = readFileSync(join(WORKER_DIR, 'lean-toolchain'), 'utf8').match(/v([0-9.]+)/)?.[1] || 'unknown';
 const mathlibVersion = JSON.parse(readFileSync(join(WORKER_DIR, 'lake-manifest.json'), 'utf8'))
   .packages.find(pkg => pkg.name === 'mathlib')?.inputRev || 'unknown';
@@ -57,6 +60,21 @@ async function readJson(req) {
   return JSON.parse(text || '{}');
 }
 
+function runLake(args, timeoutMs) {
+  return new Promise(resolve => {
+    const child = spawn('lake', args, { cwd: WORKER_DIR, shell: false, env: LEAN_ENV });
+    let stdout = '', stderr = '', timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; child.kill('SIGKILL'); }, timeoutMs);
+    child.stdout.on('data', d => { stdout = (stdout + d).slice(-200000); });
+    child.stderr.on('data', d => { stderr = (stderr + d).slice(-20000); });
+    child.on('error', error => { clearTimeout(timer); resolve({ error }); });
+    child.on('close', exitCode => { clearTimeout(timer); resolve({ exitCode, stdout, stderr, timedOut }); });
+  });
+}
+
+// 1. Compile the untrusted source to <dir>/Candidate.olean.
+// 2. Re-check that file in a separate trusted process (Checker.lean): kernel
+//    replay of every declaration, then the theorem's axioms.
 async function compile(source, theoremName, timeoutMs) {
   if (!compiler.ready) compiler = compilerStatus();
   if (!compiler.ready) {
@@ -67,26 +85,25 @@ async function compile(source, theoremName, timeoutMs) {
       durationMs: 0,
     };
   }
-  const { text, axiomsLine } = buildCheckedSource(source, theoremName);
   const dir = await mkdtemp(join(tmpdir(), 'parsons-lean-'));
-  const file = join(dir, 'Puzzle.lean');
-  await writeFile(file, text, { mode: 0o600 });
+  const file = join(dir, `${CANDIDATE_MODULE}.lean`);
+  const olean = join(dir, `${CANDIDATE_MODULE}.olean`);
+  await writeFile(file, `${source.replace(/\s+$/, '')}\n`, { mode: 0o600 });
   const started = Date.now();
+  const finish = (result) => ({ ...result, durationMs: Date.now() - started, leanVersion, mathlibVersion });
+  const failed = (run) => (run.error
+    ? finish({ status: 'infrastructure_error', valid: false, diagnostics: [{ severity: 'error', message: run.error.message }] })
+    : finish({ status: 'timeout', valid: false, diagnostics: [] }));
   try {
-    return await new Promise(resolve => {
-      const child = spawn('lake', ['env', 'lean', '--json', file], { cwd: WORKER_DIR, shell: false, env: LEAN_ENV });
-      let stdout = '', stderr = '', timedOut = false;
-      const timer = setTimeout(() => { timedOut = true; child.kill('SIGKILL'); }, Math.min(Math.max(timeoutMs, 1000), 30000));
-      child.stdout.on('data', d => { stdout = (stdout + d).slice(-200000); });
-      child.stderr.on('data', d => { stderr = (stderr + d).slice(-20000); });
-      child.on('error', error => { clearTimeout(timer); resolve({ status: 'infrastructure_error', valid: false, diagnostics: [{ severity: 'error', message: error.message }], durationMs: Date.now()-started }); });
-      child.on('close', code => {
-        clearTimeout(timer);
-        if (timedOut) return resolve({ status: 'timeout', valid: false, diagnostics: [], durationMs: Date.now()-started });
-        const result = evaluate({ exitCode: code, output: `${stdout}\n${stderr}`, theoremName, axiomsLine });
-        resolve({ ...result, durationMs: Date.now()-started, leanVersion, mathlibVersion });
-      });
-    });
+    const compileRun = await runLake(['env', 'lean', '--json', `--root=${dir}`, '-o', olean, file], Math.min(Math.max(timeoutMs, 1000), STAGE_CAP_MS));
+    if (compileRun.error || compileRun.timedOut) return failed(compileRun);
+    let checker = null;
+    if (compileRun.exitCode === 0 && existsSync(olean)) {
+      const checkRun = await runLake(['env', 'lean', '--run', CHECKER, dir, CANDIDATE_MODULE, theoremName], STAGE_CAP_MS);
+      if (checkRun.error || checkRun.timedOut) return failed(checkRun);
+      checker = parseCheckerOutput(checkRun);
+    }
+    return finish(evaluate({ exitCode: compileRun.exitCode, output: `${compileRun.stdout}\n${compileRun.stderr}`, theoremName, checker }));
   } finally { await rm(dir, { recursive: true, force: true }); }
 }
 

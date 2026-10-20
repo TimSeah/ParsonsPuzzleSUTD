@@ -39,7 +39,7 @@ A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students
 
 ### Lean-verified generation
 
-When a student asks for an AI-generated puzzle, the backend reuses a verified puzzle they haven't seen or asks OpenAI for a new one with a complete Lean proof. A Lean 4 + Mathlib worker compiles the proof and rejects `sorry`, extra axioms and warnings. Each student-facing step must match a fragment of that proof. Lean checks the maths, not the English wording, so generated puzzles still benefit from review. See [Generation and verification](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Generation-and-Verification).
+When a student asks for an AI-generated puzzle, the backend reuses a verified puzzle they haven't seen or asks OpenAI for a new one with a complete Lean proof. A Lean 4 + Mathlib worker compiles the proof, re-checks it in the Lean kernel in a separate process, and rejects `sorry`, extra axioms and warnings. Each student-facing step must match a fragment of that proof. Lean checks the maths, not the English wording, so generated puzzles still benefit from review. See [Generation and verification](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Generation-and-Verification).
 
 ## Quick start
 

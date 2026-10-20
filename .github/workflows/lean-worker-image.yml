@@ -1,7 +1,8 @@
 name: Lean worker image
 
-# Builds the Lean 4 + Mathlib worker image and checks it accepts a correct proof
-# and rejects a wrong one. The image is several GB, so this only runs when the
+# Builds the Lean 4 + Mathlib worker image and checks it accepts a correct proof,
+# rejects wrong and policy-breaking ones, and that the trusted kernel re-check
+# catches a forged theorem. The image is several GB, so this only runs when the
 # worker changes (or on demand).
 on:
   pull_request:
@@ -60,7 +61,7 @@ jobs:
           result=$(curl -sS -X POST http://127.0.0.1:3001/verify -H 'Content-Type: application/json' \
             -d '{"source":"import Mathlib\n\ntheorem ci_smoke (n : Nat) : n + 0 = n := by simp\n","theoremName":"ci_smoke","timeoutMs":30000}')
           echo "$result"
-          echo "$result" | jq -e '.status == "verified" and .valid == true'
+          echo "$result" | jq -e '.status == "verified" and .valid == true and .policyChecks.kernelChecked == true'
 
       - name: Rejects a wrong proof
         run: |
@@ -68,6 +69,37 @@ jobs:
             -d '{"source":"import Mathlib\n\ntheorem ci_wrong (n : Nat) : n + 1 = n := by simp\n","theoremName":"ci_wrong","timeoutMs":30000}')
           echo "$result"
           echo "$result" | jq -e '.status == "rejected" and .valid == false'
+
+      - name: Rejects sorry and native_decide before compiling
+        run: |
+          for tactic in sorry native_decide; do
+            code=$(curl -sS -o body.json -w '%{http_code}' -X POST http://127.0.0.1:3001/verify -H 'Content-Type: application/json' \
+              -d "{\"source\":\"import Mathlib\\n\\ntheorem ci_cheat : (2 : Nat) + 2 = 5 := by $tactic\\n\",\"theoremName\":\"ci_cheat\",\"timeoutMs\":30000}")
+            echo "$tactic -> $code $(cat body.json)"
+            test "$code" = 422
+            jq -e '.status == "rejected" and .valid == false' body.json
+          done
+
+      - name: Kernel re-check rejects a forged theorem
+        # Bypasses the source policy on purpose: the file compiles without errors,
+        # so only Checker.lean's kernel replay stands between it and "verified".
+        run: |
+          docker exec -i lean sh -s <<'EOF'
+          set -e
+          d=$(mktemp -d)
+          cat > "$d/Candidate.lean" <<'LEAN'
+          import Mathlib
+          open Lean in
+          set_option debug.skipKernelTC true in
+          run_meta addDecl <| .thmDecl { name := `ci_forged, levelParams := [], type := mkConst ``False, value := mkConst ``True.intro }
+          LEAN
+          lake env lean "--root=$d" -o "$d/Candidate.olean" "$d/Candidate.lean"
+          if lake env lean --run Checker.lean "$d" Candidate ci_forged > "$d/out" 2>&1; then
+            cat "$d/out"; echo "checker accepted a forged theorem"; exit 1
+          fi
+          cat "$d/out"
+          grep -q '(kernel)' "$d/out"
+          EOF
 
       - name: Worker logs
         if: always()

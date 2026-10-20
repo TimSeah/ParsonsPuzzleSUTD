@@ -2,7 +2,9 @@
 // server and process handling so it can be unit tested without Lean installed.
 
 export const ALLOWED_AXIOMS = new Set(['propext', 'Classical.choice', 'Quot.sound']);
-export const POLICY_VERSION = 2;
+export const POLICY_VERSION = 3;
+// The compiled proof's module name; Checker.lean reads <dir>/Candidate.olean.
+export const CANDIDATE_MODULE = 'Candidate';
 
 const THEOREM_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 const NOT_IDENT_BEFORE = "(?<![\\w.'])";
@@ -12,7 +14,7 @@ const word = (...names) => new RegExp(`${NOT_IDENT_BEFORE}(?:${names.join('|')})
 
 // Attributes a generated proof may use. Anything else is rejected, because
 // attributes such as @[command_elab], @[tactic] or @[init] can register code
-// that runs during elaboration (e.g. replacing the #print axioms command).
+// that runs inside the worker while the proof is compiled.
 const ALLOWED_ATTRIBUTES = new Set([
   'simp', 'ext', 'reducible', 'irreducible', 'norm_cast', 'push_cast', 'symm', 'refl', 'trans', 'gcongr', 'mono',
 ]);
@@ -107,7 +109,7 @@ export function importedModules(source) {
 
 export function declaresTheorem(source, theoremName) {
   const pattern = new RegExp(
-    `^\\s*(?:@\\[[^\\]\\n]*\\]\\s*)*(?:(?:private|protected|noncomputable)\\s+)*(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`,
+    `^\\s*(?:@\\[[^\\]\\n]*\\]\\s*)*(?:(?:protected|noncomputable)\\s+)*(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`,
     'm',
   );
   return pattern.test(stripComments(source));
@@ -126,16 +128,12 @@ export function validateSource(source, theoremName, { maxBytes = 20000 } = {}) {
   for (const module of importedModules(source)) {
     if (module !== 'Mathlib' && !module.startsWith('Mathlib.')) return `Import is not allowed: ${module}`;
   }
+  if (/^\s*module(?![\w'])/.test(code)) return 'Module-system headers are not allowed';
+  if (new RegExp(`(?<![\\w.'])private\\s+(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`).test(code)) {
+    return `Declare ${theoremName} without \`private\` so the checker can find it`;
+  }
   if (!declaresTheorem(source, theoremName)) return `Theorem ${theoremName} is not declared at the top level of the Lean source`;
   return null;
-}
-
-// Appends `#print axioms` so the compiler reports exactly which axioms the
-// theorem relies on (sorry shows up as sorryAx, native_decide as ofReduceBool).
-export function buildCheckedSource(source, theoremName) {
-  const body = source.replace(/\s+$/, '');
-  const axiomsLine = body.split('\n').length + 2;
-  return { text: `${body}\n\n#print axioms ${theoremName}\n`, axiomsLine };
 }
 
 export function parseMessages(output) {
@@ -167,38 +165,45 @@ export function parseMessages(output) {
 // Lint-style warnings (unused variables, deprecated names, ...) don't affect soundness.
 const isLinterWarning = (msg) => /^(?:Lean\.)?[Ll]inter\./.test(msg.kind) || /set_option linter\./.test(msg.message);
 
-export function parseAxioms(message, theoremName) {
-  const prefix = `'${theoremName}' `;
-  if (!message.startsWith(prefix)) return null;
-  const rest = message.slice(prefix.length);
-  if (rest.startsWith('does not depend on any axioms')) return [];
-  const match = rest.match(/^depends on axioms: \[([^\]]*)\]/);
-  if (!match) return null;
-  return match[1].split(',').map((name) => name.trim()).filter(Boolean);
+// Reads Checker.lean's output: one JSON line on success, a message on stderr otherwise.
+export function parseCheckerOutput({ exitCode, stdout = '', stderr = '' }) {
+  if (exitCode === 0) {
+    for (const line of stdout.split('\n').reverse()) {
+      try {
+        const result = JSON.parse(line.trim());
+        if (Array.isArray(result?.axioms) && typeof result.theorem === 'string') {
+          return { ok: true, theorem: result.theorem, axioms: result.axioms.map(String), declarations: Number(result.declarations) || 0 };
+        }
+      } catch {
+        // Not the result line.
+      }
+    }
+  }
+  const message = (stderr.match(/check failed: [^\n]*/)?.[0] || stderr.trim() || 'The trusted checker produced no result').slice(0, 1000);
+  return { ok: false, axioms: [], error: message };
 }
 
-export function evaluate({ exitCode, output, theoremName, axiomsLine }) {
+// `exitCode`/`output` come from compiling the untrusted source; `checker` is
+// parseCheckerOutput() from the trusted re-check, or null if it didn't run.
+export function evaluate({ exitCode, output, theoremName, checker = null }) {
   const messages = parseMessages(output);
   const errors = messages.filter((m) => m.severity === 'error' || (!m.structured && exitCode !== 0));
   const warnings = messages.filter((m) => m.severity === 'warning');
   const fatalWarnings = warnings.filter((m) => !isLinterWarning(m));
 
-  let axioms = null;
-  for (const m of messages) {
-    if (m.severity !== 'information' || !(m.line >= axiomsLine)) continue;
-    axioms = parseAxioms(m.message, theoremName);
-    if (axioms) break;
-  }
-  const disallowedAxioms = (axioms || []).filter((name) => !ALLOWED_AXIOMS.has(name));
-  const usesSorry = (axioms || []).includes('sorryAx') || warnings.some((m) => /declaration uses 'sorry'/.test(m.message));
+  const checked = checker?.ok === true;
+  const axioms = checked ? checker.axioms : [];
+  const disallowedAxioms = axioms.filter((name) => !ALLOWED_AXIOMS.has(name));
+  const usesSorry = axioms.includes('sorryAx') || warnings.some((m) => /declaration uses ['`]sorry['`]/.test(m.message));
 
   const policyChecks = {
     noUnsolvedGoals: exitCode === 0 && errors.length === 0,
     noSorry: !usesSorry,
     noAdmit: !usesSorry,
     noWarnings: fatalWarnings.length === 0,
-    theoremChecked: axioms !== null,
-    allowedAxioms: axioms !== null && disallowedAxioms.length === 0,
+    theoremChecked: checked,
+    kernelChecked: checked,
+    allowedAxioms: checked && disallowedAxioms.length === 0,
     allowedImports: true,
   };
   const valid = Object.values(policyChecks).every(Boolean);
@@ -212,15 +217,16 @@ export function evaluate({ exitCode, output, theoremName, axiomsLine }) {
   if (disallowedAxioms.length) {
     diagnostics.push({ severity: 'error', message: `Theorem ${theoremName} depends on disallowed axioms: ${disallowedAxioms.join(', ')}` });
   }
-  if (axioms === null && policyChecks.noUnsolvedGoals) {
-    diagnostics.push({ severity: 'error', message: `Could not confirm the axioms used by ${theoremName}` });
+  if (checker && !checked) diagnostics.push({ severity: 'error', message: checker.error });
+  if (!checker && policyChecks.noUnsolvedGoals) {
+    diagnostics.push({ severity: 'error', message: `Could not check ${theoremName} in the kernel` });
   }
 
   return {
     status: valid ? 'verified' : 'rejected',
     valid,
     diagnostics: diagnostics.slice(0, 30),
-    axioms: axioms || [],
+    axioms,
     policyChecks,
     policyVersion: POLICY_VERSION,
   };
