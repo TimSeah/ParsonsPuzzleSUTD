@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, Download, FunctionSquare, ListOrdered, Plus, Repeat, Shapes, Sigma } from 'lucide-react';
+import { BarChart3, Binary, Dices, Download, FunctionSquare, Layers, ListOrdered, Network, Plus, Repeat, Shapes, Sigma } from 'lucide-react';
 import { StatusIndicator } from '../components/ui';
 import { PuzzleCreator, PuzzleSuccessModal } from '../components/educator';
 import { CATEGORIES } from '../components/educator/educatorCategories';
@@ -12,6 +12,10 @@ const CATEGORY_ICONS = {
   induction: ListOrdered,
   'set-theory': Shapes,
   recursion: Repeat,
+  logic: Binary,
+  combinatorics: Dices,
+  'graph-theory': Network,
+  'data-structures': Layers,
 };
 
 function EducatorPage() {

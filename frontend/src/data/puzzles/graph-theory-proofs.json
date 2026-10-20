@@ -1,0 +1,135 @@
+{
+  "category": "Graph Theory",
+  "description": "Proofs about degrees, trees and minimum spanning trees",
+  "puzzles": [
+    {
+      "id": "graph1",
+      "title": "\\text{Prove the handshake lemma: } \\sum_{v \\in V} \\deg(v) = 2|E|",
+      "displayTitle": "Prove: the handshake lemma",
+      "statement": "\\text{In every finite simple graph } G = (V, E) \\text{, } \\sum_{v \\in V} \\deg(v) = 2|E|.",
+      "difficulty": "easy",
+      "tags": ["graph-theory", "handshake-lemma", "degree", "double-counting"],
+      "blocks": [
+        {
+          "id": "graph1-1",
+          "latex": "\\text{We count the pairs } (v, e) \\text{ where vertex } v \\text{ is an endpoint of edge } e \\text{, in two ways.}"
+        },
+        {
+          "id": "graph1-2",
+          "latex": "\\text{First, by vertex: vertex } v \\text{ is an endpoint of exactly } \\deg(v) \\text{ edges.}"
+        },
+        {
+          "id": "graph1-3",
+          "latex": "\\text{So the number of pairs is } \\sum_{v \\in V} \\deg(v)."
+        },
+        {
+          "id": "graph1-4",
+          "latex": "\\text{Next, by edge: every edge } e = \\{u, w\\} \\text{ has exactly two endpoints, since } u \\ne w."
+        },
+        {
+          "id": "graph1-5",
+          "latex": "\\text{So the number of pairs is also } 2|E|."
+        },
+        {
+          "id": "graph1-6",
+          "latex": "\\text{Both counts are of the same pairs, so } \\sum_{v \\in V} \\deg(v) {{op:=}} 2|E|."
+        }
+      ],
+      "solutionOrder": ["graph1-1", "graph1-2", "graph1-3", "graph1-4", "graph1-5", "graph1-6"]
+    },
+    {
+      "id": "graph2",
+      "title": "\\text{Prove: a tree with } n \\text{ vertices has } n - 1 \\text{ edges}",
+      "displayTitle": "Prove: a tree on n vertices has n − 1 edges",
+      "statement": "\\text{Every tree (connected graph with no cycles) with } n \\ge 1 \\text{ vertices has exactly } n - 1 \\text{ edges.}",
+      "difficulty": "medium",
+      "tags": ["graph-theory", "trees", "induction"],
+      "blocks": [
+        {
+          "id": "graph2-1",
+          "latex": "\\text{Proof by induction on } n \\ge 1."
+        },
+        {
+          "id": "graph2-2",
+          "latex": "\\textbf{Base case: } n = 1 \\text{: a single vertex has no edges, and } 1 - 1 = 0."
+        },
+        {
+          "id": "graph2-3",
+          "latex": "\\textbf{Inductive step: } \\text{assume every tree with } k \\text{ vertices has } k - 1 \\text{ edges, for some } k \\ge 1."
+        },
+        {
+          "id": "graph2-4",
+          "latex": "\\text{Let } T \\text{ be a tree with } k + 1 \\ge 2 \\text{ vertices.}"
+        },
+        {
+          "id": "graph2-5",
+          "latex": "\\text{Take a longest path in } T \\text{. Its last vertex } v \\text{ has degree 1, since any other neighbour would extend the path or close a cycle. So } v \\text{ is a leaf.}"
+        },
+        {
+          "id": "graph2-6",
+          "latex": "\\text{Remove } v \\text{ and its single edge to get } T'."
+        },
+        {
+          "id": "graph2-7",
+          "latex": "T' \\text{ is still connected, because no path between two other vertices passes through the leaf } v \\text{, and it has no cycles. So } T' \\text{ is a tree with } k \\text{ vertices.}"
+        },
+        {
+          "id": "graph2-8",
+          "latex": "\\text{By the inductive hypothesis, } T' \\text{ has } k - 1 \\text{ edges.}"
+        },
+        {
+          "id": "graph2-9",
+          "latex": "\\text{Adding back the edge at } v \\text{, } T \\text{ has } (k - 1) + 1 = k {{op:=}} (k + 1) - 1 \\text{ edges.}"
+        },
+        {
+          "id": "graph2-10",
+          "latex": "\\text{Therefore, by induction, a tree with } n \\text{ vertices has } n - 1 \\text{ edges } {{quantifier:\\forall}} n {{op:\\geq}} 1."
+        }
+      ],
+      "solutionOrder": ["graph2-1", "graph2-2", "graph2-3", "graph2-4", "graph2-5", "graph2-6", "graph2-7", "graph2-8", "graph2-9", "graph2-10"]
+    },
+    {
+      "id": "graph3",
+      "title": "\\text{Prove the cut property of minimum spanning trees}",
+      "displayTitle": "Prove: the MST cut property",
+      "statement": "\\text{Let } G = (V, E) \\text{ be a connected weighted graph and } (S, V \\setminus S) \\text{ a cut. If } e \\text{ has minimum weight among the edges crossing the cut, some minimum spanning tree contains } e.",
+      "difficulty": "hard",
+      "tags": ["graph-theory", "minimum-spanning-tree", "greedy", "exchange-argument"],
+      "blocks": [
+        {
+          "id": "graph3-1",
+          "latex": "\\text{Let } e = \\{u, v\\} \\text{ with } u \\in S \\text{ and } v \\in V \\setminus S \\text{, and let } T \\text{ be any minimum spanning tree.}"
+        },
+        {
+          "id": "graph3-2",
+          "latex": "\\text{If } e \\in T \\text{, we are done. Otherwise } e {{setop:\\notin}} T."
+        },
+        {
+          "id": "graph3-3",
+          "latex": "\\text{Adding } e \\text{ to } T \\text{ creates exactly one cycle: } e \\text{ together with the path from } u \\text{ to } v \\text{ in } T."
+        },
+        {
+          "id": "graph3-4",
+          "latex": "\\text{That path starts in } S \\text{ and ends in } V \\setminus S \\text{, so it contains an edge } e' \\text{ that also crosses the cut.}"
+        },
+        {
+          "id": "graph3-5",
+          "latex": "\\text{Let } T' = T - e' + e \\text{. Removing an edge of the cycle keeps the graph connected, and } T' \\text{ has } {|V| - 1} \\text{ edges, so } T' \\text{ is a spanning tree.}"
+        },
+        {
+          "id": "graph3-6",
+          "latex": "\\text{Since } e \\text{ has minimum weight among crossing edges, } w(e) \\le w(e') \\text{, so } w(T') = w(T) - w(e') + w(e) {{op:\\leq}} w(T)."
+        },
+        {
+          "id": "graph3-7",
+          "latex": "\\text{Since } T \\text{ is a minimum spanning tree, also } w(T) \\le w(T') \\text{, so } w(T') = w(T)."
+        },
+        {
+          "id": "graph3-8",
+          "latex": "\\text{So } T' \\text{ is a minimum spanning tree, and it contains } e."
+        }
+      ],
+      "solutionOrder": ["graph3-1", "graph3-2", "graph3-3", "graph3-4", "graph3-5", "graph3-6", "graph3-7", "graph3-8"]
+    }
+  ]
+}

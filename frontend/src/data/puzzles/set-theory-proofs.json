@@ -145,6 +145,96 @@
         "set2-1", "set2-2", "set2-3", "set2-4", "set2-5", "set2-6", "set2-7",
         "set2-8", "set2-9", "set2-10", "set2-11", "set2-12", "set2-13", "set2-14"
       ]
+    },
+    {
+      "id": "set3",
+      "title": "\\text{Prove: } |A \\cup B| = |A| + |B| - |A \\cap B|",
+      "displayTitle": "Prove: inclusion–exclusion for two sets",
+      "statement": "\\text{For finite sets } A \\text{ and } B \\text{, } |A \\cup B| = |A| + |B| - |A \\cap B|",
+      "difficulty": "medium",
+      "tags": ["set-theory", "inclusion-exclusion", "cardinality", "combinatorics", "union", "intersection"],
+      "blocks": [
+        {
+          "id": "set3-1",
+          "latex": "\\text{First, split } A \\cup B \\text{ into three disjoint parts: } A {{cupcap:\\setminus}} B \\text{, } A {{cupcap:\\cap}} B \\text{ and } B \\setminus A."
+        },
+        {
+          "id": "set3-2",
+          "latex": "\\text{Since the parts are disjoint, } |A \\cup B| = |A \\setminus B| + |A \\cap B| + |B \\setminus A|."
+        },
+        {
+          "id": "set3-3",
+          "latex": "\\text{Next, each element of } A \\text{ is either in } B \\text{ or not, so } |A| = |A \\setminus B| + |A \\cap B|."
+        },
+        {
+          "id": "set3-4",
+          "latex": "\\text{Rearranging, } |A \\setminus B| = |A| - |A \\cap B|."
+        },
+        {
+          "id": "set3-5",
+          "latex": "\\text{Similarly, } |B \\setminus A| = |B| - |A \\cap B|."
+        },
+        {
+          "id": "set3-6",
+          "latex": "\\text{Substituting: } |A \\cup B| = \\big(|A| - |A \\cap B|\\big) + |A \\cap B| + \\big(|B| - |A \\cap B|\\big)."
+        },
+        {
+          "id": "set3-7",
+          "latex": "\\text{Therefore } |A \\cup B| {{op:=}} |A| + |B| - |A \\cap B|."
+        }
+      ],
+      "solutionOrder": ["set3-1", "set3-2", "set3-3", "set3-4", "set3-5", "set3-6", "set3-7"]
+    },
+    {
+      "id": "set4",
+      "title": "\\text{Prove: } A \\times (B \\cap C) = (A \\times B) \\cap (A \\times C)",
+      "displayTitle": "Prove: Cartesian product distributes over intersection",
+      "statement": "A \\times (B \\cap C) = (A \\times B) \\cap (A \\times C)",
+      "difficulty": "medium",
+      "tags": ["set-theory", "cartesian-product", "intersection"],
+      "blocks": [
+        {
+          "id": "set4-1",
+          "latex": "\\text{To prove set equality, we show that each side is a subset of the other.}"
+        },
+        {
+          "id": "set4-2",
+          "latex": "\\textbf{Part 1: } A \\times (B \\cap C) \\subseteq (A \\times B) \\cap (A \\times C)"
+        },
+        {
+          "id": "set4-3",
+          "latex": "\\text{Let } (x, y) \\in A \\times (B \\cap C) \\text{, so } x \\in A \\text{ and } y {{setop:\\in}} B \\cap C."
+        },
+        {
+          "id": "set4-4",
+          "latex": "\\text{Then } y \\in B \\text{ and } y \\in C \\text{, so } (x, y) \\in A \\times B \\text{ and } (x, y) \\in A \\times C."
+        },
+        {
+          "id": "set4-5",
+          "latex": "\\text{Hence } (x, y) \\in (A \\times B) {{cupcap:\\cap}} (A \\times C)."
+        },
+        {
+          "id": "set4-6",
+          "latex": "\\textbf{Part 2: } (A \\times B) \\cap (A \\times C) \\subseteq A \\times (B \\cap C)"
+        },
+        {
+          "id": "set4-7",
+          "latex": "\\text{Let } (x, y) \\in (A \\times B) \\cap (A \\times C) \\text{, so } (x, y) \\in A \\times B \\text{ and } (x, y) \\in A \\times C."
+        },
+        {
+          "id": "set4-8",
+          "latex": "\\text{Then } x \\in A \\text{, } y \\in B \\text{ and } y \\in C \\text{, so } y \\in B \\cap C."
+        },
+        {
+          "id": "set4-9",
+          "latex": "\\text{Hence } (x, y) \\in A \\times (B \\cap C)."
+        },
+        {
+          "id": "set4-10",
+          "latex": "\\text{Both inclusions hold, so } A \\times (B \\cap C) = (A \\times B) \\cap (A \\times C)."
+        }
+      ],
+      "solutionOrder": ["set4-1", "set4-2", "set4-3", "set4-4", "set4-5", "set4-6", "set4-7", "set4-8", "set4-9", "set4-10"]
     }
   ]
 }

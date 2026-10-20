@@ -2,11 +2,15 @@
  * Puzzle loader service for loading puzzle data from JSON files
  */
 
-// Import all JSON puzzle data
+// Import all JSON puzzle data, one file per category
 import bigOProofsData from '../data/puzzles/big-o-proofs.json' with { type: 'json' };
 import inductionProofsData from '../data/puzzles/induction-proofs.json' with { type: 'json' };
 import setTheoryProofsData from '../data/puzzles/set-theory-proofs.json' with { type: 'json' };
 import recursionProofsData from '../data/puzzles/recursion-proofs.json' with { type: 'json' };
+import logicProofsData from '../data/puzzles/logic-proofs.json' with { type: 'json' };
+import combinatoricsProofsData from '../data/puzzles/combinatorics-proofs.json' with { type: 'json' };
+import graphTheoryProofsData from '../data/puzzles/graph-theory-proofs.json' with { type: 'json' };
+import dataStructuresProofsData from '../data/puzzles/data-structures-proofs.json' with { type: 'json' };
 
 /**
  * Transform puzzle data from JSON format to the format expected by components
@@ -35,49 +39,31 @@ const transformCategoryData = (categoryData) => {
   };
 };
 
-// Transform all puzzle data
-const bigOProofs = transformCategoryData(bigOProofsData);
-const inductionProofs = transformCategoryData(inductionProofsData);
-const setTheoryProofs = transformCategoryData(setTheoryProofsData);
-const recursionProofs = transformCategoryData(recursionProofsData);
+const CATEGORY_DATA = [
+  bigOProofsData,
+  inductionProofsData,
+  setTheoryProofsData,
+  recursionProofsData,
+  logicProofsData,
+  combinatoricsProofsData,
+  graphTheoryProofsData,
+  dataStructuresProofsData,
+].map(transformCategoryData);
 
-export const ALL_PUZZLES = [
-  ...bigOProofs.puzzles,
-  ...inductionProofs.puzzles,
-  ...setTheoryProofs.puzzles,
-  ...recursionProofs.puzzles
-];
+export const ALL_PUZZLES = CATEGORY_DATA.flatMap(data => data.puzzles);
 
-const PUZZLES_BY_CATEGORY = {
-  [bigOProofs.category]: bigOProofs.puzzles,
-  [inductionProofs.category]: inductionProofs.puzzles,
-  [setTheoryProofs.category]: setTheoryProofs.puzzles,
-  [recursionProofs.category]: recursionProofs.puzzles
-};
+const PUZZLES_BY_CATEGORY = Object.fromEntries(
+  CATEGORY_DATA.map(data => [data.category, data.puzzles])
+);
 
 // Export category metadata
-export const CATEGORIES = {
-  [bigOProofs.category]: {
-    name: bigOProofs.category,
-    description: bigOProofs.description,
-    puzzleCount: bigOProofs.puzzles.length
-  },
-  [inductionProofs.category]: {
-    name: inductionProofs.category,
-    description: inductionProofs.description,
-    puzzleCount: inductionProofs.puzzles.length
-  },
-  [setTheoryProofs.category]: {
-    name: setTheoryProofs.category,
-    description: setTheoryProofs.description,
-    puzzleCount: setTheoryProofs.puzzles.length
-  },
-  [recursionProofs.category]: {
-    name: recursionProofs.category,
-    description: recursionProofs.description,
-    puzzleCount: recursionProofs.puzzles.length
-  }
-};
+export const CATEGORIES = Object.fromEntries(
+  CATEGORY_DATA.map(data => [data.category, {
+    name: data.category,
+    description: data.description,
+    puzzleCount: data.puzzles.length
+  }])
+);
 
 /**
  * Puzzle loader service with methods for loading and filtering puzzles

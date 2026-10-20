@@ -1,4 +1,6 @@
 // Service for managing puzzle data with server integration
+import { CATEGORIES } from '../components/educator/educatorCategories';
+
 class PuzzleManagerService {
   constructor() {
     this.apiEnabled = true;
@@ -136,27 +138,9 @@ class PuzzleManagerService {
     }
 
     // Return default structure based on category
-    const categoryInfo = {
-      'big-o': {
-        category: 'Big O Notation',
-        description: 'Proofs involving Big O, Omega, and Theta notation'
-      },
-      'induction': {
-        category: 'Mathematical Induction',
-        description: 'Proofs using mathematical induction'
-      },
-      'recursion': {
-        category: 'Recursion',
-        description: 'Proofs involving recursive relations and algorithms'
-      },
-      'set-theory': {
-        category: 'Set Theory',
-        description: 'Proofs involving set operations and properties'
-      }
-    };
-
+    const info = CATEGORIES[category];
     return {
-      ...categoryInfo[category],
+      ...(info ? { category: info.name, description: info.description } : {}),
       puzzles: []
     };
   }
@@ -175,20 +159,14 @@ class PuzzleManagerService {
    * Get category filename
    */
   getCategoryFileName(category) {
-    const categoryMap = {
-      'big-o': 'big-o-proofs.json',
-      'induction': 'induction-proofs.json',
-      'recursion': 'recursion-proofs.json',
-      'set-theory': 'set-theory-proofs.json'
-    };
-    return categoryMap[category] || `${category}-proofs.json`;
+    return CATEGORIES[category]?.file || `${category}-proofs.json`;
   }
 
   /**
    * Get educator puzzles from localStorage (fallback)
    */
   getEducatorPuzzlesFromLocalStorage() {
-    const categories = ['big-o', 'induction', 'recursion', 'set-theory'];
+    const categories = Object.keys(CATEGORIES);
     const allPuzzles = [];
     
     for (const category of categories) {
@@ -283,13 +261,7 @@ class PuzzleManagerService {
    * Get display name for category
    */
   getCategoryDisplayName(category) {
-    const displayNames = {
-      'big-o': 'Big O Notation',
-      'induction': 'Mathematical Induction',
-      'recursion': 'Recursion',
-      'set-theory': 'Set Theory'
-    };
-    return displayNames[category] || category;
+    return CATEGORIES[category]?.name || category;
   }
 
   /**
@@ -323,7 +295,7 @@ class PuzzleManagerService {
     }
 
     // Validate category
-    const validCategories = ['big-o', 'induction', 'recursion', 'set-theory'];
+    const validCategories = Object.keys(CATEGORIES);
     if (!validCategories.includes(puzzle.category)) {
       throw new Error(`Invalid category. Must be one of: ${validCategories.join(', ')}`);
     }
@@ -408,7 +380,7 @@ class PuzzleManagerService {
    * Clear all educator-created puzzles (useful for testing)
    */
   clearEducatorPuzzles() {
-    const categories = ['big-o', 'induction', 'recursion', 'set-theory'];
+    const categories = Object.keys(CATEGORIES);
     for (const category of categories) {
       localStorage.removeItem(`puzzles_${category}`);
     }

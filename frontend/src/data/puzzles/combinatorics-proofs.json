@@ -1,0 +1,123 @@
+{
+  "category": "Combinatorics",
+  "description": "Counting arguments, the pigeonhole principle and binomial identities",
+  "puzzles": [
+    {
+      "id": "comb1",
+      "title": "\\text{Prove the pigeonhole principle for } n + 1 \\text{ objects in } n \\text{ boxes}",
+      "displayTitle": "Prove: the pigeonhole principle",
+      "statement": "\\text{If } n + 1 \\text{ objects are placed into } n \\ge 1 \\text{ boxes, some box contains at least two objects.}",
+      "difficulty": "easy",
+      "tags": ["combinatorics", "pigeonhole", "proof-by-contradiction"],
+      "blocks": [
+        {
+          "id": "comb1-1",
+          "latex": "\\text{Suppose, for contradiction, that every box contains at most one object.}"
+        },
+        {
+          "id": "comb1-2",
+          "latex": "\\text{Let } a_i \\text{ be the number of objects in box } i \\text{, so } a_i {{op:\\leq}} 1 \\text{ for each } i = 1, \\ldots, n."
+        },
+        {
+          "id": "comb1-3",
+          "latex": "\\text{Every object is in exactly one box, so the number of objects is } a_1 + a_2 + \\cdots + a_n."
+        },
+        {
+          "id": "comb1-4",
+          "latex": "\\text{So the number of objects, } a_1 + a_2 + \\cdots + a_n \\text{, is at most } 1 + 1 + \\cdots + 1 = n."
+        },
+        {
+          "id": "comb1-5",
+          "latex": "\\text{But there are } n + 1 \\text{ objects, so } n + 1 {{op:\\leq}} n."
+        },
+        {
+          "id": "comb1-6",
+          "latex": "\\text{This is impossible, so the assumption is false.}"
+        },
+        {
+          "id": "comb1-7",
+          "latex": "\\text{Therefore some box contains at least two objects.}"
+        }
+      ],
+      "solutionOrder": ["comb1-1", "comb1-2", "comb1-3", "comb1-4", "comb1-5", "comb1-6", "comb1-7"]
+    },
+    {
+      "id": "comb2",
+      "title": "\\text{Prove: a set with } n \\text{ elements has } 2^n \\text{ subsets}",
+      "displayTitle": "Prove: an n-element set has 2ⁿ subsets",
+      "statement": "|S| = n \\implies |\\mathcal{P}(S)| = 2^n",
+      "difficulty": "easy",
+      "tags": ["combinatorics", "product-rule", "subsets", "power-set", "set-theory"],
+      "blocks": [
+        {
+          "id": "comb2-1",
+          "latex": "\\text{Let } S = \\{s_1, s_2, \\ldots, s_n\\} \\text{ be a set with } n \\text{ elements.}"
+        },
+        {
+          "id": "comb2-2",
+          "latex": "\\text{A subset } T \\subseteq S \\text{ is fixed by deciding, for each } s_i \\text{, whether } s_i \\in T \\text{ or } s_i \\notin T."
+        },
+        {
+          "id": "comb2-3",
+          "latex": "\\text{Record the decisions as a binary string } b_1 b_2 \\ldots b_n \\text{, with } b_i = 1 \\text{ exactly when } s_i {{setop:\\in}} T."
+        },
+        {
+          "id": "comb2-4",
+          "latex": "\\text{Different subsets give different strings, and every string comes from a subset, so this is a bijection.}"
+        },
+        {
+          "id": "comb2-5",
+          "latex": "\\text{So it is enough to count the strings: each of the } n \\text{ positions has 2 independent choices.}"
+        },
+        {
+          "id": "comb2-6",
+          "latex": "\\text{By the product rule there are } 2 \\cdot 2 \\cdots 2 = 2^n \\text{ binary strings of length } n."
+        },
+        {
+          "id": "comb2-7",
+          "latex": "\\text{Therefore } |\\mathcal{P}(S)| {{op:=}} 2^n."
+        }
+      ],
+      "solutionOrder": ["comb2-1", "comb2-2", "comb2-3", "comb2-4", "comb2-5", "comb2-6", "comb2-7"]
+    },
+    {
+      "id": "comb3",
+      "title": "\\text{Prove Pascal's identity: } \\binom{n}{k} = \\binom{n-1}{k-1} + \\binom{n-1}{k}",
+      "displayTitle": "Prove: Pascal's identity",
+      "statement": "\\binom{n}{k} = \\binom{n-1}{k-1} + \\binom{n-1}{k} \\text{ for } 1 \\le k \\le n - 1",
+      "difficulty": "medium",
+      "tags": ["combinatorics", "binomial-coefficients", "combinatorial-proof", "pascals-triangle"],
+      "blocks": [
+        {
+          "id": "comb3-1",
+          "latex": "\\text{We count the } k \\text{-element subsets of an } n \\text{-element set } S \\text{ in two ways.}"
+        },
+        {
+          "id": "comb3-2",
+          "latex": "\\text{Directly, there are } \\binom{n}{k} \\text{ such subsets.}"
+        },
+        {
+          "id": "comb3-3",
+          "latex": "\\text{Now fix one element } x \\in S \\text{. Every } k \\text{-element subset either contains } x \\text{ or does not.}"
+        },
+        {
+          "id": "comb3-4",
+          "latex": "\\text{Case 1, subsets containing } x \\text{: choose the other } k - 1 \\text{ elements from the } n - 1 \\text{ elements of } S \\setminus \\{x\\} \\text{, in } \\binom{n-1}{k-1} \\text{ ways.}"
+        },
+        {
+          "id": "comb3-5",
+          "latex": "\\text{Case 2, subsets not containing } x \\text{: choose all } k \\text{ elements from } S \\setminus \\{x\\} \\text{, in } \\binom{n-1}{k} \\text{ ways.}"
+        },
+        {
+          "id": "comb3-6",
+          "latex": "\\text{The cases are disjoint and cover every subset, so by the sum rule there are } \\binom{n-1}{k-1} + \\binom{n-1}{k} \\text{ subsets.}"
+        },
+        {
+          "id": "comb3-7",
+          "latex": "\\text{Both counts are of the same subsets, so } \\binom{n}{k} {{op:=}} \\binom{n-1}{k-1} + \\binom{n-1}{k}."
+        }
+      ],
+      "solutionOrder": ["comb3-1", "comb3-2", "comb3-3", "comb3-4", "comb3-5", "comb3-6", "comb3-7"]
+    }
+  ]
+}
