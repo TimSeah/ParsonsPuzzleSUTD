@@ -164,7 +164,7 @@ function readEnv(file) {
 async function inspect() {
   const backendEnvFile = readEnv('backend/.env');
   // Variables already in the environment win, as they do for the backend itself (dotenv).
-  const backendEnv = { ...backendEnvFile, ...pick(process.env, ['MONGODB_URI', 'OPENAI_API_KEY', 'OPENAI_MODEL']) };
+  const backendEnv = { ...backendEnvFile, ...pick(process.env, ['MONGODB_URI', 'OPENAI_API_KEY', 'OPENAI_MODEL', 'EDUCATOR_KEY']) };
   const mongoUri = isPlaceholder(backendEnv.MONGODB_URI) ? null : backendEnv.MONGODB_URI;
   const target = mongoTarget(mongoUri);
 
@@ -179,6 +179,7 @@ async function inspect() {
     backendPort: Number(backendEnvFile?.PORT) || DEFAULT_PORTS.api,
     mongoUri,
     mongo: target ? { ...target, reachable: await canConnect(target.port, target.host, 1500) } : null,
+    educatorKey: Boolean(backendEnv.EDUCATOR_KEY),
     openai: !isPlaceholder(backendEnv.OPENAI_API_KEY),
     openaiModel: isPlaceholder(backendEnv.OPENAI_MODEL) ? null : backendEnv.OPENAI_MODEL,
     lake: findLakeDir(),
@@ -212,6 +213,8 @@ function report(state, plan) {
   else if (!state.mongo) line('ok', 'MONGODB_URI set (Atlas/SRV address, not checked)');
   else if (state.mongo.reachable) line('ok', `MongoDB reachable at ${state.mongo.host}:${state.mongo.port}`);
   else line('warn', `MongoDB not reachable at ${state.mongo.host}:${state.mongo.port}`, 'Start MongoDB; the API keeps retrying until it can connect.');
+  line(state.educatorKey ? 'ok' : 'off', state.educatorKey ? 'Educator key set' : 'EDUCATOR_KEY not set (needed to publish and review puzzles)',
+    state.educatorKey || !state.backendEnvFile ? null : 'Add EDUCATOR_KEY=educator to backend/.env for local development.');
   line(state.openai ? 'ok' : 'off', state.openai ? `OpenAI key set${state.openaiModel ? ` (model ${state.openaiModel})` : ''}` : 'OpenAI key not set (only needed for AI-generated puzzles)');
 
   console.log(bold('\nLean worker'));

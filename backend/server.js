@@ -6,6 +6,8 @@ import rateLimit from 'express-rate-limit';
 import puzzleRoutes from './routes/puzzles.js';
 import generationRoutes from './routes/generation.js';
 import feedbackRoutes from './routes/feedback.js';
+import educatorRoutes from './routes/educator.js';
+import { educatorKeyProblem } from './services/educatorAuth.js';
 import {
   connectDatabase,
   databaseState,
@@ -67,6 +69,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api/puzzles', puzzleRoutes);
 app.use('/api/generate', generationRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/educator', educatorRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -98,6 +101,8 @@ const server = app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
   console.log(`OpenAI assistant: ${ASSISTANT_NAME} (${OPENAI_MODEL})`);
+  const keyProblem = educatorKeyProblem();
+  if (keyProblem) console.warn(`Educator sign-in disabled: ${keyProblem}. Creating and editing puzzles will return 503.`);
   void connectDatabase();
 });
 

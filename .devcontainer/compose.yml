@@ -9,6 +9,8 @@ services:
     environment:
       # Used by the backend and `npm start`; overrides backend/.env if present.
       MONGODB_URI: mongodb://mongodb:27017/parsonspuzzle
+      # Development-only educator key for publishing and reviewing puzzles.
+      EDUCATOR_KEY: educator
     depends_on:
       - mongodb
 

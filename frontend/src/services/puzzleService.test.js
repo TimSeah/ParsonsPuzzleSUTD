@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PuzzleService } from './puzzleService.js';
+import { setEducatorKey } from './educatorSession.js';
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -8,6 +9,23 @@ function jsonResponse(body, status = 200) {
 describe('PuzzleService', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    sessionStorage.clear();
+  });
+
+  it('sends the educator key only on educator requests', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => jsonResponse({}));
+    vi.stubGlobal('fetch', fetchMock);
+    setEducatorKey('k1');
+    const service = new PuzzleService();
+
+    await service.createPuzzle({ id: 'p' });
+    await service.healthCheck();
+    await service.generatePuzzle({});
+
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer k1');
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('educator');
+    expect(fetchMock.mock.calls[1][1].headers).not.toHaveProperty('Authorization');
+    expect(fetchMock.mock.calls[2][1].headers).not.toHaveProperty('Authorization');
   });
 
   it('posts generation requests with the user, request id and filters', async () => {

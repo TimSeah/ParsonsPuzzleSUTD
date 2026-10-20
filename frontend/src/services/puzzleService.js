@@ -1,5 +1,8 @@
 // The single HTTP client for the backend API. Errors carry `code` ('NETWORK',
 // 'TIMEOUT' or the server's error code) and `status` so callers can branch.
+// Pass `educator: true` to send the signed-in educator's key.
+import { getEducatorKey } from './educatorSession.js';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 30000);
 const GENERATION_TIMEOUT_MS = Number(import.meta.env.VITE_GENERATION_TIMEOUT_MS || 1200000);
@@ -11,9 +14,10 @@ class PuzzleService {
     this.baseURL = API_BASE_URL;
   }
 
-  async fetchWithError(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+  async fetchWithError(url, { educator = false, ...options } = {}, timeoutMs = API_TIMEOUT_MS) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const educatorKey = educator ? getEducatorKey() : '';
     let response;
     try {
       response = await fetch(`${this.baseURL}${url}`, {
@@ -21,6 +25,7 @@ class PuzzleService {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          ...(educatorKey ? { Authorization: `Bearer ${educatorKey}` } : {}),
           ...options.headers
         },
       });
@@ -96,12 +101,17 @@ class PuzzleService {
     return this.fetchWithError(url);
   }
 
-  // Create a new puzzle
   async createPuzzle(puzzleData) {
     return this.fetchWithError('/puzzles', {
       method: 'POST',
+      educator: true,
       body: JSON.stringify(puzzleData)
     });
+  }
+
+  // Resolves if the key is accepted; rejects with status 401 if not.
+  async checkEducatorKey(key) {
+    return this.fetchWithError('/educator/session', { headers: { Authorization: `Bearer ${key}` } });
   }
 
   async getPuzzleStats() {
