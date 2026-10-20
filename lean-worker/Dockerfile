@@ -23,7 +23,7 @@ RUN curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-ini
 COPY --chown=lean lakefile.toml lake-manifest.json ./
 RUN lake exe cache get
 
-COPY --chown=lean package.json server.js verifier.js limiter.js ./
+COPY --chown=lean package.json server.js verifier.js limiter.js Checker.lean ./
 
 ENV HOST=0.0.0.0
 ENV PORT=3001

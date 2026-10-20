@@ -14,7 +14,7 @@ npm test
 | `routes/` | `/api/puzzles`, `/api/generate`, `/api/feedback`, `/api/educator` |
 | `services/` | Generation flow, OpenAI client, puzzle contract, Lean client, limits, educator auth, database |
 | `models/` | `Puzzle`, `PuzzleHistory`, `GenerationUsage`, `Feedback` |
-| `scripts/` | `npm run migrate` imports the bundled puzzles; `npm run feedback:export` exports feedback |
+| `scripts/` | `npm run migrate` imports the bundled puzzles; `npm run feedback:export` exports feedback; `npm run reverify` re-checks stored proofs after the Lean policy changes |
 | `test/` | `node:test` suites |
 
 See the wiki for the [API reference](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/API-Reference), [configuration](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Configuration) and [database setup](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Database).
