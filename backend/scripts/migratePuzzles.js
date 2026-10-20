@@ -97,13 +97,8 @@ async function migratePuzzles() {
       bufferCommands: false,
       maxPoolSize: 10
     };
-    
-    // Add TLS options for Windows/Atlas
-    if (MONGODB_URI.includes('mongodb+srv') || process.platform === 'win32') {
-      connectionOptions.tls = true;
-      connectionOptions.tlsAllowInvalidCertificates = true;
-    }
-    
+    // mongodb+srv:// (Atlas) turns TLS on, with certificate checks, by itself.
+
     await mongoose.connect(MONGODB_URI, connectionOptions);
     console.log('Connected to MongoDB successfully!');
     
@@ -196,7 +191,8 @@ async function migratePuzzles() {
     console.log(`\nTotal active puzzles: ${totalCount}`);
     
   } catch (error) {
-    console.error('Migration error:', error);
+    console.error('Migration error:', error.message);
+    throw error;
   } finally {
     await mongoose.connection.close();
     console.log('Database connection closed.');
@@ -209,8 +205,8 @@ if (process.argv[1] && process.argv[1].endsWith('migratePuzzles.js')) {
   migratePuzzles().then(() => {
     console.log('Migration completed successfully!');
     process.exit(0);
-  }).catch((error) => {
-    console.error('Migration failed:', error);
+  }).catch(() => {
+    console.error('Migration failed.');
     process.exit(1);
   });
 }

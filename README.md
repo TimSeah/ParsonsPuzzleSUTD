@@ -11,6 +11,7 @@ A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students
 ### For students
 
 - Drag steps into place, or tap **+** and reorder with ↑ / ↓. Works on desktop and phones.
+- Some steps have symbols to fill in (such as ≤, Θ or ∀). Click a symbol to cycle through the options; it is graded with the step.
 - **Practice** mode gives a score and hints as you go.
 - **Challenge** mode hides the result until you submit, with Lockout, Timed (5 minutes) and Limited moves (20) rules.
 - Pick bundled puzzles or AI-generated ones by difficulty and topic.
@@ -33,7 +34,7 @@ A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students
 
 <table>
   <tr>
-    <td><img src=".github/assets/screenshots/educator-dashboard.png" alt="Educator dashboard"></td>
+    <td><img src=".github/assets/screenshots/educator-dashboard.png" alt="Educator dashboard with the review queue"></td>
     <td><img src=".github/assets/screenshots/puzzle-creator.png" alt="Proof steps with a live LaTeX preview"></td>
   </tr>
 </table>
@@ -79,4 +80,4 @@ Common commands, run from the root: `npm run dev:fullstack`, `npm test`, `npm ru
 | Running it | [Getting started](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Getting-Started) · [Configuration](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Configuration) · [Database](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Database) · [Deployment](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Deployment) · [Troubleshooting](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Troubleshooting) |
 | How it works | [Architecture](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Architecture) · [Generation and verification](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Generation-and-Verification) · [API reference](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/API-Reference) · [Puzzle format](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Puzzle-Format) |
 
-There is no login yet. Read [Deployment](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Deployment#before-going-public) before putting the app on a public server.
+Students don't sign in, and educators share one key. Read [Deployment](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Deployment#before-going-public) before putting the app on a public server.
