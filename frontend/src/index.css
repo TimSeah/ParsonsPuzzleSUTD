@@ -304,6 +304,11 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap !important;
 }
 
+/* Keep fractions and binomials together with their brackets. */
+.katex :has(> .mfrac) {
+  white-space: nowrap !important;
+}
+
 .katex .mbin,
 .katex .mrel {
   color: var(--color-accent-fg);

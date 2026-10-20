@@ -24,7 +24,7 @@
         },
         {
           "id": "block1-4",
-          "latex": "\\text{Consider } f(n) = n^2 + n^3 \\text{ and } g(n) = n^3."
+          "latex": "\\text{Apply these definitions with } f(n) = n^2 + n^3 \\text{ and } g(n) = n^3."
         },
         {
           "id": "block1-5",
@@ -74,19 +74,19 @@
         },
         {
           "id": "block2-2",
-          "latex": "\\text{Consider } f(n) = \\log n \\text{ and } g(n) = n."
+          "latex": "\\text{Apply this with } f(n) = \\log_2 n \\text{ and } g(n) = n \\text{ (the base of the logarithm only changes the constant).}"
         },
         {
           "id": "block2-3",
-          "latex": "\\text{We know that } \\log n {{op:\\leq|<}} n \\text{ for all } n {{op:\\geq}} 1."
+          "latex": "\\text{By induction on } n \\text{, we have } n < 2^n \\text{ for all } n {{op:\\geq}} 1 \\text{ (doubling adds at least 1 each step).}"
         },
         {
           "id": "block2-4",
-          "latex": "\\text{This can be proven by induction or by observing that} \\text{ the exponential function grows faster than any polynomial.}"
+          "latex": "\\text{Taking } \\log_2 \\text{ of both sides of } n < 2^n \\text{ gives } \\log_2 n {{op:\\leq|<}} n."
         },
         {
           "id": "block2-5",
-          "latex": "\\text{Therefore, } \\log n \\le 1 \\cdot n \\text{ for all } n \\ge 1."
+          "latex": "\\text{Therefore, } \\log_2 n \\le 1 \\cdot n \\text{ for all } n \\ge 1."
         },
         {
           "id": "block2-6",
@@ -116,7 +116,7 @@
         },
         {
           "id": "block3-2",
-          "latex": "\\text{Consider } f(n) = n \\log n \\text{ and } g(n) = n^2."
+          "latex": "\\text{Apply this with } f(n) = n \\log n \\text{ (logarithm base 2) and } g(n) = n^2."
         },
         {
           "id": "block3-3",
@@ -166,7 +166,7 @@
         },
         {
           "id": "block4-2",
-          "latex": "\\text{Consider } f(n) = 2^n \\text{ and } g(n) = n^3."
+          "latex": "\\text{Apply this with } f(n) = 2^n \\text{ and } g(n) = n^3 \\text{ (logarithms below are base 2).}"
         },
         {
           "id": "block4-3",
@@ -197,6 +197,92 @@
         "block4-1", "block4-2", "block4-3", "block4-4", 
         "block4-5", "block4-6", "block4-7", "block4-8"
       ]
+    },
+    {
+      "id": "proof5",
+      "title": "\\text{Prove: if } f(n) = O(g(n)) \\text{ and } g(n) = O(h(n)) \\text{, then } f(n) = O(h(n))",
+      "displayTitle": "Prove: Big-O is transitive",
+      "statement": "f(n) = O(g(n)) \\text{ and } g(n) = O(h(n)) \\implies f(n) = O(h(n))",
+      "difficulty": "easy",
+      "tags": ["big-o", "asymptotic-analysis", "transitivity"],
+      "blocks": [
+        {
+          "id": "block5-1",
+          "latex": "\\text{Since } f(n) = O(g(n)) \\text{, there are constants } c_1 > 0 \\text{ and } n_1 \\text{ with } 0 \\le f(n) \\le c_1 g(n) \\text{ for all } n \\ge n_1."
+        },
+        {
+          "id": "block5-2",
+          "latex": "\\text{Similarly, since } g(n) = O(h(n)) \\text{, there are } c_2 > 0 \\text{ and } n_2 \\text{ with } 0 \\le g(n) \\le c_2 h(n) \\text{ for all } n \\ge n_2."
+        },
+        {
+          "id": "block5-3",
+          "latex": "\\text{Let } n_0 = \\max(n_1, n_2) \\text{, so both bounds hold for all } n \\ge n_0."
+        },
+        {
+          "id": "block5-4",
+          "latex": "\\text{For } n \\ge n_0 \\text{: } f(n) {{op:\\leq}} c_1 g(n) {{op:\\leq}} c_1 c_2 h(n) \\text{, multiplying the second bound by } c_1 > 0."
+        },
+        {
+          "id": "block5-5",
+          "latex": "\\text{So with } c = c_1 c_2 > 0 \\text{, we have } 0 \\le f(n) \\le c \\cdot h(n) \\text{ for all } n \\ge n_0."
+        },
+        {
+          "id": "block5-6",
+          "latex": "\\text{Therefore } f(n) = {{complexity:O}}(h(n))."
+        }
+      ],
+      "solutionOrder": ["block5-1", "block5-2", "block5-3", "block5-4", "block5-5", "block5-6"]
+    },
+    {
+      "id": "proof6",
+      "title": "\\text{Prove: } T(n) = 2T(n/2) + n \\text{ is } O(n \\log n)",
+      "displayTitle": "Prove: T(n) = 2T(n/2) + n is O(n log n)",
+      "statement": "T(1) = 1 \\text{ and } T(n) = 2T(n/2) + n \\text{ for powers of two } n \\ge 2 \\text{. Show } T(n) = O(n \\log_2 n).",
+      "difficulty": "medium",
+      "tags": ["big-o", "recurrence-relations", "recursion", "induction", "divide-and-conquer"],
+      "blocks": [
+        {
+          "id": "block6-1",
+          "latex": "\\text{Claim: } T(n) = n \\log_2 n + n \\text{ for every power of two } n \\ge 1 \\text{. We prove it by induction on } n."
+        },
+        {
+          "id": "block6-2",
+          "latex": "\\textbf{Base case: } T(1) = 1 = 1 \\cdot \\log_2 1 + 1 \\text{, since } \\log_2 1 = 0."
+        },
+        {
+          "id": "block6-3",
+          "latex": "\\textbf{Inductive step: } \\text{assume } T(n/2) = \\tfrac{n}{2} \\log_2 \\tfrac{n}{2} + \\tfrac{n}{2} \\text{ for a power of two } n \\ge 2."
+        },
+        {
+          "id": "block6-4",
+          "latex": "T(n) = 2T(n/2) + n = 2\\left(\\tfrac{n}{2} \\log_2 \\tfrac{n}{2} + \\tfrac{n}{2}\\right) + n"
+        },
+        {
+          "id": "block6-5",
+          "latex": "= n \\log_2 \\tfrac{n}{2} + n + n"
+        },
+        {
+          "id": "block6-6",
+          "latex": "= n(\\log_2 n - 1) + 2n \\text{, since } \\log_2 \\tfrac{n}{2} = \\log_2 n - 1"
+        },
+        {
+          "id": "block6-7",
+          "latex": "= n \\log_2 n + n \\text{, which completes the induction.}"
+        },
+        {
+          "id": "block6-8",
+          "latex": "\\text{For } n {{op:\\geq}} 2 \\text{ we have } \\log_2 n \\ge 1 \\text{, so } n \\le n \\log_2 n."
+        },
+        {
+          "id": "block6-9",
+          "latex": "\\text{Hence } T(n) = n \\log_2 n + n {{op:\\leq}} 2n \\log_2 n \\text{ for all } n \\ge 2."
+        },
+        {
+          "id": "block6-10",
+          "latex": "\\text{With } c = 2 \\text{ and } n_0 = 2 \\text{, } T(n) = {{complexity:O}}(n \\log n)."
+        }
+      ],
+      "solutionOrder": ["block6-1", "block6-2", "block6-3", "block6-4", "block6-5", "block6-6", "block6-7", "block6-8", "block6-9", "block6-10"]
     }
   ]
 }

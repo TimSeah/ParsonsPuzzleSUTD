@@ -15,18 +15,22 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parson
 // Function to load JSON puzzle data
 function loadPuzzleData() {
   const puzzleDataPath = path.join(__dirname, '../../frontend/src/data/puzzles');
-  
-  const bigOData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'big-o-proofs.json'), 'utf8'));
-  const inductionData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'induction-proofs.json'), 'utf8'));
-  const setTheoryData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'set-theory-proofs.json'), 'utf8'));
-  const recursionData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'recursion-proofs.json'), 'utf8'));
-
-  return {
-    'big-o': bigOData.puzzles,
-    induction: inductionData.puzzles,
-    'set-theory': setTheoryData.puzzles,
-    recursion: recursionData.puzzles
+  // Database category key → bundled file
+  const files = {
+    'big-o': 'big-o-proofs.json',
+    induction: 'induction-proofs.json',
+    'set-theory': 'set-theory-proofs.json',
+    recursion: 'recursion-proofs.json',
+    logic: 'logic-proofs.json',
+    combinatorics: 'combinatorics-proofs.json',
+    'graph-theory': 'graph-theory-proofs.json',
+    'data-structures': 'data-structures-proofs.json',
   };
+
+  return Object.fromEntries(Object.entries(files).map(([category, file]) => [
+    category,
+    JSON.parse(fs.readFileSync(path.join(puzzleDataPath, file), 'utf8')).puzzles,
+  ]));
 }
 
 // Function to determine difficulty based on puzzle characteristics (fallback if not provided)

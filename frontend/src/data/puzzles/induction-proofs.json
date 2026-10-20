@@ -191,6 +191,100 @@
         "ind3-1", "ind3-2", "ind3-3", "ind3-4", "ind3-5", "ind3-6", "ind3-7",
         "ind3-8", "ind3-9", "ind3-10", "ind3-11", "ind3-12", "ind3-13"
       ]
+    },
+    {
+      "id": "induction4",
+      "title": "\\text{Prove by induction: } \\sum_{i=1}^{n} (2i - 1) = n^2",
+      "displayTitle": "Prove by induction: Sum of the first n odd numbers",
+      "statement": "1 + 3 + 5 + \\cdots + (2n - 1) = n^2 \\text{ for all } n \\ge 1",
+      "difficulty": "easy",
+      "tags": ["induction", "summation", "odd-numbers"],
+      "blocks": [
+        {
+          "id": "ind4-1",
+          "latex": "\\text{Proof by induction on } n \\ge 1."
+        },
+        {
+          "id": "ind4-2",
+          "latex": "\\textbf{Base case: } n = 1 \\text{: the sum is } 2(1) - 1 = 1 = 1^2."
+        },
+        {
+          "id": "ind4-3",
+          "latex": "\\textbf{Inductive step: } \\text{assume } \\sum_{i=1}^{k} (2i - 1) = k^2 \\text{ for some } k \\ge 1."
+        },
+        {
+          "id": "ind4-4",
+          "latex": "\\text{We need to show } \\sum_{i=1}^{k+1} (2i - 1) {{op:=}} (k+1)^2."
+        },
+        {
+          "id": "ind4-5",
+          "latex": "\\sum_{i=1}^{k+1} (2i - 1) = \\sum_{i=1}^{k} (2i - 1) + \\big(2(k+1) - 1\\big)"
+        },
+        {
+          "id": "ind4-6",
+          "latex": "= k^2 + \\big(2(k+1) - 1\\big) \\text{ by the inductive hypothesis}"
+        },
+        {
+          "id": "ind4-7",
+          "latex": "= k^2 + 2k + 1"
+        },
+        {
+          "id": "ind4-8",
+          "latex": "= (k+1)^2"
+        },
+        {
+          "id": "ind4-9",
+          "latex": "\\text{Therefore, by induction, the sum of the first } n \\text{ odd numbers is } n^2 \\text{ } {{quantifier:\\forall}} n {{op:\\geq}} 1."
+        }
+      ],
+      "solutionOrder": ["ind4-1", "ind4-2", "ind4-3", "ind4-4", "ind4-5", "ind4-6", "ind4-7", "ind4-8", "ind4-9"]
+    },
+    {
+      "id": "induction5",
+      "title": "\\text{Prove by induction: } n! > 2^n \\text{ for all } n \\ge 4",
+      "displayTitle": "Prove by induction: n! > 2ⁿ for n ≥ 4",
+      "statement": "n! > 2^n \\text{ for all integers } n \\ge 4",
+      "difficulty": "medium",
+      "tags": ["induction", "inequality", "factorial", "exponential"],
+      "blocks": [
+        {
+          "id": "ind5-1",
+          "latex": "\\text{Proof by induction on } n \\ge 4 \\text{ (the claim fails for } n = 3 \\text{, since } 3! = 6 < 8 = 2^3 \\text{).}"
+        },
+        {
+          "id": "ind5-2",
+          "latex": "\\textbf{Base case: } n = 4 \\text{: } 4! = 24 {{op:>}} 16 = 2^4."
+        },
+        {
+          "id": "ind5-3",
+          "latex": "\\textbf{Inductive step: } \\text{assume } k! > 2^k \\text{ for some } k \\ge 4."
+        },
+        {
+          "id": "ind5-4",
+          "latex": "\\text{We need to show } (k+1)! > 2^{k+1}."
+        },
+        {
+          "id": "ind5-5",
+          "latex": "(k+1)! = (k+1) \\cdot k!"
+        },
+        {
+          "id": "ind5-6",
+          "latex": "> (k+1) \\cdot 2^k \\text{ by the inductive hypothesis, since } k + 1 > 0"
+        },
+        {
+          "id": "ind5-7",
+          "latex": "{{op:>|\\geq}} 2 \\cdot 2^k \\text{, since } k + 1 \\ge 5 > 2"
+        },
+        {
+          "id": "ind5-8",
+          "latex": "= 2^{k+1}"
+        },
+        {
+          "id": "ind5-9",
+          "latex": "\\text{Therefore, by induction, } n! > 2^n \\text{ holds } {{quantifier:\\forall}} n {{op:\\geq}} 4."
+        }
+      ],
+      "solutionOrder": ["ind5-1", "ind5-2", "ind5-3", "ind5-4", "ind5-5", "ind5-6", "ind5-7", "ind5-8", "ind5-9"]
     }
   ]
 }

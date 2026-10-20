@@ -1,0 +1,135 @@
+{
+  "category": "Data Structures",
+  "description": "Correctness and analysis of sorting, searching and heaps",
+  "puzzles": [
+    {
+      "id": "ds1",
+      "title": "\\text{Prove insertion sort is correct using a loop invariant}",
+      "displayTitle": "Prove: insertion sort is correct",
+      "statement": "\\text{After insertion sort runs on } A[1..n] \\text{, the array holds its original elements in sorted order.}",
+      "difficulty": "medium",
+      "tags": ["data-structures", "sorting", "insertion-sort", "loop-invariant", "algorithm-correctness"],
+      "blocks": [
+        {
+          "id": "ds1-1",
+          "latex": "\\text{For } j = 2, \\ldots, n \\text{, insertion sort sets } \\mathit{key} = A[j] \\text{, shifts the larger elements of } A[1..j-1] \\text{ one place right, and puts } \\mathit{key} \\text{ in the gap.}"
+        },
+        {
+          "id": "ds1-2",
+          "latex": "\\textbf{Invariant: } \\text{at the start of each iteration, } A[1..j-1] \\text{ holds the original elements of } A[1..j-1] \\text{ in sorted order.}"
+        },
+        {
+          "id": "ds1-3",
+          "latex": "\\textbf{Initialization: } \\text{before the first iteration } j = 2 \\text{, and } A[1..1] \\text{ has one element, so it is sorted.}"
+        },
+        {
+          "id": "ds1-4",
+          "latex": "\\textbf{Maintenance: } \\text{the loop moves each element of } A[1..j-1] \\text{ that is greater than } \\mathit{key} \\text{ one place right.}"
+        },
+        {
+          "id": "ds1-5",
+          "latex": "\\mathit{key} \\text{ lands after every element } {{op:\\leq}} \\mathit{key} \\text{ and before every element } {{op:>}} \\mathit{key} \\text{, so } A[1..j] \\text{ is sorted.}"
+        },
+        {
+          "id": "ds1-6",
+          "latex": "\\text{No element was added or lost, so } A[1..j] \\text{ holds the original elements of } A[1..j] \\text{, and increasing } j \\text{ keeps the invariant.}"
+        },
+        {
+          "id": "ds1-7",
+          "latex": "\\textbf{Termination: } \\text{the loop ends with } j = n + 1."
+        },
+        {
+          "id": "ds1-8",
+          "latex": "\\text{Putting } j = n + 1 \\text{ into the invariant, } A[1..n] \\text{ holds the original elements in sorted order.}"
+        },
+        {
+          "id": "ds1-9",
+          "latex": "\\text{Therefore insertion sort correctly sorts } A."
+        }
+      ],
+      "solutionOrder": ["ds1-1", "ds1-2", "ds1-3", "ds1-4", "ds1-5", "ds1-6", "ds1-7", "ds1-8", "ds1-9"]
+    },
+    {
+      "id": "ds2",
+      "title": "\\text{Prove binary search is correct using a loop invariant}",
+      "displayTitle": "Prove: binary search is correct",
+      "statement": "\\text{On a sorted array } A[0..n-1] \\text{, binary search returns an index of } x \\text{ if } x \\text{ is in } A \\text{, and otherwise reports that } x \\text{ is absent.}",
+      "difficulty": "medium",
+      "tags": ["data-structures", "binary-search", "loop-invariant", "algorithm-correctness", "searching"],
+      "blocks": [
+        {
+          "id": "ds2-1",
+          "latex": "\\text{Binary search keeps indices } \\mathit{lo} = 0 \\text{ and } \\mathit{hi} = n - 1 \\text{ and loops while } \\mathit{lo} \\le \\mathit{hi}."
+        },
+        {
+          "id": "ds2-2",
+          "latex": "\\textbf{Invariant: } \\text{if } x \\text{ is in } A \\text{, then } x \\text{ is in } A[\\mathit{lo}..\\mathit{hi}]."
+        },
+        {
+          "id": "ds2-3",
+          "latex": "\\textbf{Initialization: } A[\\mathit{lo}..\\mathit{hi}] = A[0..n-1] \\text{ is the whole array, so the invariant holds.}"
+        },
+        {
+          "id": "ds2-4",
+          "latex": "\\textbf{Maintenance: } \\text{let } \\mathit{mid} = \\lfloor (\\mathit{lo} + \\mathit{hi}) / 2 \\rfloor \\text{. If } A[\\mathit{mid}] = x \\text{, returning } \\mathit{mid} \\text{ is correct.}"
+        },
+        {
+          "id": "ds2-5",
+          "latex": "\\text{If } x {{op:<}} A[\\mathit{mid}] \\text{, every element of } A[\\mathit{mid}..\\mathit{hi}] \\text{ is at least } A[\\mathit{mid}] > x \\text{ because } A \\text{ is sorted, so setting } \\mathit{hi} = \\mathit{mid} - 1 \\text{ keeps the invariant.}"
+        },
+        {
+          "id": "ds2-6",
+          "latex": "\\text{Similarly, if } x {{op:>}} A[\\mathit{mid}] \\text{, setting } \\mathit{lo} = \\mathit{mid} + 1 \\text{ keeps the invariant.}"
+        },
+        {
+          "id": "ds2-7",
+          "latex": "\\textbf{Termination: } \\text{the range size } \\mathit{hi} - \\mathit{lo} + 1 \\text{ shrinks every iteration, so the loop ends. If it ends without returning, then } \\mathit{lo} > \\mathit{hi}."
+        },
+        {
+          "id": "ds2-8",
+          "latex": "\\text{Then } A[\\mathit{lo}..\\mathit{hi}] \\text{ is empty, so by the invariant } x \\text{ is not in } A \\text{, and reporting it absent is correct.}"
+        }
+      ],
+      "solutionOrder": ["ds2-1", "ds2-2", "ds2-3", "ds2-4", "ds2-5", "ds2-6", "ds2-7", "ds2-8"]
+    },
+    {
+      "id": "ds3",
+      "title": "\\text{Prove: a heap with } n \\text{ elements has height } \\lfloor \\log_2 n \\rfloor",
+      "displayTitle": "Prove: a heap with n elements has height ⌊log₂ n⌋",
+      "statement": "\\text{A binary heap with } n \\ge 1 \\text{ nodes is a complete binary tree. Show that its height is } h = \\lfloor \\log_2 n \\rfloor.",
+      "difficulty": "medium",
+      "tags": ["data-structures", "heaps", "binary-trees", "logarithm"],
+      "blocks": [
+        {
+          "id": "ds3-1",
+          "latex": "\\text{Let } h \\text{ be the height. In a complete binary tree, levels } 0, 1, \\ldots, h - 1 \\text{ are full and level } h \\text{ has between } 1 \\text{ and } 2^h \\text{ nodes.}"
+        },
+        {
+          "id": "ds3-2",
+          "latex": "\\text{Level } i \\text{ holds } 2^i \\text{ nodes when full, so the full levels hold } 1 + 2 + \\cdots + 2^{h-1} = 2^h - 1 \\text{ nodes.}"
+        },
+        {
+          "id": "ds3-3",
+          "latex": "\\text{With at least one node on level } h \\text{, } n {{op:\\geq}} (2^h - 1) + 1 = 2^h."
+        },
+        {
+          "id": "ds3-4",
+          "latex": "\\text{Also, with at most } 2^h \\text{ nodes on level } h \\text{, } n {{op:\\leq}} (2^h - 1) + 2^h = 2^{h+1} - 1 {{op:<}} 2^{h+1}."
+        },
+        {
+          "id": "ds3-5",
+          "latex": "\\text{So } 2^h \\le n < 2^{h+1}."
+        },
+        {
+          "id": "ds3-6",
+          "latex": "\\text{Taking } \\log_2 \\text{, which is increasing: } h \\le \\log_2 n < h + 1."
+        },
+        {
+          "id": "ds3-7",
+          "latex": "\\text{Since } h \\text{ is an integer, } h = \\lfloor \\log_2 n \\rfloor."
+        }
+      ],
+      "solutionOrder": ["ds3-1", "ds3-2", "ds3-3", "ds3-4", "ds3-5", "ds3-6", "ds3-7"]
+    }
+  ]
+}

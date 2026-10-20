@@ -23,5 +23,29 @@ export const CATEGORIES = {
     description: 'Proofs involving set operations and properties',
     file: 'set-theory-proofs.json',
     suggestedTags: ['set-theory', 'distributive-law', 'de-morgan-law', 'intersection', 'union', 'complement']
+  },
+  'logic': {
+    name: 'Logic',
+    description: 'Proofs about implications, contradiction and the contrapositive',
+    file: 'logic-proofs.json',
+    suggestedTags: ['logic', 'contrapositive', 'proof-by-contradiction', 'propositional-logic', 'inference-rules', 'number-theory']
+  },
+  'combinatorics': {
+    name: 'Combinatorics',
+    description: 'Counting arguments, the pigeonhole principle and binomial identities',
+    file: 'combinatorics-proofs.json',
+    suggestedTags: ['combinatorics', 'pigeonhole', 'product-rule', 'binomial-coefficients', 'combinatorial-proof', 'subsets']
+  },
+  'graph-theory': {
+    name: 'Graph Theory',
+    description: 'Proofs about degrees, trees and minimum spanning trees',
+    file: 'graph-theory-proofs.json',
+    suggestedTags: ['graph-theory', 'trees', 'degree', 'handshake-lemma', 'minimum-spanning-tree', 'shortest-paths']
+  },
+  'data-structures': {
+    name: 'Data Structures',
+    description: 'Correctness and analysis of sorting, searching and heaps',
+    file: 'data-structures-proofs.json',
+    suggestedTags: ['data-structures', 'loop-invariant', 'algorithm-correctness', 'sorting', 'binary-search', 'heaps']
   }
 };
