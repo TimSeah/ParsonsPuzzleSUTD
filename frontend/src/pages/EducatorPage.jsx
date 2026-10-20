@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import { BarChart3, Binary, Dices, Download, FunctionSquare, Layers, ListOrdered, Network, Plus, Repeat, Shapes, Sigma } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { BarChart3, Binary, Dices, Download, FunctionSquare, KeyRound, Layers, ListOrdered, LogOut, Network, Plus, Repeat, Shapes, Sigma } from 'lucide-react';
 import { StatusIndicator } from '../components/ui';
-import { PuzzleCreator, PuzzleSuccessModal } from '../components/educator';
+import { EducatorSignInDialog, PuzzleCreator, PuzzleSuccessModal } from '../components/educator';
 import { CATEGORIES } from '../components/educator/educatorCategories';
 import { useApiHealth } from '../hooks/usePuzzles';
 import puzzleManagerService from '../services/puzzleManagerService';
+import { clearEducatorKey, getEducatorKey } from '../services/educatorSession';
 import styles from './EducatorPage.module.css';
 
 const CATEGORY_ICONS = {
@@ -31,6 +32,27 @@ function EducatorPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastCreatedPuzzle, setLastCreatedPuzzle] = useState(null);
   const { isHealthy, loading: healthLoading } = useApiHealth();
+  const [isSignedIn, setIsSignedIn] = useState(() => Boolean(getEducatorKey()));
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
+  const signInWaiter = useRef(null);
+
+  // Opens the sign-in dialog; resolves true once signed in, false if cancelled.
+  const requestSignIn = () => new Promise((resolve) => {
+    signInWaiter.current = resolve;
+    setIsSignInOpen(true);
+  });
+
+  const handleSignInClosed = (signedIn) => {
+    setIsSignInOpen(false);
+    if (signedIn) setIsSignedIn(true);
+    signInWaiter.current?.(signedIn);
+    signInWaiter.current = null;
+  };
+
+  const handleSignOut = () => {
+    clearEducatorKey();
+    setIsSignedIn(false);
+  };
 
   // Load statistics on component mount
   useEffect(() => {
@@ -61,10 +83,22 @@ function EducatorPage() {
     window.scrollTo?.(0, 0);
   };
 
+  const savePuzzle = async (puzzle) => {
+    try {
+      return await puzzleManagerService.savePuzzle(puzzle);
+    } catch (error) {
+      if (error.status !== 401) throw error;
+      // Missing or outdated key: ask once, then retry the same save.
+      handleSignOut();
+      if (!(await requestSignIn())) throw new Error('Sign in as an educator to publish puzzles.');
+      return puzzleManagerService.savePuzzle(puzzle);
+    }
+  };
+
   const handleSavePuzzle = async (puzzle) => {
     setIsLoading(true);
     try {
-      const result = await puzzleManagerService.savePuzzle(puzzle);
+      const result = await savePuzzle(puzzle);
       setLastCreatedPuzzle({
         title: puzzle.displayTitle,
         filename: result.filename,
@@ -116,6 +150,15 @@ function EducatorPage() {
             </div>
             <div className={styles.headerActions}>
               <StatusIndicator isUsingApi={isHealthy === true} isLoading={healthLoading && isHealthy === null} />
+              {isSignedIn ? (
+                <button type="button" className="btn" onClick={handleSignOut}>
+                  <LogOut size={16} aria-hidden="true" /> Sign out
+                </button>
+              ) : (
+                <button type="button" className="btn" onClick={() => requestSignIn()}>
+                  <KeyRound size={16} aria-hidden="true" /> Sign in
+                </button>
+              )}
               <button type="button" className="btn" onClick={handleExportAll}>
                 <Download size={16} aria-hidden="true" /> Export all
               </button>
@@ -213,6 +256,8 @@ function EducatorPage() {
         filename={lastCreatedPuzzle?.filename}
         savedTo={lastCreatedPuzzle?.savedTo}
       />
+
+      <EducatorSignInDialog isOpen={isSignInOpen} onClose={handleSignInClosed} />
     </div>
   );
 }

@@ -18,7 +18,9 @@ class PuzzleManagerService {
         filename: this.getCategoryFileName(puzzle.category)
       };
     } catch (error) {
-      if (error.code !== 'NETWORK') throw new Error(`Failed to save puzzle: ${error.message}`);
+      if (error.code !== 'NETWORK') {
+        throw Object.assign(new Error(`Failed to save puzzle: ${error.message}`), { status: error.status, code: error.code });
+      }
       this.saveToLocalStorage(puzzle);
       this.downloadUpdatedFile(this.getStoredPuzzles(puzzle.category), this.getCategoryFileName(puzzle.category));
       return {

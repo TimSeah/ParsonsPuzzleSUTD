@@ -3,7 +3,7 @@
 Express API for Parsons Puzzles: puzzle storage in MongoDB, Astra generation with OpenAI and the Lean worker, and student feedback.
 
 ```bash
-cp .env.example .env      # then set MONGODB_URI, OPENAI_API_KEY, OPENAI_MODEL
+cp .env.example .env      # then set MONGODB_URI, OPENAI_API_KEY, OPENAI_MODEL, EDUCATOR_KEY
 npm run dev               # or `npm run dev:backend` from the repository root
 npm test
 ```
@@ -11,8 +11,8 @@ npm test
 | Path | Contents |
 | --- | --- |
 | `server.js` | Express setup, CORS, rate limits, `/api/health` |
-| `routes/` | `/api/puzzles`, `/api/generate`, `/api/feedback` |
-| `services/` | Generation flow, OpenAI client, puzzle contract, Lean client, limits, database |
+| `routes/` | `/api/puzzles`, `/api/generate`, `/api/feedback`, `/api/educator` |
+| `services/` | Generation flow, OpenAI client, puzzle contract, Lean client, limits, educator auth, database |
 | `models/` | `Puzzle`, `PuzzleHistory`, `GenerationUsage`, `Feedback` |
 | `scripts/` | `npm run migrate` imports the bundled puzzles; `npm run feedback:export` exports feedback |
 | `test/` | `node:test` suites |

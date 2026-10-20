@@ -25,6 +25,7 @@ A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students
 
 ### For educators
 
+- Sign in with the shared educator key (`EDUCATOR_KEY` in `backend/.env`) to publish puzzles. Anyone can browse the dashboard.
 - Dashboard with puzzle counts by category and difficulty.
 - Write LaTeX with a live preview, reorder steps, and try the puzzle as a student before publishing.
 - Add clickable symbols with their answer, such as `{{op:\leq}}` or `{{complexity:\Theta}}` (use `|` for alternatives: `{{op:\leq|<}}`). Students click to cycle through the symbols, and the symbol is graded with the step.
