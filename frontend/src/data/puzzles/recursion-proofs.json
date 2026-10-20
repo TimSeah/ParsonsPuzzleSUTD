@@ -48,7 +48,7 @@
         },
         {
           "id": "rec1-10",
-          "latex": "\\text{The recurrence relation holds by definition} \\text{ for } {{quantifier}} n {{op}} 2."
+          "latex": "\\text{The recurrence relation holds by definition} \\text{ for } {{quantifier:\\forall}} n {{op:\\geq}} 2."
         }
       ],
       "solutionOrder": [

@@ -26,8 +26,8 @@ A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students
 ### For educators
 
 - Dashboard with puzzle counts by category and difficulty.
-- Write puzzles in LaTeX with a live preview, reorder steps, and try the puzzle as a student before publishing.
-- Add dropdown placeholders such as `{{op}}` or `{{complexity}}` to make students pick the right symbol.
+- Write LaTeX with a live preview, reorder steps, and try the puzzle as a student before publishing.
+- Add clickable symbols with their answer, such as `{{op:\leq}}` or `{{complexity:\Theta}}` (use `|` for alternatives: `{{op:\leq|<}}`). Students click to cycle through the symbols, and the symbol is graded with the step.
 
 <table>
   <tr>

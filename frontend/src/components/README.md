@@ -34,7 +34,7 @@ Components for the educator puzzle-creation workflow:
 
 ### `/renderers`
 Specialized rendering components:
-- `KatexRenderer` - Renders bundled LaTeX puzzles and generated prose with delimited math, including interactive dropdown placeholders
+- `KatexRenderer` - Renders bundled LaTeX puzzles and generated prose with delimited math. Symbol placeholders such as `{{op:\leq}}` become buttons that cycle through their symbols on click (see `utils/placeholders.js`)
 
 ## Usage
 

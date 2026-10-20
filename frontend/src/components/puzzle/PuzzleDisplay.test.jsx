@@ -207,3 +207,59 @@ describe('PuzzleDisplay challenge mode', () => {
     }
   });
 });
+
+describe('PuzzleDisplay symbol placeholders', () => {
+  const symbolPuzzle = {
+    id: 'symbol-puzzle',
+    title: '\\text{Prove } P',
+    statement: 'P',
+    blocks: [
+      { id: 'a', latex: '\\text{For all } n {{op:\\geq}} 1' },
+      { id: 'b', latex: 'f(n) = {{complexity:\\Theta}}(n)' },
+      { id: 'c', latex: '\\text{Done}' },
+    ],
+    solutionOrder: ['a', 'b', 'c'],
+  };
+  const symbolIn = (column, name) => within(column).getByRole('button', { name });
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('needs the right symbols before practice mode marks the proof correct', async () => {
+    const { user } = renderPuzzle({ puzzle: symbolPuzzle });
+    // Symbols can be chosen while the step is still in Available steps
+    await user.click(symbolIn(stepsColumn(), /^Bound: not chosen/));
+    await user.click(symbolIn(stepsColumn(), /^Bound: big O/));
+    await user.click(symbolIn(stepsColumn(), /^Bound: big Omega/));
+    for (const id of ['a', 'b', 'c']) await addStep(user, id);
+
+    expect(proofOrder()).toEqual(['a', 'b', 'c']);
+    expect(screen.queryByText('Correct!')).toBeNull();
+    expect(screen.getByText('Symbols to fix').nextSibling).toHaveTextContent('1');
+
+    // ≥ is the fourth relation: <, ≤, =, ≥
+    for (let i = 0; i < 4; i++) await user.click(symbolIn(proofColumn(), /^Relation:/));
+    expect(symbolIn(proofColumn(), /^Relation:/)).toHaveAccessibleName(/greater than or equal to/);
+    expect(screen.getByText('Correct!')).toBeInTheDocument();
+  });
+
+  it('fills in the correct symbols when the solution is shown', async () => {
+    const { user } = renderPuzzle({ puzzle: symbolPuzzle });
+    await user.click(showSolution());
+    expect(symbolIn(proofColumn(), /^Relation:/)).toHaveAccessibleName(/greater than or equal to/);
+    expect(symbolIn(proofColumn(), /^Bound:/)).toHaveAccessibleName(/big Theta/);
+    expect(screen.getByText('Correct!')).toBeInTheDocument();
+  });
+
+  it('grades symbols in challenge mode', async () => {
+    const { user } = renderPuzzle({ puzzle: symbolPuzzle, mode: 'challenge' });
+    await user.click(challengeType('Limited moves'));
+    for (const id of ['a', 'b', 'c']) await addStep(user, id);
+    await user.click(symbolIn(proofColumn(), /^Bound:/));
+
+    await user.click(submitButton());
+    expect(resultLine()).toHaveTextContent('1/3 steps correct');
+    expect(resultLine()).toHaveTextContent('2 step(s) with a symbol to fix');
+  });
+});

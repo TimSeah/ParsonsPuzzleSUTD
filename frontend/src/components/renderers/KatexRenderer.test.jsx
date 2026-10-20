@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { useState } from 'react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import KatexRenderer from './KatexRenderer.jsx';
 import { ALL_PUZZLES } from '../../services/puzzleLoader.js';
@@ -51,29 +52,85 @@ describe('KatexRenderer', () => {
     expect(maths).toEqual(['x', 'x=2k']);
   });
 
-  it('renders placeholders as dropdowns when interactive and reports changes', async () => {
+  it('renders placeholders as symbol buttons that cycle on click, starting unset', async () => {
     const onVariableChange = vi.fn();
     const el = renderLatex({
-      latex: 'f(n) = {{complexity}}(g(n)) \\text{ for all } n {{op}} n_0',
+      latex: 'f(n) = {{complexity:\\Theta}}(g(n)) \\text{ for all } n {{op:\\geq}} n_0',
       isInteractive: true,
       onVariableChange,
       blockId: 'b1',
     });
-    const selects = el.querySelectorAll('select');
-    expect(selects).toHaveLength(2);
+    expect(el.querySelector('select')).toBeNull();
+    const buttons = el.querySelectorAll('button.symbol-choice');
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]).toHaveAccessibleName('Bound: not chosen. Press to change.');
+    expect(buttons[0]).toHaveTextContent('?');
     expect(visibleText(el)).not.toMatch(RAW_LATEX_PATTERN);
+    expect(visibleText(el)).not.toContain('Θ');
 
-    await userEvent.selectOptions(selects[0], '\\Theta');
-    expect(onVariableChange).toHaveBeenCalledWith('complexity_0', '\\Theta');
+    await userEvent.click(buttons[0]);
+    expect(onVariableChange).toHaveBeenLastCalledWith('complexity_0', 'O');
+  });
+
+  it('shows the chosen symbol and moves to the next one on each click, keeping focus', async () => {
+    const user = userEvent.setup();
+    function Stateful() {
+      const [variables, setVariables] = useState({ op_0: '\\leq' });
+      return (
+        <KatexRenderer
+          latex="n {{op:\\geq}} 1"
+          isInteractive
+          variables={variables}
+          onVariableChange={(key, value) => setVariables((prev) => ({ ...prev, [key]: value }))}
+        />
+      );
+    }
+    render(<Stateful />);
+    const button = () => screen.getByRole('button', { name: /^Relation:/ });
+    expect(button()).toHaveAccessibleName('Relation: less than or equal to. Press to change.');
+
+    await user.click(button());
+    expect(button()).toHaveAccessibleName('Relation: equal to. Press to change.');
+    expect(button()).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+    expect(button()).toHaveAccessibleName('Relation: greater than or equal to. Press to change.');
+    expect(button()).toHaveFocus();
+  });
+
+  it('keeps the same buttons when the parent re-renders with new callbacks, and uses the latest one', async () => {
+    const first = vi.fn();
+    const latest = vi.fn();
+    const { container, rerender } = render(
+      <KatexRenderer latex="n {{op:\\geq}} 1" isInteractive variables={{}} onVariableChange={first} />,
+    );
+    const button = container.querySelector('button.symbol-choice');
+
+    rerender(<KatexRenderer latex="n {{op:\\geq}} 1" isInteractive variables={{}} onVariableChange={latest} />);
+    expect(container.querySelector('button.symbol-choice')).toBe(button);
+
+    await userEvent.click(button);
+    expect(first).not.toHaveBeenCalled();
+    expect(latest).toHaveBeenCalledWith('op_0', '<');
   });
 
   it('substitutes selected values when not interactive', () => {
     const el = renderLatex({
-      latex: 'f(n) = {{complexity}}(g(n))',
+      latex: 'f(n) = {{complexity:\\Theta}}(g(n))',
       variables: { complexity_0: '\\Omega' },
     });
-    expect(el.querySelector('select')).toBeNull();
+    expect(el.querySelector('button')).toBeNull();
     expect(visibleText(el)).toContain('Ω');
+  });
+
+  it('shows an empty box instead of the answer when nothing is chosen, unless answers are revealed', () => {
+    const latex = 'f(n) = {{complexity:\\Theta}}(g(n))';
+    const hidden = renderLatex({ latex });
+    expect(visibleText(hidden)).not.toContain('Θ');
+    expect(visibleText(hidden)).toContain('□');
+
+    const revealed = renderLatex({ latex, revealAnswers: true });
+    expect(visibleText(revealed)).toContain('Θ');
   });
 
   describe.each(ALL_PUZZLES.map((puzzle) => [puzzle.id, puzzle]))('bundled puzzle %s', (_id, puzzle) => {

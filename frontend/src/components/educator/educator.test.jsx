@@ -120,6 +120,26 @@ describe('PuzzleCreator', () => {
     expect(puzzle.solutionOrder).toEqual(puzzle.blocks.map(block => block.id));
   });
 
+  it('requires an answer for every symbol placeholder before publishing', async () => {
+    const { user, onSave } = renderCreator();
+    await user.type(screen.getByLabelText('Title (LaTeX)'), 'T');
+    await user.type(screen.getByLabelText('Display title (plain text)'), 'D');
+    await user.type(screen.getByLabelText('Statement (LaTeX)'), 'S');
+    await user.click(screen.getByRole('button', { name: 'induction' }));
+    await addStep(user, 'First');
+
+    // userEvent treats "{" as a key descriptor, so paste the placeholder
+    const newStep = screen.getByLabelText('New step (LaTeX)');
+    await user.click(newStep);
+    await user.paste('n {{op}} 1');
+    expect(screen.getByText(/\{\{op\}\} needs an answer/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Add step/ }));
+
+    await user.click(screen.getByRole('button', { name: /Publish puzzle/ }));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText(/Step 2: \{\{op\}\} needs an answer/)).toBeInTheDocument();
+  });
+
   it('shows the save error and keeps the form when publishing fails', async () => {
     const onSave = vi.fn().mockRejectedValue(new Error('Failed to save puzzle: Server error: 500'));
     const { user } = renderCreator({ onSave });
