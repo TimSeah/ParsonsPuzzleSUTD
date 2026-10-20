@@ -47,11 +47,12 @@ Needs Node.js 22.12 or newer.
 ```bash
 git clone https://github.com/TimSeah/ParsonsPuzzleSUTD.git
 cd ParsonsPuzzleSUTD
-npm run setup
-npm run dev
+npm start
 ```
 
-Open http://localhost:5173. Without a backend the app uses its bundled puzzles. To run the API, MongoDB and the Lean worker, follow [Getting started](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Getting-Started), or use Docker:
+On Windows you can double-click `start.cmd`; on macOS or Linux run `./start.sh`. Both only run `npm start`, which asks before installing dependencies, then starts the frontend, plus the API and Lean worker if they are set up. Without a backend the app uses its bundled puzzles. `npm run doctor` checks your setup and explains what's missing.
+
+No local installs: open the repo in GitHub Codespaces or a VS Code dev container for Node and MongoDB ready to go. For the full setup (database, OpenAI, Lean) see [Getting started](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Getting-Started) and [CONTRIBUTING.md](CONTRIBUTING.md), or use Docker:
 
 ```bash
 docker compose up --build                        # frontend, backend, MongoDB

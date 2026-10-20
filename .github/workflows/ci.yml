@@ -56,6 +56,12 @@ jobs:
       - name: Lean worker policy tests
         run: npm run test:lean
 
+      - name: Dev launcher tests
+        run: npm run test:scripts
+
+      - name: Setup check runs
+        run: npm run doctor
+
   compose:
     name: Docker Compose config
     runs-on: ubuntu-latest
@@ -64,6 +70,11 @@ jobs:
 
       - name: Validate docker-compose.yml (all profiles)
         run: docker compose --profile generation config --quiet
+
+      - name: Validate the dev container
+        run: |
+          docker compose -f .devcontainer/compose.yml config --quiet
+          node -e "JSON.parse(require('fs').readFileSync('.devcontainer/devcontainer.json', 'utf8'))"
 
   docker:
     name: Docker images build (${{ matrix.service }})
