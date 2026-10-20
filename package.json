@@ -4,24 +4,29 @@
   "version": "0.0.0",
   "type": "module",
   "description": "Repo-level scripts. The apps live in frontend/, backend/ and lean-worker/, each with its own package.json.",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
+    "start": "node scripts/dev.mjs",
+    "doctor": "node scripts/dev.mjs --doctor",
     "setup": "npm ci && npm ci --prefix frontend && npm ci --prefix backend",
     "dev": "npm --prefix frontend run dev --",
     "dev:backend": "npm --prefix backend run dev",
     "dev:lean": "npm --prefix lean-worker start",
-    "dev:fullstack": "concurrently --kill-others-on-fail --names lean,api,web \"npm run dev:lean\" \"npm run dev:backend\" \"npm run dev\"",
+    "dev:fullstack": "node scripts/dev.mjs",
     "build": "npm --prefix frontend run build --",
     "preview": "npm --prefix frontend run preview --",
     "lint": "eslint .",
-    "test": "npm run test:frontend && npm run test:backend && npm run test:lean",
+    "test": "npm run test:frontend && npm run test:backend && npm run test:lean && npm run test:scripts",
     "test:frontend": "npm --prefix frontend test --",
     "test:watch": "npm --prefix frontend run test:watch --",
     "test:backend": "npm --prefix backend test",
-    "test:lean": "npm --prefix lean-worker test"
+    "test:lean": "npm --prefix lean-worker test",
+    "test:scripts": "node --test scripts/*.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
-    "concurrently": "^9.2.0",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

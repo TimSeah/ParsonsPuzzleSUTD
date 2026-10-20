@@ -12,6 +12,7 @@ export const DIFFICULTIES = [
 ];
 
 export const TOPICS = [
+  { value: 'big-o', label: 'Big-O' },
   { value: 'induction', label: 'Induction' },
   { value: 'set-theory', label: 'Set Theory' },
   { value: 'recursion', label: 'Recursion' },

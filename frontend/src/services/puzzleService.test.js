@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PuzzleService } from './puzzleService.js';
+import { setEducatorKey } from './educatorSession.js';
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -8,6 +9,23 @@ function jsonResponse(body, status = 200) {
 describe('PuzzleService', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    sessionStorage.clear();
+  });
+
+  it('sends the educator key only on educator requests', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => jsonResponse({}));
+    vi.stubGlobal('fetch', fetchMock);
+    setEducatorKey('k1');
+    const service = new PuzzleService();
+
+    await service.createPuzzle({ id: 'p' });
+    await service.healthCheck();
+    await service.generatePuzzle({});
+
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer k1');
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('educator');
+    expect(fetchMock.mock.calls[1][1].headers).not.toHaveProperty('Authorization');
+    expect(fetchMock.mock.calls[2][1].headers).not.toHaveProperty('Authorization');
   });
 
   it('posts generation requests with the user, request id and filters', async () => {
@@ -55,7 +73,15 @@ describe('PuzzleService', () => {
   it('reports the configured API URL when the backend is unreachable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     const service = new PuzzleService();
-    await expect(service.getAllPuzzles()).rejects.toThrow(`Cannot reach the API at ${service.baseURL}`);
+    await expect(service.getAllPuzzles()).rejects.toMatchObject({
+      code: 'NETWORK',
+      message: expect.stringContaining(`Cannot reach the API at ${service.baseURL}`),
+    });
+  });
+
+  it('attaches the status and server error code to failed requests', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'EDUCATOR_AUTH_REQUIRED', message: 'Sign in' }, 401)));
+    await expect(new PuzzleService().createPuzzle({})).rejects.toMatchObject({ status: 401, code: 'EDUCATOR_AUTH_REQUIRED', message: 'Sign in' });
   });
 
   it('times out slow requests', async () => {

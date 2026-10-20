@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle2, ChevronDown, CircleHelp, Lightbulb, MapPin, RotateCcw } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronDown, CircleHelp, Lightbulb, MapPin, RotateCcw, Sigma } from 'lucide-react';
 import ProofValidator from '../../utils/ProofValidator';
 import { KatexRenderer } from '../renderers';
 import './ProofValidationDisplay.css';
 
-const HINT_ICONS = { position: MapPin, missing: CircleHelp, next: ArrowRight };
+const HINT_ICONS = { position: MapPin, missing: CircleHelp, next: ArrowRight, symbol: Sigma };
 
 const scoreTone = (score) => {
   if (score >= 90) return 'success';
@@ -12,7 +12,7 @@ const scoreTone = (score) => {
   return 'danger';
 };
 
-const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, isLastPuzzle, onPuzzleTried }) => {
+const ProofValidationDisplay = ({ puzzle, proofBlocks, blockSelections = {}, onReset, onNextPuzzle, isLastPuzzle, onPuzzleTried }) => {
   const [validator, setValidator] = useState(() => new ProofValidator(puzzle));
   const [validationResult, setValidationResult] = useState(null);
   const [showHints, setShowHints] = useState(false);
@@ -28,7 +28,7 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
   useEffect(() => {
     if (proofBlocks && proofBlocks.length > 0) {
       const userOrder = proofBlocks.map(block => block.id);
-      const result = validator.validateProof(userOrder);
+      const result = validator.validateProof(userOrder, blockSelections);
       setValidationResult(result);
       if (result.isCorrect && !completionReported && onPuzzleTried) {
         setCompletionReported(true);
@@ -37,7 +37,7 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
     } else {
       setValidationResult(null);
     }
-  }, [proofBlocks, validator, completionReported, onPuzzleTried, puzzle.id]);
+  }, [proofBlocks, blockSelections, validator, completionReported, onPuzzleTried, puzzle.id]);
 
   if (!validationResult) {
     return (
@@ -71,6 +71,9 @@ const ProofValidationDisplay = ({ puzzle, proofBlocks, onReset, onNextPuzzle, is
           )}
           {details.incorrectlyPositioned?.length > 0 && (
             <li><span>Out of place</span><strong className="validation__bad">{details.incorrectlyPositioned.length}</strong></li>
+          )}
+          {details.symbolErrors?.length > 0 && (
+            <li><span>Symbols to fix</span><strong className="validation__bad">{details.symbolErrors.length}</strong></li>
           )}
         </ul>
       )}

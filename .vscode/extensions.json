@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "leanprover.lean4",
+    "ms-vscode-remote.remote-containers"
+  ]
+}

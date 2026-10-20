@@ -21,6 +21,7 @@ import { Clock, Eye, Footprints, Lock, RotateCcw, Send } from 'lucide-react';
 import ProofBlock from './ProofBlock';
 import ProofValidationDisplay from './ProofValidationDisplay';
 import { KatexRenderer } from '../renderers';
+import { answerSelections, checkSymbols } from '../../utils/placeholders';
 import './PuzzleDisplay.css';
 
 // Lockout challenge rules
@@ -125,23 +126,27 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
         percent: 0,
         isFullyCorrect: false,
         missing: 0,
+        symbolErrors: 0,
       };
     }
 
     const solution = puzzle.solutionOrder;
     const total = solution.length;
 
+    // A step counts only if it is in the right place and its symbols are right.
     let correct = 0;
     for (let i = 0; i < total; i++) {
-      if (proofBlocks[i]?.id === solution[i]) correct++;
+      const block = proofBlocks[i];
+      if (block?.id === solution[i] && checkSymbols(block.latex, blockSelections[block.id]).isCorrect) correct++;
     }
+    const symbolErrors = proofBlocks.filter(block => !checkSymbols(block.latex, blockSelections[block.id]).isCorrect).length;
 
     const missing = Math.max(0, total - proofBlocks.length);
     const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
     const isFullyCorrect = correct === total && proofBlocks.length === total;
 
-    return { canEvaluate: true, total, correct, percent, isFullyCorrect, missing };
-  }, [puzzle, proofBlocks]);
+    return { canEvaluate: true, total, correct, percent, isFullyCorrect, missing, symbolErrors };
+  }, [puzzle, proofBlocks, blockSelections]);
 
   // reset whenever puzzle or challenge sub-mode changes
   useEffect(() => {
@@ -433,6 +438,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
 
       setProofBlocks(solutionBlocks);
       setAvailableBlocks([]);
+      setBlockSelections(Object.fromEntries(
+        puzzle.blocks.map(block => [block.id, answerSelections(block.latex)]),
+      ));
 
       if (isChallenge) {
         setRevealResults(true);
@@ -602,8 +610,9 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
           {isChallenge && revealResults && evaluation.canEvaluate && (
             <div className={`notice ${evaluation.isFullyCorrect ? 'notice--success' : 'notice--warning'} puzzle__result`} role="status">
               <span>
-                <strong>Result:</strong> {evaluation.percent}% correct ({evaluation.correct}/{evaluation.total} steps in correct position)
+                <strong>Result:</strong> {evaluation.percent}% correct ({evaluation.correct}/{evaluation.total} steps correct)
                 {evaluation.missing > 0 ? ` • Missing ${evaluation.missing} step(s)` : ''}
+                {evaluation.symbolErrors > 0 ? ` • ${evaluation.symbolErrors} step(s) with a symbol to fix` : ''}
                 {evaluation.isFullyCorrect ? ' • Fully correct!' : ''}
               </span>
             </div>
@@ -678,6 +687,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
           <ProofValidationDisplay
             puzzle={puzzle}
             proofBlocks={proofBlocks}
+            blockSelections={blockSelections}
             onReset={handleReset}
             onNextPuzzle={onNextPuzzle}
             isLastPuzzle={isLastPuzzle}
@@ -692,6 +702,7 @@ const PuzzleDisplay = ({ puzzle, onNextPuzzle, isLastPuzzle, onPuzzleTried, mode
             id={activeBlock.id}
             latexContent={activeBlock.latex}
             pedagogicalRole={activeBlock.pedagogicalRole}
+            blockSelections={blockSelections[activeBlock.id] || {}}
             isOverlay
           />
         ) : null}

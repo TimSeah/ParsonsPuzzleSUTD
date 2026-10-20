@@ -1,0 +1,20 @@
+{
+  "name": "Parsons Puzzles",
+  "dockerComposeFile": "compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "npm run setup",
+  "postAttachCommand": "npm run doctor",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": { "label": "Frontend", "onAutoForward": "openBrowser" },
+    "5001": { "label": "API", "onAutoForward": "silent" },
+    "3001": { "label": "Lean worker", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint"]
+    }
+  }
+}

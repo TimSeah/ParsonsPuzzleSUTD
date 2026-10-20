@@ -2,9 +2,12 @@
  * ProofValidator - Validates proof sequences for Parsons puzzles
  * 
  * This utility provides functionality to validate whether a user's arrangement
- * of proof blocks matches the correct solution order, with support for
+ * of proof blocks matches the correct solution order, and whether the symbols
+ * chosen for placeholders such as {{op:\leq}} are right, with support for
  * partial validation, hint generation, and detailed feedback.
  */
+
+import { checkSymbols } from './placeholders';
 
 export class ProofValidator {
   constructor(puzzle) {
@@ -15,9 +18,10 @@ export class ProofValidator {
   /**
    * Validates the complete proof sequence
    * @param {Array} userOrder - Array of block IDs in user's order
+   * @param {Object} selections - Chosen symbols per block: { [blockId]: { op_0: '\\leq', ... } }
    * @returns {Object} Validation result with score, feedback, and details
    */
-  validateProof(userOrder) {
+  validateProof(userOrder, selections = {}) {
     if (!userOrder || userOrder.length === 0) {
       return {
         isCorrect: false,
@@ -60,7 +64,7 @@ export class ProofValidator {
       };
     }
 
-    const result = this._analyzeSequence(userOrder);
+    const result = this._analyzeSequence(userOrder, selections);
     const feedback = this._generateFeedback(result);
 
     return {
@@ -70,64 +74,6 @@ export class ProofValidator {
       details: result,
       hints: this._generateHints(result, userOrder)
     };
-  }
-
-  /**
-   * Validates a partial proof (useful for real-time feedback)
-   * @param {Array} userOrder - Array of block IDs in user's current order
-   * @returns {Object} Partial validation result
-   */
-  validatePartial(userOrder) {
-    if (!userOrder || userOrder.length === 0) {
-      return {
-        isValid: true,
-        correctSoFar: true,
-        nextExpected: this.solutionOrder[0],
-        progress: 0
-      };
-    }
-
-    const correctSoFar = this._isCorrectSequence(userOrder, 0, userOrder.length);
-    const nextExpectedIndex = userOrder.length;
-    const nextExpected = nextExpectedIndex < this.solutionOrder.length 
-      ? this.solutionOrder[nextExpectedIndex] 
-      : null;
-
-    return {
-      isValid: correctSoFar,
-      correctSoFar,
-      nextExpected,
-      progress: (userOrder.length / this.solutionOrder.length) * 100,
-      currentLength: userOrder.length,
-      totalLength: this.solutionOrder.length
-    };
-  }
-
-  /**
-   * Checks if a block can be placed at a specific position
-   * @param {string} blockId - ID of the block to place
-   * @param {number} position - Target position (0-indexed)
-   * @param {Array} currentOrder - Current user arrangement
-   * @returns {boolean} Whether the placement is valid
-   */
-  canPlaceBlock(blockId, position, currentOrder = []) {
-    if (position < 0 || position >= this.solutionOrder.length) {
-      return false;
-    }
-
-    // Check if this is the correct block for this position
-    if (this.solutionOrder[position] !== blockId) {
-      return false;
-    }
-
-    // Check if previous positions are correctly filled
-    for (let i = 0; i < position; i++) {
-      if (i >= currentOrder.length || currentOrder[i] !== this.solutionOrder[i]) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   /**
@@ -158,7 +104,7 @@ export class ProofValidator {
    * Analyzes the complete sequence and returns detailed results
    * @private
    */
-  _analyzeSequence(userOrder) {
+  _analyzeSequence(userOrder, selections = {}) {
     const solutionSet = new Set(this.solutionOrder);
     const userSet = new Set(userOrder);
     
@@ -173,9 +119,18 @@ export class ProofValidator {
     
     const isComplete = userOrder.length === this.solutionOrder.length && 
                       missingBlocks === 0 && extraBlocks === 0;
+
+    // Placed steps whose symbols are wrong or not chosen yet
+    const symbolErrors = userOrder
+      .map((blockId, position) => ({ blockId, position }))
+      .filter(({ blockId }) => {
+        const block = this.blockMap.get(blockId);
+        return block && !checkSymbols(block.latex, selections[blockId]).isCorrect;
+      });
     
     const correctSequence = isComplete && 
-                           this._isCorrectSequence(userOrder, 0, userOrder.length);
+                           this._isCorrectSequence(userOrder, 0, userOrder.length) &&
+                           symbolErrors.length === 0;
 
     // Find correctly positioned blocks
     const correctlyPositioned = [];
@@ -206,6 +161,7 @@ export class ProofValidator {
       correctSequence,
       correctlyPositioned,
       incorrectlyPositioned,
+      symbolErrors,
       duplicates: this._findDuplicates(userOrder)
     };
   }
@@ -251,14 +207,17 @@ export class ProofValidator {
       return 100;
     }
 
-    // Partial scoring based on correct positions and presence of correct blocks
-    const positionScore = (result.correctlyPositioned.length / result.totalBlocks) * 60;
+    // Partial scoring based on correct positions (with the right symbols) and presence of correct blocks
+    const symbolErrorIds = new Set((result.symbolErrors || []).map(error => error.blockId));
+    const fullyRight = result.correctlyPositioned.filter(item => !symbolErrorIds.has(item.blockId)).length;
+    const positionScore = (fullyRight / result.totalBlocks) * 60;
     const presenceScore = (result.correctBlocks / result.totalBlocks) * 40;
     
     // Penalty for extra blocks
     const extraPenalty = Math.min(result.extraBlocks * 5, 20);
     
-    return Math.max(0, Math.round(positionScore + presenceScore - extraPenalty));
+    // Only a fully correct proof scores 100
+    return Math.min(99, Math.max(0, Math.round(positionScore + presenceScore - extraPenalty)));
   }
 
   /**
@@ -292,6 +251,10 @@ export class ProofValidator {
       feedback.push(`✅ ${result.correctlyPositioned.length} block(s) are correctly positioned.`);
     }
 
+    if (result.symbolErrors?.length > 0) {
+      feedback.push(`🔣 ${result.symbolErrors.length} step(s) have a symbol to fix.`);
+    }
+
     return feedback.length > 0 ? feedback.join(' ') : "Keep working on your proof!";
   }  /**
    * Generates specific hints for improvement
@@ -315,6 +278,18 @@ export class ProofValidator {
         latex: '',
         blockId: null
       }];
+    }
+
+    // Hint about the first placed step with a wrong or missing symbol. Only
+    // point at the step; showing its LaTeX would give the symbol away.
+    if (result.symbolErrors?.length > 0) {
+      const firstSymbolError = result.symbolErrors[0];
+      hints.push({
+        type: 'symbol',
+        message: `Check the symbols in step ${firstSymbolError.position + 1}. Click a symbol to change it.`,
+        latex: '',
+        blockId: firstSymbolError.blockId
+      });
     }
 
     // Hint about first incorrect position
@@ -393,69 +368,6 @@ export class ProofValidator {
   }
 
   /**
-   * Truncates LaTeX for display (now only used for non-hint purposes)
-   * @private
-   */
-  _truncateLatex(latex, maxLength = 50) {
-    if (latex.length <= maxLength) {
-      return latex;
-    }
-    return latex.substring(0, maxLength) + '...';
-  }
-
-  /**
-   * Gets validation statistics for the puzzle
-   * @returns {Object} Statistics about the puzzle structure
-   */
-  getStatistics() {
-    return {
-      totalBlocks: this.solutionOrder.length,
-      blockTypes: this.puzzle.blocks.map(block => ({
-        id: block.id,
-        preview: this._truncateLatex(block.latex, 30)
-      })),
-      difficulty: this._estimateDifficulty()
-    };
-  }
-
-  /**
-   * Estimates puzzle difficulty based on number of blocks
-   * @private
-   */
-  _estimateDifficulty() {
-    const blockCount = this.solutionOrder.length;
-    if (blockCount <= 5) return 'Easy';
-    if (blockCount <= 10) return 'Medium';
-    return 'Hard';
-  }
-
-  /**
-   * Debug method to analyze what's happening with validation
-   * @param {Array} userOrder - Array of block IDs in user's order
-   * @returns {Object} Debug information
-   */
-  debugValidation(userOrder) {
-    const result = this._analyzeSequence(userOrder);
-    const hints = this._generateHints(result, userOrder);
-    
-    return {
-      puzzle: {
-        id: this.puzzle.id,
-        title: this.puzzle.title,
-        totalBlocks: this.solutionOrder.length,
-        solutionOrder: this.solutionOrder
-      },
-      userInput: {
-        userOrder,
-        userBlocks: userOrder.length
-      },
-      analysis: result,
-      hints,
-      validation: this.validateProof(userOrder)
-    };
-  }
-
-  /**
    * Validates that a user order contains only valid block IDs for this puzzle
    * @param {Array} userOrder - Array of block IDs in user's order
    * @returns {Object} Validation result with invalid blocks identified
@@ -474,52 +386,5 @@ export class ProofValidator {
     };
   }
 }
-
-// Export utility functions that can be used independently
-export const ValidationUtils = {
-  /**
-   * Quick validation function for simple use cases
-   */
-  isCorrectOrder: (userOrder, correctOrder) => {
-    if (userOrder.length !== correctOrder.length) return false;
-    return userOrder.every((block, index) => block === correctOrder[index]);
-  },
-
-  /**
-   * Calculate percentage similarity between two sequences
-   */
-  calculateSimilarity: (userOrder, correctOrder) => {
-    if (correctOrder.length === 0) return 0;
-    
-    let matches = 0;
-    const minLength = Math.min(userOrder.length, correctOrder.length);
-    
-    for (let i = 0; i < minLength; i++) {
-      if (userOrder[i] === correctOrder[i]) {
-        matches++;
-      }
-    }
-    
-    return (matches / correctOrder.length) * 100;
-  },
-
-  /**
-   * Find the longest correct subsequence from the beginning
-   */
-  findCorrectPrefix: (userOrder, correctOrder) => {
-    let length = 0;
-    const minLength = Math.min(userOrder.length, correctOrder.length);
-    
-    for (let i = 0; i < minLength; i++) {
-      if (userOrder[i] === correctOrder[i]) {
-        length++;
-      } else {
-        break;
-      }
-    }
-    
-    return length;
-  }
-};
 
 export default ProofValidator;

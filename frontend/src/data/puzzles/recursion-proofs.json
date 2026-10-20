@@ -4,57 +4,58 @@
   "puzzles": [
     {
       "id": "recursion1",
-      "title": "\\text{Prove the recurrence relation for Fibonacci numbers:} F(n) = F(n-1) + F(n-2)",
-      "displayTitle": "Fibonacci Recurrence Relation",
-      "statement": "F(n) = F(n-1) + F(n-2) \\text{ for } n \\ge 2",
-      "difficulty": "easy",
-      "tags": ["recursion", "fibonacci", "sequences"],
+      "title": "\\text{Prove: } \\sum_{i=0}^{n} F(i) = F(n+2) - 1 \\text{ for the Fibonacci numbers}",
+      "displayTitle": "Prove: F(0) + F(1) + … + F(n) = F(n+2) − 1",
+      "statement": "\\text{With } F(0) = 0,\\ F(1) = 1 \\text{ and } F(n) = F(n-1) + F(n-2) \\text{ for } n \\ge 2 \\text{, show } \\sum_{i=0}^{n} F(i) = F(n+2) - 1 \\text{ for all } n \\ge 0.",
+      "difficulty": "medium",
+      "tags": ["recursion", "fibonacci", "sequences", "induction", "recurrence-relations"],
       "blocks": [
         {
           "id": "rec1-1",
-          "latex": "\\text{The Fibonacci sequence is defined as follows:}"
+          "latex": "\\text{Proof by induction on } n \\ge 0."
         },
         {
           "id": "rec1-2",
-          "latex": "F(0) = 0 \\text{ (base case 1)}"
+          "latex": "\\textbf{Base case: } n = 0"
         },
         {
           "id": "rec1-3",
-          "latex": "F(1) = 1 \\text{ (base case 2)}"
+          "latex": "\\text{LHS: } \\sum_{i=0}^{0} F(i) = F(0) = 0"
         },
         {
           "id": "rec1-4",
-          "latex": "\\text{For } n \\ge 2 \\text{, we define } F(n) = F(n-1) + F(n-2)."
+          "latex": "\\text{RHS: } F(2) - 1 = \\big(F(1) + F(0)\\big) - 1 = 0 \\text{, so LHS } {{op:=}} \\text{ RHS.}"
         },
         {
           "id": "rec1-5",
-          "latex": "\\text{This is the recursive definition} \\text{ of the Fibonacci sequence.}"
+          "latex": "\\textbf{Inductive step: } \\text{assume } \\sum_{i=0}^{k} F(i) = F(k+2) - 1 \\text{ for some } k \\ge 0."
         },
         {
           "id": "rec1-6",
-          "latex": "\\text{To verify: } F(2) = F(1) + F(0) = 1 + 0 = 1"
+          "latex": "\\text{We need to show } \\sum_{i=0}^{k+1} F(i) {{op:=}} F(k+3) - 1."
         },
         {
           "id": "rec1-7",
-          "latex": "F(3) = F(2) + F(1) = 1 + 1 = 2"
+          "latex": "\\sum_{i=0}^{k+1} F(i) = \\sum_{i=0}^{k} F(i) + F(k+1)"
         },
         {
           "id": "rec1-8",
-          "latex": "F(4) = F(3) + F(2) = 2 + 1 = 3"
+          "latex": "= \\big(F(k+2) - 1\\big) + F(k+1) \\text{ by the inductive hypothesis}"
         },
         {
           "id": "rec1-9",
-          "latex": "\\text{This generates the sequence: } 0, 1, 1, 2, 3, 5, 8, 13, \\ldots"
+          "latex": "= \\big(F(k+2) + F(k+1)\\big) - 1"
         },
         {
           "id": "rec1-10",
-          "latex": "\\text{The recurrence relation holds by definition} \\text{ for } {{quantifier}} n {{op}} 2."
+          "latex": "= F(k+3) - 1 \\text{ by the recurrence, since } k + 3 \\ge 2."
+        },
+        {
+          "id": "rec1-11",
+          "latex": "\\text{Therefore } \\sum_{i=0}^{n} F(i) = F(n+2) - 1 \\text{ holds } {{quantifier:\\forall}} n {{op:\\geq}} 0."
         }
       ],
-      "solutionOrder": [
-        "rec1-1", "rec1-2", "rec1-3", "rec1-4", "rec1-5",
-        "rec1-6", "rec1-7", "rec1-8", "rec1-9", "rec1-10"
-      ]
+      "solutionOrder": ["rec1-1", "rec1-2", "rec1-3", "rec1-4", "rec1-5", "rec1-6", "rec1-7", "rec1-8", "rec1-9", "rec1-10", "rec1-11"]
     },
     {
       "id": "recursion2",
@@ -98,7 +99,15 @@
         },
         {
           "id": "rec2-9",
-          "latex": "\\text{Therefore: } T(n) = T(n-1) + 1 + T(n-1) = 2T(n-1) + 1"
+          "latex": "\\text{This method uses } T(n-1) + 1 + T(n-1) \\text{ moves, so } T(n) \\le 2T(n-1) + 1."
+        },
+        {
+          "id": "rec2-14",
+          "latex": "\\text{Conversely, any solution must move the largest disk at least once. Before its first move the other } n-1 \\text{ disks must all be on the third peg (at least } T(n-1) \\text{ moves), and after its last move they must all be moved back on top of it (at least } T(n-1) \\text{ more).}"
+        },
+        {
+          "id": "rec2-15",
+          "latex": "\\text{So } T(n) {{op:\\geq}} 2T(n-1) + 1 \\text{, and together with the method above, } T(n) = 2T(n-1) + 1."
         },
         {
           "id": "rec2-10",
@@ -119,8 +128,47 @@
       ],
       "solutionOrder": [
         "rec2-1", "rec2-2", "rec2-3", "rec2-4", "rec2-5", "rec2-6", "rec2-7",
-        "rec2-8", "rec2-9", "rec2-10", "rec2-11", "rec2-12", "rec2-13"
+        "rec2-8", "rec2-9", "rec2-14", "rec2-15", "rec2-10", "rec2-11", "rec2-12", "rec2-13"
       ]
+    },
+    {
+      "id": "recursion3",
+      "title": "\\text{Prove: binary search's recurrence } T(n) = T(n/2) + 1 \\text{ is } O(\\log n)",
+      "displayTitle": "Prove: T(n) = T(n/2) + 1 is O(log n)",
+      "statement": "T(1) = 1 \\text{ and } T(n) = T(n/2) + 1 \\text{ for powers of two } n \\ge 2 \\text{. Show } T(n) = O(\\log_2 n).",
+      "difficulty": "medium",
+      "tags": ["recursion", "recurrence-relations", "binary-search", "big-o", "induction"],
+      "blocks": [
+        {
+          "id": "rec3-2",
+          "latex": "\\text{Claim: } T(n) = \\log_2 n + 1 \\text{ for every power of two } n \\ge 1 \\text{. We prove it by induction on } n."
+        },
+        {
+          "id": "rec3-3",
+          "latex": "\\textbf{Base case: } T(1) = 1 = \\log_2 1 + 1."
+        },
+        {
+          "id": "rec3-4",
+          "latex": "\\textbf{Inductive step: } \\text{assume } T(n/2) = \\log_2 \\tfrac{n}{2} + 1 \\text{ for a power of two } n \\ge 2."
+        },
+        {
+          "id": "rec3-5",
+          "latex": "T(n) = T(n/2) + 1 \\text{ (one comparison, then half the array)} = \\left(\\log_2 \\tfrac{n}{2} + 1\\right) + 1"
+        },
+        {
+          "id": "rec3-6",
+          "latex": "= (\\log_2 n - 1) + 2 = \\log_2 n + 1 \\text{, which completes the induction.}"
+        },
+        {
+          "id": "rec3-7",
+          "latex": "\\text{For } n {{op:\\geq}} 2 \\text{ we have } 1 \\le \\log_2 n \\text{, so } T(n) = \\log_2 n + 1 {{op:\\leq}} 2 \\log_2 n."
+        },
+        {
+          "id": "rec3-8",
+          "latex": "\\text{With } c = 2 \\text{ and } n_0 = 2 \\text{, } T(n) = {{complexity:O}}(\\log n)."
+        }
+      ],
+      "solutionOrder": ["rec3-2", "rec3-3", "rec3-4", "rec3-5", "rec3-6", "rec3-7", "rec3-8"]
     }
   ]
 }

@@ -1,0 +1,131 @@
+{
+  "category": "Logic",
+  "description": "Proofs about implications, contradiction and the contrapositive",
+  "puzzles": [
+    {
+      "id": "logic1",
+      "title": "\\text{Prove: if } n^2 \\text{ is even, then } n \\text{ is even}",
+      "displayTitle": "Prove: if n² is even, then n is even",
+      "statement": "\\text{For every integer } n \\text{, if } n^2 \\text{ is even then } n \\text{ is even.}",
+      "difficulty": "easy",
+      "tags": ["logic", "contrapositive", "parity", "number-theory"],
+      "blocks": [
+        {
+          "id": "log1-1",
+          "latex": "\\text{We prove the contrapositive: if } n \\text{ is odd, then } n^2 \\text{ is odd.}"
+        },
+        {
+          "id": "log1-2",
+          "latex": "\\text{This is enough, because } p \\to q \\text{ is logically equivalent to } \\neg q \\to {{logic:\\neg}} p."
+        },
+        {
+          "id": "log1-3",
+          "latex": "\\text{Assume } n \\text{ is odd, so } n = 2k + 1 \\text{ for some integer } k."
+        },
+        {
+          "id": "log1-4",
+          "latex": "\\text{Then } n^2 = (2k + 1)^2 = 4k^2 + 4k + 1"
+        },
+        {
+          "id": "log1-5",
+          "latex": "= 2(2k^2 + 2k) + 1"
+        },
+        {
+          "id": "log1-6",
+          "latex": "\\text{Since } 2k^2 + 2k \\text{ is an integer, } n^2 \\text{ is odd.}"
+        },
+        {
+          "id": "log1-7",
+          "latex": "\\text{So } n \\text{ odd implies } n^2 \\text{ odd, and by the contrapositive, } n^2 \\text{ even implies } n \\text{ even.}"
+        }
+      ],
+      "solutionOrder": ["log1-1", "log1-2", "log1-3", "log1-4", "log1-5", "log1-6", "log1-7"]
+    },
+    {
+      "id": "logic2",
+      "title": "\\text{Prove modus tollens: from } p \\to q \\text{ and } \\neg q \\text{, conclude } \\neg p",
+      "displayTitle": "Prove: modus tollens",
+      "statement": "(p \\to q) \\land \\neg q \\implies \\neg p",
+      "difficulty": "easy",
+      "tags": ["logic", "inference-rules", "proof-by-contradiction", "propositional-logic"],
+      "blocks": [
+        {
+          "id": "log2-1",
+          "latex": "\\text{Assume } p \\to q \\text{ and } \\neg q \\text{ are both true, so } q \\text{ is false.}"
+        },
+        {
+          "id": "log2-2",
+          "latex": "\\text{Suppose, for contradiction, that } p \\text{ is true.}"
+        },
+        {
+          "id": "log2-3",
+          "latex": "\\text{From } p \\text{ and } p \\to q \\text{, modus ponens gives } q."
+        },
+        {
+          "id": "log2-4",
+          "latex": "\\text{So } q {{logic:\\land}} \\neg q \\text{ holds, which is a contradiction.}"
+        },
+        {
+          "id": "log2-5",
+          "latex": "\\text{Therefore the assumption that } p \\text{ is true is false.}"
+        },
+        {
+          "id": "log2-6",
+          "latex": "\\text{Hence } {{logic:\\neg}} p \\text{, as required.}"
+        }
+      ],
+      "solutionOrder": ["log2-1", "log2-2", "log2-3", "log2-4", "log2-5", "log2-6"]
+    },
+    {
+      "id": "logic3",
+      "title": "\\text{Prove: } \\sqrt{2} \\text{ is irrational}",
+      "displayTitle": "Prove: √2 is irrational",
+      "statement": "\\sqrt{2} \\notin \\mathbb{Q}",
+      "difficulty": "medium",
+      "tags": ["logic", "proof-by-contradiction", "irrationality", "number-theory"],
+      "blocks": [
+        {
+          "id": "log3-1",
+          "latex": "\\text{Suppose, for contradiction, that } \\sqrt{2} \\text{ is rational.}"
+        },
+        {
+          "id": "log3-2",
+          "latex": "\\text{Then } \\sqrt{2} = \\tfrac{a}{b} \\text{ for integers } a, b \\text{ with } b \\ne 0 \\text{ and the fraction in lowest terms, so } a \\text{ and } b \\text{ have no common factor.}"
+        },
+        {
+          "id": "log3-3",
+          "latex": "\\text{Squaring both sides gives } 2 = \\tfrac{a^2}{b^2} \\text{, so } a^2 {{op:=}} 2b^2."
+        },
+        {
+          "id": "log3-4",
+          "latex": "\\text{So } a^2 \\text{ is even, and therefore } a \\text{ is even (if } n^2 \\text{ is even, then } n \\text{ is even).}"
+        },
+        {
+          "id": "log3-5",
+          "latex": "\\text{Write } a = 2k \\text{ for some integer } k."
+        },
+        {
+          "id": "log3-6",
+          "latex": "\\text{Substituting: } (2k)^2 = 2b^2 \\text{, so } 4k^2 = 2b^2 \\text{ and } b^2 = 2k^2."
+        },
+        {
+          "id": "log3-7",
+          "latex": "\\text{So } b^2 \\text{ is even, and therefore } b \\text{ is even.}"
+        },
+        {
+          "id": "log3-8",
+          "latex": "\\text{Then } a \\text{ and } b \\text{ are both even, so 2 is a common factor.}"
+        },
+        {
+          "id": "log3-9",
+          "latex": "\\text{This contradicts the fraction being in lowest terms.}"
+        },
+        {
+          "id": "log3-10",
+          "latex": "\\text{Therefore } \\sqrt{2} {{setop:\\notin}} \\mathbb{Q} \\text{, so } \\sqrt{2} \\text{ is irrational.}"
+        }
+      ],
+      "solutionOrder": ["log3-1", "log3-2", "log3-3", "log3-4", "log3-5", "log3-6", "log3-7", "log3-8", "log3-9", "log3-10"]
+    }
+  ]
+}

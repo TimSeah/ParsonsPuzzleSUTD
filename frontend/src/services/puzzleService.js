@@ -1,16 +1,23 @@
-// API service for interacting with the backend
+// The single HTTP client for the backend API. Errors carry `code` ('NETWORK',
+// 'TIMEOUT' or the server's error code) and `status` so callers can branch.
+// Pass `educator: true` to send the signed-in educator's key.
+import { getEducatorKey } from './educatorSession.js';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 30000);
 const GENERATION_TIMEOUT_MS = Number(import.meta.env.VITE_GENERATION_TIMEOUT_MS || 1200000);
+
+const apiError = (message, fields) => Object.assign(new Error(message), fields);
 
 class PuzzleService {
   constructor() {
     this.baseURL = API_BASE_URL;
   }
 
-  async fetchWithError(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+  async fetchWithError(url, { educator = false, ...options } = {}, timeoutMs = API_TIMEOUT_MS) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const educatorKey = educator ? getEducatorKey() : '';
     let response;
     try {
       response = await fetch(`${this.baseURL}${url}`, {
@@ -18,19 +25,23 @@ class PuzzleService {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          ...(educatorKey ? { Authorization: `Bearer ${educatorKey}` } : {}),
           ...options.headers
         },
       });
     } catch (error) {
-      if (error.name === 'AbortError') throw new Error('The API took too long to respond. Please try again.');
-      throw new Error(`Cannot reach the API at ${this.baseURL}. Start the full stack and try again.`);
+      if (error.name === 'AbortError') throw apiError('The API took too long to respond. Please try again.', { code: 'TIMEOUT' });
+      throw apiError(`Cannot reach the API at ${this.baseURL}. Start the full stack and try again.`, { code: 'NETWORK' });
     } finally {
       clearTimeout(timeout);
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
+      throw apiError(errorData.message || errorData.error || `HTTP error! status: ${response.status}`, {
+        code: errorData.error,
+        status: response.status,
+      });
     }
 
     if (response.status === 204) return null;
@@ -74,11 +85,6 @@ class PuzzleService {
     });
   }
 
-  // Get a specific puzzle by ID
-  async getPuzzleById(id) {
-    return this.fetchWithError(`/puzzles/${id}`);
-  }
-
   // Get puzzles by category
   async getPuzzlesByCategory(category, params = {}) {
     const queryParams = new URLSearchParams();
@@ -95,40 +101,35 @@ class PuzzleService {
     return this.fetchWithError(url);
   }
 
-  // Create a new puzzle
   async createPuzzle(puzzleData) {
     return this.fetchWithError('/puzzles', {
       method: 'POST',
+      educator: true,
       body: JSON.stringify(puzzleData)
     });
   }
 
-  // Update an existing puzzle
-  async updatePuzzle(id, puzzleData) {
-    return this.fetchWithError(`/puzzles/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(puzzleData)
+  // Resolves if the key is accepted; rejects with status 401 if not.
+  async checkEducatorKey(key) {
+    return this.fetchWithError('/educator/session', { headers: { Authorization: `Bearer ${key}` } });
+  }
+
+  // AI-generated puzzles waiting for an educator: { puzzles, total }.
+  async getReviewQueue() {
+    return this.fetchWithError('/educator/review', { educator: true });
+  }
+
+  // decision: 'approve' or 'reject'
+  async reviewPuzzle(id, decision, note = '') {
+    return this.fetchWithError(`/educator/review/${encodeURIComponent(id)}`, {
+      method: 'POST',
+      educator: true,
+      body: JSON.stringify({ decision, note }),
     });
   }
 
-  // Delete a puzzle (soft delete)
-  async deletePuzzle(id) {
-    return this.fetchWithError(`/puzzles/${id}`, {
-      method: 'DELETE'
-    });
-  }
-
-  // Get puzzle statistics
   async getPuzzleStats() {
     return this.fetchWithError('/puzzles/stats/summary');
-  }
-
-  // Search puzzles
-  async searchPuzzles(searchTerm, filters = {}) {
-    return this.getAllPuzzles({
-      search: searchTerm,
-      ...filters
-    });
   }
 
   // Health check

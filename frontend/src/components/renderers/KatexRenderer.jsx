@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import katex from 'katex';
+import { describeType, findChoice, nextChoice, parsePlaceholders } from '../../utils/placeholders';
 
 const MATH_DELIMITER_PATTERN = /(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\$(?!\$)[^$]+?\$)/g;
 
@@ -107,111 +108,116 @@ const isLegacyLatex = (content) => {
   if (hasMathDelimiters(content)) return false;
   if (/\\(?:text[a-z]*|math[a-z]+)\{/.test(content)) return true;
   const proseWords = content
-    .replace(/\{\{\w+\}\}/g, ' ')
+    .replace(/\{\{\w+(?::[^{}]*)?\}\}/g, ' ')
     .replace(/\\[A-Za-z]+/g, ' ')
     .match(/\b[A-Za-z]{3,}\b/g) || [];
   return proseWords.length < 2;
 };
 
-const getDropdownOptions = (type) => {
-  switch (type) {
-    case 'op':
-      return [
-        ['<', '<'], ['\\leq', '≤'], ['=', '='], ['\\geq', '≥'], ['>', '>'], ['\\neq', '≠']
-      ];
-    case 'quantifier':
-      return [
-        ['\\forall', '∀ (for all)'], ['\\exists', '∃ (exists)'],
-        ['\\exists!', '∃! (exactly one)'], ['\\nexists', '∄ (does not exist)']
-      ];
-    case 'set':
-    case 'setop':
-      return [
-        ['\\in', '∈ (element of)'], ['\\notin', '∉ (not element of)'],
-        ['\\subset', '⊂ (proper subset)'], ['\\subseteq', '⊆ (subset)'],
-        ['\\supset', '⊃ (proper superset)'], ['\\supseteq', '⊇ (superset)'],
-        ['\\emptyset', '∅ (empty set)']
-      ];
-    case 'logic':
-      return [['\\land', '∧ (and)'], ['\\lor', '∨ (or)'], ['\\neg', '¬ (not)']];
-    case 'complexity':
-      return [['O', 'O (upper bound)'], ['\\Omega', 'Ω (lower bound)'], ['\\Theta', 'Θ (tight bound)']];
-    default:
-      return [['', 'Select...']];
+// Shown for a placeholder that hasn't been chosen yet, so the step doesn't
+// give the answer away.
+const UNSET_SYMBOL = '\\square';
+
+const createSymbolButton = (placeholder, selected, onChoose) => {
+  const choice = findChoice(placeholder.type, selected);
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `symbol-choice symbol-choice--${placeholder.type}${choice ? '' : ' symbol-choice--unset'}`;
+  button.dataset.symbolKey = placeholder.key;
+  button.setAttribute(
+    'aria-label',
+    `${describeType(placeholder.type)}: ${choice ? choice.name : 'not chosen'}. Press to change.`,
+  );
+  button.title = 'Click to change the symbol';
+
+  if (choice) {
+    const symbol = document.createElement('span');
+    symbol.setAttribute('aria-hidden', 'true');
+    renderLatex(choice.value, symbol);
+    button.appendChild(symbol);
+  } else {
+    button.textContent = '?';
   }
+
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    onChoose(placeholder.key, nextChoice(placeholder.type, selected));
+  });
+  // Clicking a symbol must never start dragging the step it sits in.
+  ['pointerdown', 'mousedown', 'touchstart', 'keydown'].forEach((type) => {
+    button.addEventListener(type, (event) => event.stopPropagation());
+  });
+  return button;
 };
 
-const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive = false, blockId = null }) => {
+/**
+ * Renders a step's LaTeX. Placeholders such as {{op:\leq}} become buttons that
+ * cycle through their symbols when `isInteractive`; otherwise they show the
+ * selected symbol, the answer when `revealAnswers`, or an empty box.
+ */
+const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive = false, revealAnswers = false, blockId = null }) => {
   const containerRef = useRef();
-
-  const createDropdown = useCallback((uniqueKey, currentValue, onChange) => {
-    const varType = uniqueKey.split('_')[0]; // Extract type from unique key
-    const options = getDropdownOptions(varType);
-    const select = document.createElement('select');
-    
-    // Use CSS classes for styling instead of inline styles
-    select.className = `dropdown-${varType}`;
-    
-    options.forEach(([value, label]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      if (value === currentValue) option.selected = true;
-      select.appendChild(option);
-    });
-    
-    select.addEventListener('change', (e) => {
-      e.stopPropagation();
-      onChange(uniqueKey, e.target.value);
-    });
-    
-    // Using a dropdown must never start dragging the block it sits in.
-    ['pointerdown', 'mousedown', 'touchstart'].forEach((type) => {
-      select.addEventListener(type, (e) => e.stopPropagation());
-    });
-    
-    return select;
-  }, []);
+  // Parents pass a new callback and selections object on every render (the
+  // Timed challenge re-renders every second). Rebuilding the buttons each time
+  // would drop clicks that straddle a rebuild, so only rebuild when the
+  // selected values change and always call the latest callback.
+  const onVariableChangeRef = useRef(onVariableChange);
+  const variablesRef = useRef(variables);
+  const variablesKey = JSON.stringify(variables || {});
+  useEffect(() => {
+    onVariableChangeRef.current = onVariableChange;
+    variablesRef.current = variables;
+  });
 
   const renderMixedContent = useCallback(() => {
-    if (!containerRef.current || !latex) return;
+    const container = containerRef.current;
+    if (!container || !latex) return;
+    const selections = variablesRef.current || {};
+
+    // Rebuilding the DOM drops focus; put it back on the same symbol afterwards.
+    const focusedKey = container.contains(document.activeElement)
+      ? document.activeElement?.dataset?.symbolKey
+      : null;
 
     try {
-      // Find all placeholder patterns
-      const placeholderPattern = /\{\{(\w+)\}\}/g;
-      const placeholders = [...latex.matchAll(placeholderPattern)];
-      
+      const placeholders = parsePlaceholders(latex);
+      const displayValue = (placeholder) => {
+        const selected = findChoice(placeholder.type, selections[placeholder.key]);
+        if (selected) return selected.value;
+        if (revealAnswers && placeholder.answers.length > 0) return placeholder.answers[0];
+        return UNSET_SYMBOL;
+      };
+
       if (placeholders.length === 0 || !isInteractive) {
         // Render ordinary prose normally and only send delimited mathematics to
         // KaTeX. Rendering an entire English sentence as math removes spaces,
         // italicises the words, and displays parse failures in red.
         let processedLatex = normalizeLatexInput(latex);
-        
-        // Replace placeholders with their selected values
-        placeholders.forEach((match, index) => {
-          const [fullMatch, varType] = match;
-          const uniqueKey = `${varType}_${index}`;
-          const value = variables[uniqueKey] || getDropdownOptions(varType)[0][0];
-          processedLatex = processedLatex.replace(fullMatch, value);
-        });
-        
-        containerRef.current.innerHTML = '';
+        for (let i = placeholders.length - 1; i >= 0; i -= 1) {
+          const placeholder = placeholders[i];
+          processedLatex = processedLatex.slice(0, placeholder.start)
+            + ` ${displayValue(placeholder)} `
+            + processedLatex.slice(placeholder.end);
+        }
+
+        container.innerHTML = '';
         if (isLegacyLatex(processedLatex)) {
-          renderLatex(processedLatex, containerRef.current);
+          renderLatex(processedLatex, container);
         } else if (hasMathDelimiters(processedLatex)) {
-          renderDelimitedContent(processedLatex, containerRef.current);
+          renderDelimitedContent(processedLatex, container);
         } else if (hasUndelimitedMath(processedLatex)) {
-          renderLatex(prepareUndelimitedLatex(processedLatex), containerRef.current);
+          renderLatex(prepareUndelimitedLatex(processedLatex), container);
         } else {
-          appendText(containerRef.current, processedLatex);
+          appendText(container, processedLatex);
         }
         return;
       }
 
-      // Clear container
-      containerRef.current.innerHTML = '';
+      container.innerHTML = '';
       const legacyLatex = isLegacyLatex(normalizeLatexInput(latex));
-      const renderFragment = (fragment, span) => {
+      const appendFragment = (fragment) => {
+        if (!fragment.trim()) return;
+        const span = document.createElement('span');
         if (legacyLatex) {
           renderLatex(fragment, span);
         } else if (hasMathDelimiters(fragment)) {
@@ -219,49 +225,31 @@ const KatexRenderer = ({ latex, variables = {}, onVariableChange, isInteractive 
         } else {
           appendText(span, fragment);
         }
+        container.appendChild(span);
       };
-      
-      // Split latex by placeholders and render mixed content
+
       let lastIndex = 0;
-      
-      placeholders.forEach((match, index) => {
-        const [fullMatch, varType] = match;
-        const matchStart = match.index;
-        
-        // Render LaTeX before this placeholder
-        if (matchStart > lastIndex) {
-          const latexBefore = latex.substring(lastIndex, matchStart);
-          if (latexBefore.trim()) {
-            const span = document.createElement('span');
-            renderFragment(latexBefore, span);
-            containerRef.current.appendChild(span);
-          }
-        }
-        
-        // Create unique key for this specific dropdown instance
-        const uniqueKey = `${varType}_${index}`;
-        const currentValue = variables[uniqueKey] || getDropdownOptions(varType)[0][0];
-        const dropdown = createDropdown(uniqueKey, currentValue, (key, value) => onVariableChange(key, value));
-        containerRef.current.appendChild(dropdown);
-        
-        lastIndex = matchStart + fullMatch.length;
+      placeholders.forEach((placeholder) => {
+        appendFragment(latex.substring(lastIndex, placeholder.start));
+        container.appendChild(createSymbolButton(
+          placeholder,
+          selections[placeholder.key],
+          (key, value) => onVariableChangeRef.current?.(key, value),
+        ));
+        lastIndex = placeholder.end;
       });
-      
-      // Render remaining LaTeX after last placeholder
-      if (lastIndex < latex.length) {
-        const latexAfter = latex.substring(lastIndex);
-        if (latexAfter.trim()) {
-          const span = document.createElement('span');
-          renderFragment(latexAfter, span);
-          containerRef.current.appendChild(span);
-        }
+      appendFragment(latex.substring(lastIndex));
+
+      if (focusedKey) {
+        container.querySelector(`[data-symbol-key="${focusedKey}"]`)?.focus();
       }
-      
     } catch (e) {
       console.error('KaTeX rendering error:', e);
-      containerRef.current.textContent = latex;
+      container.textContent = latex;
     }
-  }, [createDropdown, isInteractive, latex, onVariableChange, variables]);
+    // variablesKey stands in for `variables`, which is read through a ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInteractive, latex, revealAnswers, variablesKey]);
 
   useEffect(() => {
     renderMixedContent();

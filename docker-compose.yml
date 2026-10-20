@@ -19,6 +19,8 @@ services:
       context: ./backend
     ports:
       - "5000:5000"
+    # Set EDUCATOR_KEY in backend/.env (16+ characters): this runs with
+    # NODE_ENV=production, which refuses the "educator" development key.
     # Optional: OPENAI_API_KEY, OPENAI_MODEL, limits, etc. The values under
     # `environment` below take precedence (needs Docker Compose 2.24+).
     env_file:

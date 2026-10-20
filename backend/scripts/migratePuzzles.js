@@ -15,18 +15,22 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parson
 // Function to load JSON puzzle data
 function loadPuzzleData() {
   const puzzleDataPath = path.join(__dirname, '../../frontend/src/data/puzzles');
-  
-  const bigOData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'big-o-proofs.json'), 'utf8'));
-  const inductionData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'induction-proofs.json'), 'utf8'));
-  const setTheoryData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'set-theory-proofs.json'), 'utf8'));
-  const recursionData = JSON.parse(fs.readFileSync(path.join(puzzleDataPath, 'recursion-proofs.json'), 'utf8'));
-
-  return {
-    'big-o': bigOData.puzzles,
-    induction: inductionData.puzzles,
-    'set-theory': setTheoryData.puzzles,
-    recursion: recursionData.puzzles
+  // Database category key → bundled file
+  const files = {
+    'big-o': 'big-o-proofs.json',
+    induction: 'induction-proofs.json',
+    'set-theory': 'set-theory-proofs.json',
+    recursion: 'recursion-proofs.json',
+    logic: 'logic-proofs.json',
+    combinatorics: 'combinatorics-proofs.json',
+    'graph-theory': 'graph-theory-proofs.json',
+    'data-structures': 'data-structures-proofs.json',
   };
+
+  return Object.fromEntries(Object.entries(files).map(([category, file]) => [
+    category,
+    JSON.parse(fs.readFileSync(path.join(puzzleDataPath, file), 'utf8')).puzzles,
+  ]));
 }
 
 // Function to determine difficulty based on puzzle characteristics (fallback if not provided)
@@ -93,13 +97,8 @@ async function migratePuzzles() {
       bufferCommands: false,
       maxPoolSize: 10
     };
-    
-    // Add TLS options for Windows/Atlas
-    if (MONGODB_URI.includes('mongodb+srv') || process.platform === 'win32') {
-      connectionOptions.tls = true;
-      connectionOptions.tlsAllowInvalidCertificates = true;
-    }
-    
+    // mongodb+srv:// (Atlas) turns TLS on, with certificate checks, by itself.
+
     await mongoose.connect(MONGODB_URI, connectionOptions);
     console.log('Connected to MongoDB successfully!');
     
@@ -192,7 +191,8 @@ async function migratePuzzles() {
     console.log(`\nTotal active puzzles: ${totalCount}`);
     
   } catch (error) {
-    console.error('Migration error:', error);
+    console.error('Migration error:', error.message);
+    throw error;
   } finally {
     await mongoose.connection.close();
     console.log('Database connection closed.');
@@ -205,8 +205,8 @@ if (process.argv[1] && process.argv[1].endsWith('migratePuzzles.js')) {
   migratePuzzles().then(() => {
     console.log('Migration completed successfully!');
     process.exit(0);
-  }).catch((error) => {
-    console.error('Migration failed:', error);
+  }).catch(() => {
+    console.error('Migration failed.');
     process.exit(1);
   });
 }

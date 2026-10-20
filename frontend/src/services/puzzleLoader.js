@@ -1,12 +1,14 @@
-/**
- * Puzzle loader service for loading puzzle data from JSON files
- */
+// Bundled puzzles, used offline and when the API is unavailable.
 
-// Import all JSON puzzle data
+// Import all JSON puzzle data, one file per category
 import bigOProofsData from '../data/puzzles/big-o-proofs.json' with { type: 'json' };
 import inductionProofsData from '../data/puzzles/induction-proofs.json' with { type: 'json' };
 import setTheoryProofsData from '../data/puzzles/set-theory-proofs.json' with { type: 'json' };
 import recursionProofsData from '../data/puzzles/recursion-proofs.json' with { type: 'json' };
+import logicProofsData from '../data/puzzles/logic-proofs.json' with { type: 'json' };
+import combinatoricsProofsData from '../data/puzzles/combinatorics-proofs.json' with { type: 'json' };
+import graphTheoryProofsData from '../data/puzzles/graph-theory-proofs.json' with { type: 'json' };
+import dataStructuresProofsData from '../data/puzzles/data-structures-proofs.json' with { type: 'json' };
 
 /**
  * Transform puzzle data from JSON format to the format expected by components
@@ -35,142 +37,19 @@ const transformCategoryData = (categoryData) => {
   };
 };
 
-// Transform all puzzle data
-const bigOProofs = transformCategoryData(bigOProofsData);
-const inductionProofs = transformCategoryData(inductionProofsData);
-const setTheoryProofs = transformCategoryData(setTheoryProofsData);
-const recursionProofs = transformCategoryData(recursionProofsData);
+const CATEGORY_DATA = [
+  bigOProofsData,
+  inductionProofsData,
+  setTheoryProofsData,
+  recursionProofsData,
+  logicProofsData,
+  combinatoricsProofsData,
+  graphTheoryProofsData,
+  dataStructuresProofsData,
+].map(transformCategoryData);
 
-export const ALL_PUZZLES = [
-  ...bigOProofs.puzzles,
-  ...inductionProofs.puzzles,
-  ...setTheoryProofs.puzzles,
-  ...recursionProofs.puzzles
-];
+export const ALL_PUZZLES = CATEGORY_DATA.flatMap(data => data.puzzles);
 
-const PUZZLES_BY_CATEGORY = {
-  [bigOProofs.category]: bigOProofs.puzzles,
-  [inductionProofs.category]: inductionProofs.puzzles,
-  [setTheoryProofs.category]: setTheoryProofs.puzzles,
-  [recursionProofs.category]: recursionProofs.puzzles
-};
-
-// Export category metadata
-export const CATEGORIES = {
-  [bigOProofs.category]: {
-    name: bigOProofs.category,
-    description: bigOProofs.description,
-    puzzleCount: bigOProofs.puzzles.length
-  },
-  [inductionProofs.category]: {
-    name: inductionProofs.category,
-    description: inductionProofs.description,
-    puzzleCount: inductionProofs.puzzles.length
-  },
-  [setTheoryProofs.category]: {
-    name: setTheoryProofs.category,
-    description: setTheoryProofs.description,
-    puzzleCount: setTheoryProofs.puzzles.length
-  },
-  [recursionProofs.category]: {
-    name: recursionProofs.category,
-    description: recursionProofs.description,
-    puzzleCount: recursionProofs.puzzles.length
-  }
-};
-
-/**
- * Puzzle loader service with methods for loading and filtering puzzles
- */
-export class PuzzleLoader {
-  /**
-   * Get all available puzzles
-   */
-  static getAllPuzzles() {
-    return ALL_PUZZLES;
-  }
-
-  /**
-   * Get puzzles by category
-   * @param {string} category - The category name
-   */
-  static getPuzzlesByCategory(category) {
-    return PUZZLES_BY_CATEGORY[category] || [];
-  }
-
-  /**
-   * Get a specific puzzle by ID
-   * @param {string} puzzleId - The puzzle ID
-   */
-  static getPuzzleById(puzzleId) {
-    return ALL_PUZZLES.find(puzzle => puzzle.id === puzzleId);
-  }
-
-  /**
-   * Get puzzles by difficulty
-   * @param {string} difficulty - The difficulty level (easy, medium, hard)
-   */
-  static getPuzzlesByDifficulty(difficulty) {
-    return ALL_PUZZLES.filter(puzzle => puzzle.difficulty === difficulty);
-  }
-
-  /**
-   * Get puzzles by tags
-   * @param {string[]} tags - Array of tags to filter by
-   */
-  static getPuzzlesByTags(tags) {
-    return ALL_PUZZLES.filter(puzzle => 
-      tags.some(tag => puzzle.tags.includes(tag))
-    );
-  }
-
-  /**
-   * Search puzzles by title or content
-   * @param {string} searchTerm - The search term
-   */
-  static searchPuzzles(searchTerm) {
-    const term = searchTerm.toLowerCase();
-    return ALL_PUZZLES.filter(puzzle => 
-      puzzle.title.toLowerCase().includes(term) ||
-      puzzle.displayTitle.toLowerCase().includes(term) ||
-      puzzle.statement.toLowerCase().includes(term) ||
-      puzzle.tags.some(tag => tag.toLowerCase().includes(term))
-    );
-  }
-
-  /**
-   * Get all available categories
-   */
-  static getCategories() {
-    return CATEGORIES;
-  }
-
-  /**
-   * Get category names
-   */
-  static getCategoryNames() {
-    return Object.keys(CATEGORIES);
-  }
-
-  /**
-   * Get random puzzle
-   */
-  static getRandomPuzzle() {
-    const randomIndex = Math.floor(Math.random() * ALL_PUZZLES.length);
-    return ALL_PUZZLES[randomIndex];
-  }
-
-  /**
-   * Get random puzzle from category
-   * @param {string} category - The category name
-   */
-  static getRandomPuzzleFromCategory(category) {
-    const categoryPuzzles = this.getPuzzlesByCategory(category);
-    if (categoryPuzzles.length === 0) return null;
-    
-    const randomIndex = Math.floor(Math.random() * categoryPuzzles.length);
-    return categoryPuzzles[randomIndex];
-  }
-}
-
-export default PuzzleLoader;
+export const PUZZLES_BY_CATEGORY = Object.fromEntries(
+  CATEGORY_DATA.map(data => [data.category, data.puzzles])
+);

@@ -1,38 +1,15 @@
-// Service for managing puzzle data with server integration
+// Educator-side puzzle management: validation, saving, statistics and export.
+// HTTP goes through puzzleService; when the API is unreachable, puzzles are
+// kept in localStorage and downloaded as JSON so no work is lost.
+import { CATEGORIES } from '../components/educator/educatorCategories';
+import puzzleService from './puzzleService.js';
+
 class PuzzleManagerService {
-  constructor() {
-    this.apiEnabled = true;
-    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
-  }
-
-  /**
-   * Save a new puzzle to the server database
-   * This provides immediate availability to students
-   */
   async savePuzzle(puzzle) {
+    this.validatePuzzle(puzzle);
     try {
-      // Validate puzzle data
-      this.validatePuzzle(puzzle);
-
-      // Send to server
-      const response = await fetch(`${this.baseUrl}/puzzles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(puzzle)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-
-      const savedPuzzle = await response.json();
-
-      // Also save to localStorage as backup
+      const savedPuzzle = await puzzleService.createPuzzle(puzzle);
       this.saveToLocalStorage(puzzle);
-
       return {
         success: true,
         message: 'Puzzle created successfully! Students can see it immediately.',
@@ -40,87 +17,29 @@ class PuzzleManagerService {
         puzzle: savedPuzzle,
         filename: this.getCategoryFileName(puzzle.category)
       };
-
     } catch (error) {
-      console.error('Error saving puzzle:', error);
-      
-      // Fallback to localStorage if server is down (fetch rejects with a TypeError)
-      if (error instanceof TypeError || error.message.includes('fetch')) {
-        console.warn('Server unavailable, saving to localStorage as fallback');
-        this.saveToLocalStorage(puzzle);
-        this.downloadUpdatedFile(this.getStoredPuzzles(puzzle.category), this.getCategoryFileName(puzzle.category));
-        
-        return {
-          success: true,
-          message: 'Server unavailable. Puzzle saved locally and downloaded as JSON file.',
-          savedTo: 'local',
-          puzzle: puzzle,
-          filename: this.getCategoryFileName(puzzle.category)
-        };
+      if (error.code !== 'NETWORK') {
+        throw Object.assign(new Error(`Failed to save puzzle: ${error.message}`), { status: error.status, code: error.code });
       }
-      
-      throw new Error(`Failed to save puzzle: ${error.message}`);
+      this.saveToLocalStorage(puzzle);
+      this.downloadUpdatedFile(this.getStoredPuzzles(puzzle.category), this.getCategoryFileName(puzzle.category));
+      return {
+        success: true,
+        message: 'Server unavailable. Puzzle saved locally and downloaded as JSON file.',
+        savedTo: 'local',
+        puzzle,
+        filename: this.getCategoryFileName(puzzle.category)
+      };
     }
   }
 
-  /**
-   * Get all puzzles from server (for statistics and management)
-   */
   async getAllPuzzles() {
     try {
-      const response = await fetch(`${this.baseUrl}/puzzles?limit=1000`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch puzzles: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.puzzles || [];
-      
+      const data = await puzzleService.getAllPuzzles({ limit: 1000 });
+      return data?.puzzles || [];
     } catch (error) {
       console.warn('Could not fetch from server, falling back to localStorage:', error.message);
       return this.getEducatorPuzzlesFromLocalStorage();
-    }
-  }
-
-  /**
-   * Get puzzles by category from server
-   */
-  async getPuzzlesByCategory(category) {
-    try {
-      const response = await fetch(`${this.baseUrl}/puzzles/category/${category}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch puzzles: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.puzzles || [];
-      
-    } catch (error) {
-      console.warn('Could not fetch from server, falling back to localStorage:', error.message);
-      return this.getStoredPuzzles(category).puzzles;
-    }
-  }
-
-  /**
-   * Delete a puzzle from the server
-   */
-  async deletePuzzle(puzzleId) {
-    try {
-      const response = await fetch(`${this.baseUrl}/puzzles/${puzzleId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete puzzle: ${response.status}`);
-      }
-
-      return { success: true, message: 'Puzzle deleted successfully' };
-      
-    } catch (error) {
-      console.error('Error deleting puzzle:', error);
-      throw new Error(`Failed to delete puzzle: ${error.message}`);
     }
   }
 
@@ -136,27 +55,9 @@ class PuzzleManagerService {
     }
 
     // Return default structure based on category
-    const categoryInfo = {
-      'big-o': {
-        category: 'Big O Notation',
-        description: 'Proofs involving Big O, Omega, and Theta notation'
-      },
-      'induction': {
-        category: 'Mathematical Induction',
-        description: 'Proofs using mathematical induction'
-      },
-      'recursion': {
-        category: 'Recursion',
-        description: 'Proofs involving recursive relations and algorithms'
-      },
-      'set-theory': {
-        category: 'Set Theory',
-        description: 'Proofs involving set operations and properties'
-      }
-    };
-
+    const info = CATEGORIES[category];
     return {
-      ...categoryInfo[category],
+      ...(info ? { category: info.name, description: info.description } : {}),
       puzzles: []
     };
   }
@@ -175,20 +76,14 @@ class PuzzleManagerService {
    * Get category filename
    */
   getCategoryFileName(category) {
-    const categoryMap = {
-      'big-o': 'big-o-proofs.json',
-      'induction': 'induction-proofs.json',
-      'recursion': 'recursion-proofs.json',
-      'set-theory': 'set-theory-proofs.json'
-    };
-    return categoryMap[category] || `${category}-proofs.json`;
+    return CATEGORIES[category]?.file || `${category}-proofs.json`;
   }
 
   /**
    * Get educator puzzles from localStorage (fallback)
    */
   getEducatorPuzzlesFromLocalStorage() {
-    const categories = ['big-o', 'induction', 'recursion', 'set-theory'];
+    const categories = Object.keys(CATEGORIES);
     const allPuzzles = [];
     
     for (const category of categories) {
@@ -203,38 +98,21 @@ class PuzzleManagerService {
     return allPuzzles;
   }
 
-  /**
-   * Get statistics about puzzles
-   */
   async getStatistics() {
+    let serverStats;
     try {
-      // Try to fetch from server first
-      const response = await fetch(`${this.baseUrl}/puzzles/stats/summary`);
-      
-      if (response.ok) {
-        const serverStats = await response.json();
-        
-        // Transform server response to match expected format
-        const categories = Object.keys(serverStats.categoryCounts || {});
-        
-        return {
-          totalPuzzles: serverStats.total || 0,
-          categories: categories.length,
-          byDifficulty: this.calculateDifficultyStats(await this.getAllPuzzles()),
-          byCategory: this.transformCategoryStats(serverStats.categoryCounts || {})
-        };
-      }
-      
-      // If server request fails, fall back to client-side calculation
-      const puzzles = await this.getAllPuzzles();
-      return this.calculateStatsFromPuzzles(puzzles);
-      
+      serverStats = await puzzleService.getPuzzleStats();
     } catch (error) {
-      console.warn('Using localStorage for statistics:', error.message);
-      // Fallback to localStorage
-      const puzzles = this.getEducatorPuzzlesFromLocalStorage();
-      return this.calculateStatsFromPuzzles(puzzles);
+      console.warn('Could not fetch statistics from server:', error.message);
+      return this.calculateStatsFromPuzzles(await this.getAllPuzzles());
     }
+    const categoryCounts = serverStats.categoryCounts || {};
+    return {
+      totalPuzzles: serverStats.total || 0,
+      categories: Object.keys(categoryCounts).length,
+      byDifficulty: this.calculateDifficultyStats(await this.getAllPuzzles()),
+      byCategory: this.transformCategoryStats(categoryCounts)
+    };
   }
 
   /**
@@ -279,17 +157,13 @@ class PuzzleManagerService {
       transformed[displayName] = count;
     }
     return transformed;
-  }  /**
+  }
+
+  /**
    * Get display name for category
    */
   getCategoryDisplayName(category) {
-    const displayNames = {
-      'big-o': 'Big O Notation',
-      'induction': 'Mathematical Induction',
-      'recursion': 'Recursion',
-      'set-theory': 'Set Theory'
-    };
-    return displayNames[category] || category;
+    return CATEGORIES[category]?.name || category;
   }
 
   /**
@@ -323,7 +197,7 @@ class PuzzleManagerService {
     }
 
     // Validate category
-    const validCategories = ['big-o', 'induction', 'recursion', 'set-theory'];
+    const validCategories = Object.keys(CATEGORIES);
     if (!validCategories.includes(puzzle.category)) {
       throw new Error(`Invalid category. Must be one of: ${validCategories.join(', ')}`);
     }
@@ -401,28 +275,6 @@ class PuzzleManagerService {
         success: true,
         message: 'All puzzles exported successfully (from local storage)!'
       };
-    }
-  }
-
-  /**
-   * Clear all educator-created puzzles (useful for testing)
-   */
-  clearEducatorPuzzles() {
-    const categories = ['big-o', 'induction', 'recursion', 'set-theory'];
-    for (const category of categories) {
-      localStorage.removeItem(`puzzles_${category}`);
-    }
-  }
-
-  /**
-   * Check server connectivity
-   */
-  async checkServerStatus() {
-    try {
-      const response = await fetch(`${this.baseUrl}/puzzles?limit=1`);
-      return response.ok;
-    } catch {
-      return false;
     }
   }
 }

@@ -1,7 +1,18 @@
-/* Import shared CSS variables and utilities */
-@import './styles/shared.css';
-
 :root {
+  /* Spacing, sizing and radius tokens */
+  --gap-sm: 0.5rem;
+  --padding-xs: 0.375rem 0.5rem;
+  --margin-sm: 0.5rem;
+  --margin-lg: 1rem;
+  --margin-xl: 1.5rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --text-md: 0.875rem;
+  --input-height: 2rem;
+  --button-height: 2rem;
+  --border-thin: 0.0625rem;
+
   /* GitHub Dark Theme Color Palette (default / fallback values) */
   --color-canvas-default: #0d1117;
   --color-canvas-subtle: #161b22;
@@ -304,6 +315,11 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap !important;
 }
 
+/* Keep fractions and binomials together with their brackets. */
+.katex :has(> .mfrac) {
+  white-space: nowrap !important;
+}
+
 .katex .mbin,
 .katex .mrel {
   color: var(--color-accent-fg);
@@ -314,42 +330,60 @@ input:focus, textarea:focus, select:focus {
   color: var(--color-fg-muted);
 }
 
-/* Interactive dropdowns inside formulas stay on one line. */
-.katex select,
-select.dropdown-op,
-select.dropdown-quantifier,
-select.dropdown-set,
-select.dropdown-setop,
-select.dropdown-logic,
-select.dropdown-complexity {
+/* Placeholder symbols: buttons that cycle through their choices when clicked. */
+.symbol-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 1.875rem;
+  margin: 0 0.2rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-canvas-subtle);
+  color: var(--color-fg-default);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
   white-space: nowrap;
-  display: inline-block;
-}
-/* Animation utilities */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(0.625rem); /* ~10px */
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  vertical-align: middle;
+  cursor: pointer;
+  box-shadow: none;
+  user-select: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+.symbol-choice:hover {
+  border-color: var(--color-accent-fg);
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+.symbol-choice:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
-.animate-slide-in {
-  animation: slideIn 0.3s ease-out;
+.symbol-choice .katex {
+  font-size: 1.1em;
+}
+
+.symbol-choice--unset {
+  border-style: dashed;
+  background-color: transparent;
+  color: var(--color-fg-muted);
+}
+
+.symbol-choice--op { border-color: var(--color-accent-fg); background-color: var(--color-accent-subtle); }
+.symbol-choice--quantifier { border-color: var(--color-success-fg); background-color: var(--color-success-subtle); }
+.symbol-choice--setop, .symbol-choice--cupcap { border-color: var(--color-attention-fg); background-color: var(--color-attention-subtle); }
+.symbol-choice--logic { border-color: #a855f7; background-color: rgba(168, 85, 247, 0.15); }
+.symbol-choice--complexity { border-color: var(--color-danger-fg); background-color: var(--color-danger-subtle); }
+.symbol-choice.symbol-choice--unset { background-color: transparent; }
+
+@media (pointer: coarse) {
+  .symbol-choice {
+    min-width: 2.5rem;
+    min-height: 2.25rem;
+  }
 }

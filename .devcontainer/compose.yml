@@ -1,0 +1,24 @@
+# Dev container: a Node 22 workspace plus a local MongoDB, for VS Code
+# (Dev Containers extension) and GitHub Codespaces. Run `npm start` inside it.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    environment:
+      # Used by the backend and `npm start`; overrides backend/.env if present.
+      MONGODB_URI: mongodb://mongodb:27017/parsonspuzzle
+      # Development-only educator key for publishing and reviewing puzzles.
+      EDUCATOR_KEY: educator
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongodb-data:/data/db
+
+volumes:
+  mongodb-data:

@@ -9,6 +9,7 @@
     "dev": "nodemon --exitcrash server.js",
     "migrate": "node scripts/migratePuzzles.js",
     "feedback:export": "node scripts/exportFeedback.js",
+    "reverify": "node scripts/reverifyPuzzles.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
