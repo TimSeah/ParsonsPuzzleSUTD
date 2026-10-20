@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usePuzzles, useApiHealth } from './usePuzzles';
-import { PuzzleLoader } from '../services/puzzleLoader';
+import { ALL_PUZZLES } from '../services/puzzleLoader';
 
 export const useAppState = () => {
   const [currentPuzzle, setCurrentPuzzle] = useState(null);
@@ -11,9 +11,8 @@ export const useAppState = () => {
   const { puzzles: apiPuzzles, loading: puzzlesLoading, error: puzzlesError } = usePuzzles(null, {}, apiEnabled);
   const { isHealthy: apiHealthy, loading: healthLoading } = useApiHealth(apiEnabled);
   
-  // Determine which puzzle data to use - now using JSON-based PuzzleLoader for fallback
-  const localPuzzles = PuzzleLoader.getAllPuzzles();
-  const puzzles = useLocalData || !apiHealthy || puzzlesError ? localPuzzles : apiPuzzles;
+  // Fall back to the bundled puzzles when the API is off, down or failing
+  const puzzles = useLocalData || !apiHealthy || puzzlesError ? ALL_PUZZLES : apiPuzzles;
   const isUsingApi = !useLocalData && apiHealthy && !puzzlesError && apiPuzzles.length > 0;
 
   // Set initial puzzle when data loads
@@ -23,18 +22,6 @@ export const useAppState = () => {
     }
   }, [puzzles, currentPuzzle]);
 
-  const handlePuzzleChange = (event) => {
-    const puzzleId = event.target.value;
-    const puzzle = puzzles.find(p => p.id === puzzleId);
-    setCurrentPuzzle(puzzle);
-  };
-
-  const handleNextPuzzle = () => {
-    const currentIndex = puzzles.findIndex(p => p.id === currentPuzzle.id);
-    const nextIndex = (currentIndex + 1) % puzzles.length;
-    setCurrentPuzzle(puzzles[nextIndex]);
-  };
-
   const toggleDataSource = () => {
     setUseLocalData(!useLocalData);
     // Reset to first puzzle when switching data sources
@@ -43,31 +30,17 @@ export const useAppState = () => {
     }
   };
 
-  // Derived state
-  const currentPuzzleIndex = puzzles.findIndex(p => p.id === currentPuzzle?.id);
-  const isLastPuzzle = currentPuzzleIndex === puzzles.length - 1;
   const isLoading = !useLocalData
     && apiHealthy !== false
     && (puzzlesLoading || (healthLoading && apiHealthy === null));
 
   return {
-    // State
     currentPuzzle,
     useLocalData,
-    puzzles,
     isUsingApi,
-    
-    // Loading states
     isLoading,
     healthLoading,
     puzzlesError,
-    
-    // Derived state
-    isLastPuzzle,
-    
-    // Handlers
-    handlePuzzleChange,
-    handleNextPuzzle,
     toggleDataSource
   };
 };

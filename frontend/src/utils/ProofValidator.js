@@ -77,64 +77,6 @@ export class ProofValidator {
   }
 
   /**
-   * Validates a partial proof (useful for real-time feedback)
-   * @param {Array} userOrder - Array of block IDs in user's current order
-   * @returns {Object} Partial validation result
-   */
-  validatePartial(userOrder) {
-    if (!userOrder || userOrder.length === 0) {
-      return {
-        isValid: true,
-        correctSoFar: true,
-        nextExpected: this.solutionOrder[0],
-        progress: 0
-      };
-    }
-
-    const correctSoFar = this._isCorrectSequence(userOrder, 0, userOrder.length);
-    const nextExpectedIndex = userOrder.length;
-    const nextExpected = nextExpectedIndex < this.solutionOrder.length 
-      ? this.solutionOrder[nextExpectedIndex] 
-      : null;
-
-    return {
-      isValid: correctSoFar,
-      correctSoFar,
-      nextExpected,
-      progress: (userOrder.length / this.solutionOrder.length) * 100,
-      currentLength: userOrder.length,
-      totalLength: this.solutionOrder.length
-    };
-  }
-
-  /**
-   * Checks if a block can be placed at a specific position
-   * @param {string} blockId - ID of the block to place
-   * @param {number} position - Target position (0-indexed)
-   * @param {Array} currentOrder - Current user arrangement
-   * @returns {boolean} Whether the placement is valid
-   */
-  canPlaceBlock(blockId, position, currentOrder = []) {
-    if (position < 0 || position >= this.solutionOrder.length) {
-      return false;
-    }
-
-    // Check if this is the correct block for this position
-    if (this.solutionOrder[position] !== blockId) {
-      return false;
-    }
-
-    // Check if previous positions are correctly filled
-    for (let i = 0; i < position; i++) {
-      if (i >= currentOrder.length || currentOrder[i] !== this.solutionOrder[i]) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  /**
    * Gets the next valid block that should be placed
    * @param {Array} currentOrder - Current user arrangement
    * @returns {string|null} ID of the next expected block, or null if complete
@@ -426,69 +368,6 @@ export class ProofValidator {
   }
 
   /**
-   * Truncates LaTeX for display (now only used for non-hint purposes)
-   * @private
-   */
-  _truncateLatex(latex, maxLength = 50) {
-    if (latex.length <= maxLength) {
-      return latex;
-    }
-    return latex.substring(0, maxLength) + '...';
-  }
-
-  /**
-   * Gets validation statistics for the puzzle
-   * @returns {Object} Statistics about the puzzle structure
-   */
-  getStatistics() {
-    return {
-      totalBlocks: this.solutionOrder.length,
-      blockTypes: this.puzzle.blocks.map(block => ({
-        id: block.id,
-        preview: this._truncateLatex(block.latex, 30)
-      })),
-      difficulty: this._estimateDifficulty()
-    };
-  }
-
-  /**
-   * Estimates puzzle difficulty based on number of blocks
-   * @private
-   */
-  _estimateDifficulty() {
-    const blockCount = this.solutionOrder.length;
-    if (blockCount <= 5) return 'Easy';
-    if (blockCount <= 10) return 'Medium';
-    return 'Hard';
-  }
-
-  /**
-   * Debug method to analyze what's happening with validation
-   * @param {Array} userOrder - Array of block IDs in user's order
-   * @returns {Object} Debug information
-   */
-  debugValidation(userOrder) {
-    const result = this._analyzeSequence(userOrder);
-    const hints = this._generateHints(result, userOrder);
-    
-    return {
-      puzzle: {
-        id: this.puzzle.id,
-        title: this.puzzle.title,
-        totalBlocks: this.solutionOrder.length,
-        solutionOrder: this.solutionOrder
-      },
-      userInput: {
-        userOrder,
-        userBlocks: userOrder.length
-      },
-      analysis: result,
-      hints,
-      validation: this.validateProof(userOrder)
-    };
-  }
-
-  /**
    * Validates that a user order contains only valid block IDs for this puzzle
    * @param {Array} userOrder - Array of block IDs in user's order
    * @returns {Object} Validation result with invalid blocks identified
@@ -507,52 +386,5 @@ export class ProofValidator {
     };
   }
 }
-
-// Export utility functions that can be used independently
-export const ValidationUtils = {
-  /**
-   * Quick validation function for simple use cases
-   */
-  isCorrectOrder: (userOrder, correctOrder) => {
-    if (userOrder.length !== correctOrder.length) return false;
-    return userOrder.every((block, index) => block === correctOrder[index]);
-  },
-
-  /**
-   * Calculate percentage similarity between two sequences
-   */
-  calculateSimilarity: (userOrder, correctOrder) => {
-    if (correctOrder.length === 0) return 0;
-    
-    let matches = 0;
-    const minLength = Math.min(userOrder.length, correctOrder.length);
-    
-    for (let i = 0; i < minLength; i++) {
-      if (userOrder[i] === correctOrder[i]) {
-        matches++;
-      }
-    }
-    
-    return (matches / correctOrder.length) * 100;
-  },
-
-  /**
-   * Find the longest correct subsequence from the beginning
-   */
-  findCorrectPrefix: (userOrder, correctOrder) => {
-    let length = 0;
-    const minLength = Math.min(userOrder.length, correctOrder.length);
-    
-    for (let i = 0; i < minLength; i++) {
-      if (userOrder[i] === correctOrder[i]) {
-        length++;
-      } else {
-        break;
-      }
-    }
-    
-    return length;
-  }
-};
 
 export default ProofValidator;

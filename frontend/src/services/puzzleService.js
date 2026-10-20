@@ -1,7 +1,10 @@
-// API service for interacting with the backend
+// The single HTTP client for the backend API. Errors carry `code` ('NETWORK',
+// 'TIMEOUT' or the server's error code) and `status` so callers can branch.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 30000);
 const GENERATION_TIMEOUT_MS = Number(import.meta.env.VITE_GENERATION_TIMEOUT_MS || 1200000);
+
+const apiError = (message, fields) => Object.assign(new Error(message), fields);
 
 class PuzzleService {
   constructor() {
@@ -22,15 +25,18 @@ class PuzzleService {
         },
       });
     } catch (error) {
-      if (error.name === 'AbortError') throw new Error('The API took too long to respond. Please try again.');
-      throw new Error(`Cannot reach the API at ${this.baseURL}. Start the full stack and try again.`);
+      if (error.name === 'AbortError') throw apiError('The API took too long to respond. Please try again.', { code: 'TIMEOUT' });
+      throw apiError(`Cannot reach the API at ${this.baseURL}. Start the full stack and try again.`, { code: 'NETWORK' });
     } finally {
       clearTimeout(timeout);
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
+      throw apiError(errorData.message || errorData.error || `HTTP error! status: ${response.status}`, {
+        code: errorData.error,
+        status: response.status,
+      });
     }
 
     if (response.status === 204) return null;
@@ -74,11 +80,6 @@ class PuzzleService {
     });
   }
 
-  // Get a specific puzzle by ID
-  async getPuzzleById(id) {
-    return this.fetchWithError(`/puzzles/${id}`);
-  }
-
   // Get puzzles by category
   async getPuzzlesByCategory(category, params = {}) {
     const queryParams = new URLSearchParams();
@@ -103,32 +104,8 @@ class PuzzleService {
     });
   }
 
-  // Update an existing puzzle
-  async updatePuzzle(id, puzzleData) {
-    return this.fetchWithError(`/puzzles/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(puzzleData)
-    });
-  }
-
-  // Delete a puzzle (soft delete)
-  async deletePuzzle(id) {
-    return this.fetchWithError(`/puzzles/${id}`, {
-      method: 'DELETE'
-    });
-  }
-
-  // Get puzzle statistics
   async getPuzzleStats() {
     return this.fetchWithError('/puzzles/stats/summary');
-  }
-
-  // Search puzzles
-  async searchPuzzles(searchTerm, filters = {}) {
-    return this.getAllPuzzles({
-      search: searchTerm,
-      ...filters
-    });
   }
 
   // Health check

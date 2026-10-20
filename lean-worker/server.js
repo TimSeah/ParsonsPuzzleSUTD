@@ -100,8 +100,7 @@ http.createServer(async (req, res) => {
       compiles: compileLimiter.stats(),
     });
   }
-  const isVerificationRoute = req.url === '/verify' || req.url === '/syntax-check';
-  if (req.method !== 'POST' || !isVerificationRoute) return json(res, 404, { error: 'NOT_FOUND' });
+  if (req.method !== 'POST' || req.url !== '/verify') return json(res, 404, { error: 'NOT_FOUND' });
   let clientGone = false;
   res.on('close', () => { if (!res.writableEnded) clientGone = true; });
   try {

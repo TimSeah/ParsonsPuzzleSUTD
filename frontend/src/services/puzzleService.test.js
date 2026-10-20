@@ -55,7 +55,15 @@ describe('PuzzleService', () => {
   it('reports the configured API URL when the backend is unreachable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     const service = new PuzzleService();
-    await expect(service.getAllPuzzles()).rejects.toThrow(`Cannot reach the API at ${service.baseURL}`);
+    await expect(service.getAllPuzzles()).rejects.toMatchObject({
+      code: 'NETWORK',
+      message: expect.stringContaining(`Cannot reach the API at ${service.baseURL}`),
+    });
+  });
+
+  it('attaches the status and server error code to failed requests', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'EDUCATOR_AUTH_REQUIRED', message: 'Sign in' }, 401)));
+    await expect(new PuzzleService().createPuzzle({})).rejects.toMatchObject({ status: 401, code: 'EDUCATOR_AUTH_REQUIRED', message: 'Sign in' });
   });
 
   it('times out slow requests', async () => {
