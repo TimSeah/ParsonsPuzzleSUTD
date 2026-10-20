@@ -39,7 +39,7 @@ export default [
   },
   // Backend and Lean worker configuration
   {
-    files: ['backend/**/*.js', 'lean-worker/**/*.js', '*.config.js', 'frontend/*.config.js'],
+    files: ['backend/**/*.js', 'lean-worker/**/*.js', 'scripts/**/*.mjs', '*.config.js', 'frontend/*.config.js'],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.node,
