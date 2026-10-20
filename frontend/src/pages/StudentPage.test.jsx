@@ -89,6 +89,17 @@ describe('StudentPage', () => {
     expect(request).toMatchObject({ difficulty: 'medium', topics: [] });
     expect(request.userId).toMatch(/^anon_/);
     expect(request.requestId).toBeTruthy();
+    expect(screen.queryByText(/hasn't reviewed the wording yet/)).toBeNull();
+  });
+
+  it('tells the student when their new puzzle has not been reviewed yet', async () => {
+    const user = userEvent.setup();
+    vi.mocked(puzzleService.generatePuzzle).mockResolvedValue({ ...generatedPuzzle, review: 'pending' });
+    render(<StudentPage />);
+
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
+
+    expect(await screen.findByText(/hasn't reviewed the wording yet/)).toBeInTheDocument();
   });
 
   it('disables the button while generating so requests cannot overlap', async () => {

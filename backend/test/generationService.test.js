@@ -204,3 +204,46 @@ test('caps the number of simultaneous fresh generations', async () => {
   await Promise.all(running);
   assert.equal(service.activeGenerations, 0);
 });
+test('new generated puzzles wait for educator review and are only reused once approved', async () => {
+  const deps = dependencies({
+    generatedCandidates: [validCandidate()],
+    leanResults: [{ valid: true, status: 'verified', diagnostics: [] }],
+  });
+  const result = await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
+
+  assert.deepEqual(deps.saved().review, { status: 'pending' });
+  assert.equal(result.review, 'pending', 'the student who generated it is told it is not reviewed yet');
+  assert.deepEqual(deps.cacheFilter()['review.status'], { $nin: ['pending', 'rejected'] });
+});
+
+test('cached puzzles without a review status are treated as approved', async () => {
+  const cached = { id: 'old', title: 'T', displayTitle: 'T', statement: 'S', category: 'logic', difficulty: 'easy', tags: [], blocks: [], solutionOrder: [], verification: { status: 'verified' } };
+  const deps = dependencies({ generatedCandidates: [validCandidate()], leanResults: [], cachedPuzzle: cached });
+  const result = await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
+  assert.equal(result.source, 'cache');
+  assert.equal(result.review, 'approved');
+});
+
+test('never reuses a duplicate that was rejected or is awaiting review', async () => {
+  const deps = dependencies({
+    generatedCandidates: [validCandidate(), { ...validCandidate(), statement: 'A different statement' }],
+    leanResults: [{ valid: true, status: 'verified', diagnostics: [] }],
+  });
+  const fingerprintLookups = [];
+  let created = 0;
+  deps.PuzzleModel.create = async (puzzle) => {
+    created += 1;
+    if (created === 1) throw Object.assign(new Error('duplicate key'), { code: 11000 });
+    return { ...puzzle, toObject: () => puzzle };
+  };
+  deps.PuzzleModel.findOne = (filter) => {
+    if (filter.contentFingerprint) { fingerprintLookups.push(filter); return Promise.resolve(null); }
+    return { skip: async () => null };
+  };
+  const result = await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
+
+  assert.deepEqual(fingerprintLookups[0]['review.status'], { $nin: ['pending', 'rejected'] });
+  assert.equal(fingerprintLookups[0].isActive, true);
+  assert.equal(result.statement, 'A different statement', 'asks the model again instead of serving the duplicate');
+  assert.equal(result.review, 'pending');
+});

@@ -25,7 +25,8 @@ A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students
 
 ### For educators
 
-- Sign in with the shared educator key (`EDUCATOR_KEY` in `backend/.env`) to publish puzzles. Anyone can browse the dashboard.
+- Sign in with the shared educator key (`EDUCATOR_KEY` in `backend/.env`) to publish and review puzzles. Anyone can browse the dashboard.
+- Review queue for AI-generated puzzles: compare the statement with the Lean theorem, then approve or reject it.
 - Dashboard with puzzle counts by category and difficulty.
 - Write LaTeX with a live preview, reorder steps, and try the puzzle as a student before publishing.
 - Add clickable symbols with their answer, such as `{{op:\leq}}` or `{{complexity:\Theta}}` (use `|` for alternatives: `{{op:\leq|<}}`). Students click to cycle through the symbols, and the symbol is graded with the step.
@@ -39,7 +40,7 @@ A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students
 
 ### Lean-verified generation
 
-When a student asks for an AI-generated puzzle, the backend reuses a verified puzzle they haven't seen or asks OpenAI for a new one with a complete Lean proof. A Lean 4 + Mathlib worker compiles the proof, re-checks it in the Lean kernel in a separate process, and rejects `sorry`, extra axioms and warnings. Each student-facing step must match a fragment of that proof. Lean checks the maths, not the English wording, so generated puzzles still benefit from review. See [Generation and verification](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Generation-and-Verification).
+When a student asks for an AI-generated puzzle, the backend reuses a verified puzzle they haven't seen or asks OpenAI for a new one with a complete Lean proof. A Lean 4 + Mathlib worker compiles the proof, re-checks it in the Lean kernel in a separate process, and rejects `sorry`, extra axioms and warnings. Each student-facing step must match a fragment of that proof. Lean checks the maths, not the English wording, so a new puzzle goes only to the student who asked for it until an educator approves it in the review queue. See [Generation and verification](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Generation-and-Verification).
 
 ## Quick start
 

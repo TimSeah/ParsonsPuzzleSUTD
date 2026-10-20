@@ -79,6 +79,15 @@ const puzzleSchema = new mongoose.Schema({
   },
   useCount: { type: Number, default: 0 },
   lastServedAt: Date,
+  // Educator review of AI-generated puzzles. New ones start 'pending' and are
+  // only shown to the student who generated them until approved. Puzzles
+  // without a review status (educator-made, bundled, older generated) count
+  // as approved.
+  review: {
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], index: true },
+    reviewedAt: Date,
+    note: { type: String, maxlength: 500 }
+  },
   createdAt: {
     type: Date,
     default: Date.now
