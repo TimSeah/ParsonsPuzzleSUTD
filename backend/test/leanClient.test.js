@@ -64,3 +64,14 @@ test('maps worker failures to infrastructure errors', async () => {
   assert.equal(result.status, 'infrastructure_error');
   assert.equal(result.valid, false);
 });
+
+test('keeps worker timeouts and infrastructure errors distinct from rejections', async () => {
+  for (const status of ['timeout', 'cancelled', 'infrastructure_error']) {
+    const client = new LeanClient({ fetchImpl: workerResponse({ status, valid: false, diagnostics: [] }) });
+    const result = await client.verify({ source: 'import Mathlib\ntheorem t : True := trivial', theoremName: 't', imports: ['Mathlib'] });
+    assert.equal(result.status, status);
+    assert.equal(result.valid, false);
+  }
+  const unknown = new LeanClient({ fetchImpl: workerResponse({ status: 'weird', valid: true, policyChecks: {} }) });
+  assert.equal((await unknown.verify({ source: 'import Mathlib\ntheorem t : True := trivial', theoremName: 't', imports: ['Mathlib'] })).status, 'rejected');
+});

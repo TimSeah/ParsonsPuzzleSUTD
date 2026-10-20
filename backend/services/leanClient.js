@@ -7,6 +7,8 @@ export const REQUIRED_POLICY_CHECKS = ['noUnsolvedGoals', 'noSorry', 'noAdmit', 
 // 3: proofs are re-checked by the kernel in a separate trusted process.
 export const LEAN_POLICY_VERSION = 3;
 
+const NOT_CHECKED = new Set(['timeout', 'cancelled', 'infrastructure_error']);
+
 const isMathlibModule = name => name === 'Mathlib' || name.startsWith('Mathlib.');
 
 export class LeanClient {
@@ -30,7 +32,9 @@ export class LeanClient {
       if (!response.ok) return { status: response.status >= 500 ? 'infrastructure_error' : 'rejected', valid: false, diagnostics: body.diagnostics || [], durationMs: Date.now()-started };
       const valid = body.status === 'verified' && body.valid === true
         && REQUIRED_POLICY_CHECKS.every(check => body.policyChecks?.[check] === true);
-      return { ...body, status: valid ? 'verified' : 'rejected', valid, durationMs: body.durationMs ?? Date.now()-started };
+      // Keep the worker's timeout/infrastructure statuses: they mean "not checked", not "wrong".
+      const status = valid ? 'verified' : (NOT_CHECKED.has(body.status) ? body.status : 'rejected');
+      return { ...body, status, valid, durationMs: body.durationMs ?? Date.now()-started };
     } catch (error) {
       if (error.name === 'AbortError') return { status: 'timeout', valid: false, diagnostics: [], durationMs: Date.now()-started };
       return { status: 'infrastructure_error', valid: false, diagnostics: [], reason: error.message, durationMs: Date.now()-started };

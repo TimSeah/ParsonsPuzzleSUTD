@@ -108,7 +108,7 @@ export function stripLeanComments(source) {
 
 export function declaresTheorem(source, theoremName) {
   if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(theoremName)) return false;
-  const pattern = new RegExp(`^\\s*(?:@\\[[^\\]\\n]*\\]\\s*)*(?:(?:private|protected|noncomputable)\\s+)*(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`, 'm');
+  const pattern = new RegExp(`^\\s*(?:@\\[[^\\]\\n]*\\]\\s*)*(?:(?:protected|noncomputable)\\s+)*(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`, 'm');
   return pattern.test(stripLeanComments(source));
 }
 

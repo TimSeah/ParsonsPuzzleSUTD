@@ -133,6 +133,7 @@ for (const [name, source, pattern] of [
   ['BaseIO', `${SOURCE}\ndef x : BaseIO Unit := pure ()`, /IO/],
   ['skipping kernel checks', `set_option debug.skipKernelTC true\n${SOURCE}`, /debug/],
   ['non-Mathlib imports', SOURCE.replace('import Mathlib', 'import Mathlib Lean.Elab'), /Import is not allowed: Lean.Elab|metaprogramming/],
+  ['private theorems (the checker cannot find mangled private names)', SOURCE.replace('theorem and_swap', 'private theorem and_swap'), /without `private`/],
   ['module-system headers', `module\n${SOURCE}`, /Module-system/],
   ['look-alike imports', SOURCE.replace('import Mathlib', 'import MathlibEvil'), /Import is not allowed/],
   [

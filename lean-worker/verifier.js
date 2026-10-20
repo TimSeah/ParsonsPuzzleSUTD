@@ -109,7 +109,7 @@ export function importedModules(source) {
 
 export function declaresTheorem(source, theoremName) {
   const pattern = new RegExp(
-    `^\\s*(?:@\\[[^\\]\\n]*\\]\\s*)*(?:(?:private|protected|noncomputable)\\s+)*(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`,
+    `^\\s*(?:@\\[[^\\]\\n]*\\]\\s*)*(?:(?:protected|noncomputable)\\s+)*(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`,
     'm',
   );
   return pattern.test(stripComments(source));
@@ -129,6 +129,9 @@ export function validateSource(source, theoremName, { maxBytes = 20000 } = {}) {
     if (module !== 'Mathlib' && !module.startsWith('Mathlib.')) return `Import is not allowed: ${module}`;
   }
   if (/^\s*module(?![\w'])/.test(code)) return 'Module-system headers are not allowed';
+  if (new RegExp(`(?<![\\w.'])private\\s+(?:theorem|lemma)\\s+${theoremName}(?![\\w.'!?])`).test(code)) {
+    return `Declare ${theoremName} without \`private\` so the checker can find it`;
+  }
   if (!declaresTheorem(source, theoremName)) return `Theorem ${theoremName} is not declared at the top level of the Lean source`;
   return null;
 }
