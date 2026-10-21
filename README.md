@@ -2,7 +2,7 @@
 
 A web app for practising mathematical proofs in SUTD 50.004 Algorithms. Students rebuild a proof by putting shuffled steps in order. Educators publish their own puzzles, and Astra generates new ones with OpenAI, checking every proof with Lean 4 first.
 
-**Documentation is in the [wiki](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki).**
+**[Try the demo](https://timseah.github.io/ParsonsPuzzleSUTD/)**: the whole app running in your browser, with sample AI puzzles and no sign-in. Documentation is in the **[wiki](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki)**.
 
 ![Practice mode: steps on the left, the student's proof on the right, feedback below](.github/assets/screenshots/student-practice.png)
 
@@ -70,7 +70,7 @@ docker compose --profile generation up --build   # plus the Lean worker
 | [`backend/`](backend) | Express API, MongoDB models, generation service |
 | [`lean-worker/`](lean-worker) | Lean 4 proof checker |
 
-Common commands, run from the root: `npm run dev:fullstack`, `npm test`, `npm run lint`, `npm run build`. The full list is on [Development](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Development).
+Common commands, run from the root: `npm run dev:fullstack`, `npm test`, `npm run lint`, `npm run build`, and `npm run dev:demo` to run the demo locally. The full list is on [Development](https://github.com/TimSeah/ParsonsPuzzleSUTD/wiki/Development).
 
 ## Documentation
 

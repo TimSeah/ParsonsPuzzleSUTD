@@ -16,6 +16,8 @@
     "dev:lean": "npm --prefix lean-worker start",
     "dev:fullstack": "node scripts/dev.mjs",
     "build": "npm --prefix frontend run build --",
+    "build:demo": "npm --prefix frontend run build:demo --",
+    "dev:demo": "npm --prefix frontend run dev:demo --",
     "preview": "npm --prefix frontend run preview --",
     "lint": "eslint .",
     "test": "npm run test:frontend && npm run test:backend && npm run test:lean && npm run test:scripts",

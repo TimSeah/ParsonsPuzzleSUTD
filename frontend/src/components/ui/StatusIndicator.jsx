@@ -1,6 +1,10 @@
+import { IS_DEMO } from '../../demo/isDemo';
+
 const STATUSES = {
   loading: { label: 'Connecting…', detail: 'Checking the puzzle server' },
-  online: { label: 'Online', detail: 'Puzzles are loaded from the course database' },
+  online: IS_DEMO
+    ? { label: 'Demo', detail: 'Puzzles are stored in this browser' }
+    : { label: 'Online', detail: 'Puzzles are loaded from the course database' },
   offline: { label: 'Offline', detail: 'Using the bundled puzzles in this app' },
 };
 

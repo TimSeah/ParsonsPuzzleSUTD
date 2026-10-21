@@ -2,13 +2,19 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { NavigationHeader } from './components/navigation';
 import { StudentPage, EducatorPage } from './pages';
 import FeedbackPage from './pages/FeedbackPage';
+import DemoBanner from './demo/DemoBanner';
+import { IS_DEMO } from './demo/isDemo';
 import './App.css';
+
+// '/' normally; '/ParsonsPuzzleSUTD/' for the GitHub Pages demo.
+const BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 
 function App() {
   return (
-    <Router>
+    <Router basename={BASENAME}>
       <div className="App">
         <NavigationHeader />
+        {IS_DEMO && <DemoBanner />}
 
         <main id="main-content" className="app-main page" tabIndex={-1}>
           <Routes>

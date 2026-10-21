@@ -11,6 +11,33 @@
   outline: none;
 }
 
+.demo-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem var(--page-padding);
+  border-bottom: 1px solid var(--color-accent-muted);
+  background: var(--color-accent-subtle);
+  color: var(--color-fg-default);
+  font-size: 0.8125rem;
+}
+
+.demo-banner svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: var(--color-accent-fg);
+}
+
+.demo-banner p {
+  margin: 0;
+  max-width: 72rem;
+}
+
+.demo-banner a {
+  color: var(--color-accent-fg);
+  font-weight: 600;
+}
+
 .app-footer {
   padding: 1rem var(--page-padding);
   border-top: 1px solid var(--color-border-default);
