@@ -19,11 +19,14 @@ function loadSubmode() {
   return saved === SUBMODES.CHALLENGE ? SUBMODES.CHALLENGE : SUBMODES.PRACTICE;
 }
 
-// Puzzles educators published on the server, added to the bundled ones while
-// the API is online. Failing to load them just leaves the bundled puzzles.
+// Puzzles educators published on the server, added to the bundled ones when
+// the API answers. Choosing Bundled turns off the health check, so this just
+// tries with a short timeout; failing leaves the bundled puzzles.
+const EDUCATOR_PUZZLES_TIMEOUT_MS = 4000;
+
 async function loadEducatorPuzzles(bundled) {
   try {
-    const { puzzles = [] } = await puzzleService.getAllPuzzles({ source: 'educator', limit: 200 });
+    const { puzzles = [] } = await puzzleService.getAllPuzzles({ source: 'educator', limit: 200 }, { timeoutMs: EDUCATOR_PUZZLES_TIMEOUT_MS });
     const bundledIds = new Set(bundled.map(p => p.id));
     return puzzles.filter(p => !bundledIds.has(p.id));
   } catch (error) {
@@ -95,7 +98,7 @@ function StudentPage() {
     
     try {
       if (dataSource === 'local') {
-        let filteredPuzzles = [...ALL_PUZZLES, ...(isUsingApi ? await loadEducatorPuzzles(ALL_PUZZLES) : [])];
+        let filteredPuzzles = [...ALL_PUZZLES, ...await loadEducatorPuzzles(ALL_PUZZLES)];
         if (!isCurrentRequest()) return;
         
         // Filter by difficulty
