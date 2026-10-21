@@ -1,5 +1,6 @@
 import { CheckCircle2, Download } from 'lucide-react';
 import { Dialog } from '../ui';
+import { IS_DEMO } from '../../demo/isDemo';
 
 // Confirms a published puzzle. `savedTo` is 'server' (students see it now)
 // or 'local' (server unavailable: saved in this browser and downloaded).
@@ -21,7 +22,9 @@ function PuzzleSuccessModal({ isOpen, onClose, puzzleTitle, filename, savedTo = 
             <p style={{ margin: '0.25rem 0 0' }}>
               {savedLocally
                 ? 'The server was unavailable, so the puzzle was saved in this browser and downloaded as a JSON file.'
-                : 'Saved to the course database. Students can solve it now.'}
+                : IS_DEMO
+                  ? 'Saved in this browser for the demo and counted on the dashboard. In the full app it goes to the course database.'
+                  : 'Saved to the course database. Students can solve it now.'}
             </p>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle2, MessageSquare } from "lucide-react";
 import puzzleService from "../services/puzzleService.js";
 import { getStableUserId } from "../services/userIdentity.js";
+import { IS_DEMO } from "../demo/isDemo.js";
 
 const MAX_COMMENT = 2000;
 const RATINGS = [
@@ -70,6 +71,9 @@ export default function FeedbackPage() {
         <div>
           <h1 className="page-title">Feedback</h1>
           <p className="page-subtitle">Help us improve SUTD Parsons Puzzles (50.004).</p>
+        {IS_DEMO && (
+          <p className="notice notice--info">This is the demo, so feedback isn&apos;t sent anywhere. The form works as it does in the full app.</p>
+        )}
         </div>
       </div>
 
