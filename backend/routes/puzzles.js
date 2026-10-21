@@ -33,6 +33,8 @@ export function puzzleProblem(puzzle) {
   return null;
 }
 
+const PUZZLE_SOURCES = ['local', 'educator', 'llm-generated'];
+
 const escapeRegex = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export function createPuzzlesRouter({
@@ -46,13 +48,19 @@ export function createPuzzlesRouter({
   // GET /api/puzzles - Get all puzzles with optional filtering
   router.get('/', async (req, res) => {
     try {
-      const { category, difficulty, tags, search, limit = 50, offset = 0 } = req.query;
+      const { category, difficulty, tags, search, source, limit = 50, offset = 0 } = req.query;
       const filter = { ...SERVABLE, isActive: true };
       if (category) {
         filter.category = category;
       }
       if (difficulty) {
         filter.difficulty = difficulty;
+      }
+      if (source !== undefined) {
+        if (!PUZZLE_SOURCES.includes(source)) {
+          return res.status(400).json({ error: 'INVALID_SOURCE', message: `source must be one of: ${PUZZLE_SOURCES.join(', ')}` });
+        }
+        filter.source = source;
       }
       if (tags) {
         const tagArray = (Array.isArray(tags) ? tags : String(tags).split(',')).map(String);

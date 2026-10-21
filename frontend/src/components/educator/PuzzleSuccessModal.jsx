@@ -23,8 +23,8 @@ function PuzzleSuccessModal({ isOpen, onClose, puzzleTitle, filename, savedTo = 
               {savedLocally
                 ? 'The server was unavailable, so the puzzle was saved in this browser and downloaded as a JSON file.'
                 : IS_DEMO
-                  ? 'Saved in this browser for the demo and counted on the dashboard. In the full app it goes to the course database.'
-                  : 'Saved to the course database. Students can solve it now.'}
+                  ? 'Saved in this browser for the demo. Students get it from New puzzle, with either Bundled or AI generated selected.'
+                  : 'Saved to the course database. Students get it from New puzzle, with either Bundled or AI generated selected.'}
             </p>
           </div>
         </div>

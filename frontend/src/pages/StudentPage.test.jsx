@@ -21,7 +21,7 @@ vi.mock('../hooks/useAppState', () => ({
 }));
 
 vi.mock('../services/puzzleService.js', () => ({
-  default: { generatePuzzle: vi.fn(), recordPuzzleTried: vi.fn() },
+  default: { generatePuzzle: vi.fn(), recordPuzzleTried: vi.fn(), getAllPuzzles: vi.fn() },
 }));
 
 const generatedPuzzle = {
@@ -48,9 +48,44 @@ const heading = () => document.getElementById('puzzle-title');
 describe('StudentPage', () => {
   beforeEach(() => {
     vi.mocked(puzzleService.generatePuzzle).mockReset();
+    vi.mocked(puzzleService.getAllPuzzles).mockReset().mockResolvedValue({ puzzles: [] });
     toggleDataSource.mockReset();
     appState.puzzlesError = null;
     vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  it('adds puzzles educators published to the bundled ones while the server is online', async () => {
+    const user = userEvent.setup();
+    vi.mocked(puzzleService.getAllPuzzles).mockResolvedValue({ puzzles: [{
+      id: 'edu_logic_hard', title: '\\text{Educator puzzle}', displayTitle: 'Educator puzzle', statement: 'S',
+      category: 'logic', difficulty: 'hard', tags: ['custom-tag'], source: 'educator',
+      blocks: [{ id: 'a', latex: 'A' }, { id: 'b', latex: 'B' }], solutionOrder: ['a', 'b'],
+    }] });
+    render(<StudentPage />);
+
+    const sidebar = screen.getByRole('complementary', { name: 'Puzzle settings' });
+    await user.click(within(sidebar).getByRole('radio', { name: 'Bundled' }));
+    await user.click(within(sidebar).getByRole('radio', { name: 'Hard' }));
+    await user.click(within(sidebar).getByRole('button', { name: 'Logic' }));
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
+
+    // No bundled puzzle is hard logic, so only the educator puzzle matches (by category)
+    await waitFor(() => expect(heading()).toHaveTextContent('Educator puzzle'));
+    expect(puzzleService.getAllPuzzles).toHaveBeenCalledWith({ source: 'educator', limit: 200 });
+  });
+
+  it('still serves the bundled puzzles when educator puzzles cannot be loaded', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(puzzleService.getAllPuzzles).mockRejectedValue(new Error('down'));
+    render(<StudentPage />);
+
+    const sidebar = screen.getByRole('complementary', { name: 'Puzzle settings' });
+    await user.click(within(sidebar).getByRole('radio', { name: 'Bundled' }));
+    await user.click(within(sidebar).getByRole('button', { name: 'Set Theory' }));
+    await user.click(screen.getByRole('button', { name: 'New puzzle' }));
+
+    await waitFor(() => expect(heading()).toHaveTextContent(/A[∪∩×]/));
   });
 
   it('tells the student when server puzzles are unavailable', async () => {

@@ -75,6 +75,15 @@ describe('DemoApi', () => {
     expect((await demo.generatePuzzle({ difficulty: 'easy', topics: ['logic'] })).review).toBe('approved');
   });
 
+  it('serves puzzles published in this browser to students, like the real service', async () => {
+    const demo = api();
+    await demo.createPuzzle({ ...newPuzzle('mine_hard'), category: 'graph-theory', difficulty: 'hard' });
+    expect((await demo.getAllPuzzles({ source: 'educator' })).puzzles.map((p) => p.id)).toEqual(['mine_hard']);
+
+    const served = await demo.generatePuzzle({ difficulty: 'hard', topics: ['graph-theory'] });
+    expect(served).toMatchObject({ id: 'mine_hard', review: 'approved', source: 'cache' });
+  });
+
   it('accepts feedback and educator keys without a server', async () => {
     await expect(api().submitFeedback({ rating: 5, comment: 'ok' })).resolves.toEqual({ id: 'demo' });
     await expect(api().checkEducatorKey('anything')).resolves.toBeNull();

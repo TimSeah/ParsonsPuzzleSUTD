@@ -49,9 +49,19 @@ export class GenerationService {
   async findUnseen({ userId, difficulty, topics }) {
     const history = await this.History.find({ userId, $or: [{ seenCount: { $gt: 0 } }, { attemptCount: { $gt: 0 } }] }).select('puzzleId -_id').lean();
     const excluded = history.map(item => item.puzzleId);
-    // Only reuse puzzles checked under the current verification policy and
-    // not waiting for (or rejected in) educator review.
-    const filter = { ...SERVABLE, isActive: true, difficulty, 'verification.status': 'verified', 'verification.policyVersion': { $gte: LEAN_POLICY_VERSION }, id: { $nin: excluded } };
+    // Reuse AI puzzles checked under the current verification policy, and
+    // puzzles educators published (they are trusted, not Lean-checked). Never
+    // ones waiting for review or rejected.
+    const filter = {
+      ...SERVABLE,
+      isActive: true,
+      difficulty,
+      id: { $nin: excluded },
+      $or: [
+        { 'verification.status': 'verified', 'verification.policyVersion': { $gte: LEAN_POLICY_VERSION } },
+        { source: 'educator' },
+      ],
+    };
     if (topics.length) filter.category = { $in: topics };
     const count = await this.Puzzle.countDocuments(filter);
     if (!count) return null;

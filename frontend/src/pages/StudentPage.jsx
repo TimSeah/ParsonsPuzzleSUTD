@@ -19,6 +19,19 @@ function loadSubmode() {
   return saved === SUBMODES.CHALLENGE ? SUBMODES.CHALLENGE : SUBMODES.PRACTICE;
 }
 
+// Puzzles educators published on the server, added to the bundled ones while
+// the API is online. Failing to load them just leaves the bundled puzzles.
+async function loadEducatorPuzzles(bundled) {
+  try {
+    const { puzzles = [] } = await puzzleService.getAllPuzzles({ source: 'educator', limit: 200 });
+    const bundledIds = new Set(bundled.map(p => p.id));
+    return puzzles.filter(p => !bundledIds.has(p.id));
+  } catch (error) {
+    console.warn('Could not load educator puzzles:', error.message);
+    return [];
+  }
+}
+
 function StudentPage() {
   const {
     currentPuzzle,
@@ -82,7 +95,8 @@ function StudentPage() {
     
     try {
       if (dataSource === 'local') {
-        let filteredPuzzles = ALL_PUZZLES;
+        let filteredPuzzles = [...ALL_PUZZLES, ...(isUsingApi ? await loadEducatorPuzzles(ALL_PUZZLES) : [])];
+        if (!isCurrentRequest()) return;
         
         // Filter by difficulty
         if (selectedDifficulty) {
@@ -92,9 +106,9 @@ function StudentPage() {
         // Filter by proof types (categories)
         if (selectedProofTypes.length > 0) {
           filteredPuzzles = filteredPuzzles.filter(p => {
-            // Check if puzzle's tags include any of the selected proof types
+            // Educator puzzles carry their category; bundled ones are matched by tag
             return selectedProofTypes.some(type => 
-              p.tags.some(tag => tag.toLowerCase().includes(type.toLowerCase()))
+              p.category === type || (p.tags || []).some(tag => tag.toLowerCase().includes(type.toLowerCase()))
             );
           });
         }

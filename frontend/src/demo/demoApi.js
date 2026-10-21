@@ -2,7 +2,8 @@
 // It has the same methods as PuzzleService and keeps its state in
 // localStorage, so the whole app works in the browser:
 //  - the puzzle list is the bundled puzzles plus anything published here;
-//  - "AI generated" serves the pre-made puzzles in samplePuzzles.js;
+//  - "AI generated" serves the pre-made puzzles in samplePuzzles.js and
+//    puzzles published here, like the real service serves educator puzzles;
 //  - the review queue holds those samples, and decisions change what is served;
 //  - feedback is accepted but not sent anywhere.
 import { PUZZLES_BY_CATEGORY } from '../services/puzzleLoader.js';
@@ -53,9 +54,9 @@ export class DemoApi {
   }
 
   // Newest first, like the real API: puzzles published in this browser, then the bundled ones.
-  listPuzzles({ category, difficulty } = {}) {
+  listPuzzles({ category, difficulty, source } = {}) {
     return [...read(KEYS.published, []).slice().reverse(), ...bundled()]
-      .filter((p) => (!category || p.category === category) && (!difficulty || p.difficulty === difficulty));
+      .filter((p) => (!category || p.category === category) && (!difficulty || p.difficulty === difficulty) && (!source || p.source === source));
   }
 
   async healthCheck() {
@@ -97,7 +98,8 @@ export class DemoApi {
   async generatePuzzle({ difficulty, topics = [] } = {}) {
     await wait(this.delayMs);
     const seen = new Set(read(KEYS.seen, []));
-    const available = SAMPLE_AI_PUZZLES.filter((p) => this.reviewStatus(p.id) !== 'rejected');
+    const published = read(KEYS.published, []);
+    const available = [...SAMPLE_AI_PUZZLES.filter((p) => this.reviewStatus(p.id) !== 'rejected'), ...published];
     if (available.length === 0) throw fail('Every sample puzzle has been rejected. Clear this site\'s data to reset the demo.', 422, 'LEAN_VERIFICATION_FAILED');
     const inTopics = (p) => topics.length === 0 || topics.includes(p.category);
     const candidates = [
@@ -110,6 +112,7 @@ export class DemoApi {
     const chosen = pool[Math.floor(Math.random() * pool.length)];
     write(KEYS.seen, [...seen, chosen.id]);
     const { lean: _lean, verification, model: _model, ...puzzle } = chosen;
+    if (chosen.source === 'educator') return { ...puzzle, source: 'cache', verification: { status: 'unverified' }, review: 'approved' };
     const review = this.reviewStatus(chosen.id) === 'pending' ? 'pending' : 'approved';
     return { ...puzzle, source: seen.has(chosen.id) ? 'cache' : 'generated', verification: { status: verification.status }, review };
   }
