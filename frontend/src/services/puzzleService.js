@@ -2,6 +2,8 @@
 // 'TIMEOUT' or the server's error code) and `status` so callers can branch.
 // Pass `educator: true` to send the signed-in educator's key.
 import { getEducatorKey } from './educatorSession.js';
+import { IS_DEMO } from '../demo/isDemo.js';
+import demoApi from '../demo/demoApi.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 30000);
@@ -138,8 +140,9 @@ class PuzzleService {
   }
 }
 
-// Create and export a singleton instance
-const puzzleService = new PuzzleService();
+// Create and export a singleton instance. The GitHub Pages demo has no
+// backend, so it swaps in an in-browser stand-in with the same methods.
+const puzzleService = IS_DEMO ? demoApi : new PuzzleService();
 export default puzzleService;
 
 // Also export the class for testing

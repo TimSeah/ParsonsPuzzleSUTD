@@ -6,6 +6,7 @@ import { CATEGORIES } from '../components/educator/educatorCategories';
 import { useApiHealth } from '../hooks/usePuzzles';
 import puzzleManagerService from '../services/puzzleManagerService';
 import { clearEducatorKey, getEducatorKey } from '../services/educatorSession';
+import { IS_DEMO } from '../demo/isDemo';
 import styles from './EducatorPage.module.css';
 
 const CATEGORY_ICONS = {
@@ -32,7 +33,8 @@ function EducatorPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastCreatedPuzzle, setLastCreatedPuzzle] = useState(null);
   const { isHealthy, loading: healthLoading } = useApiHealth();
-  const [isSignedIn, setIsSignedIn] = useState(() => Boolean(getEducatorKey()));
+  // The demo has no server to check a key against, so educators are always signed in.
+  const [isSignedIn, setIsSignedIn] = useState(() => IS_DEMO || Boolean(getEducatorKey()));
   const [isSignInOpen, setIsSignInOpen] = useState(false);
   const signInWaiter = useRef(null);
 
@@ -156,7 +158,7 @@ function EducatorPage() {
             </div>
             <div className={styles.headerActions}>
               <StatusIndicator isUsingApi={isHealthy === true} isLoading={healthLoading && isHealthy === null} />
-              {isSignedIn ? (
+              {IS_DEMO ? null : isSignedIn ? (
                 <button type="button" className="btn" onClick={handleSignOut}>
                   <LogOut size={16} aria-hidden="true" /> Sign out
                 </button>

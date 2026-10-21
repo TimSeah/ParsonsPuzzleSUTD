@@ -1,8 +1,11 @@
 import { Database, Sparkles } from 'lucide-react';
+import { IS_DEMO } from '../../demo/isDemo';
 
 export const SOURCES = [
   { value: 'local', label: 'Bundled', icon: Database, hint: 'Built-in puzzles. Works offline.' },
-  { value: 'smart', label: 'AI generated', icon: Sparkles, hint: 'Lean-verified puzzles from the course server, generated if needed.' },
+  { value: 'smart', label: 'AI generated', icon: Sparkles, hint: IS_DEMO
+    ? 'Lean-verified sample puzzles. The demo serves a fixed set instead of generating new ones.'
+    : 'Lean-verified puzzles from the course server, generated if needed.' },
 ];
 
 export const DIFFICULTIES = [
