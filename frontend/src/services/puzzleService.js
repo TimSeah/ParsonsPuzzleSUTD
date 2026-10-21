@@ -51,7 +51,7 @@ class PuzzleService {
   }
 
   // Get all puzzles with optional filtering
-  async getAllPuzzles(params = {}) {
+  async getAllPuzzles(params = {}, { timeoutMs } = {}) {
     const queryParams = new URLSearchParams();
     
     Object.entries(params).forEach(([key, value]) => {
@@ -63,7 +63,7 @@ class PuzzleService {
     const queryString = queryParams.toString();
     const url = `/puzzles${queryString ? `?${queryString}` : ''}`;
     
-    return this.fetchWithError(url);
+    return this.fetchWithError(url, {}, timeoutMs);
   }
 
   async generatePuzzle({ userId, requestId, difficulty, topics }) {

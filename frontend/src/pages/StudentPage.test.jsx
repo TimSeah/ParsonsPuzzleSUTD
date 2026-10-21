@@ -6,13 +6,13 @@ import puzzleService from '../services/puzzleService.js';
 import { ALL_PUZZLES } from '../services/puzzleLoader.js';
 
 const toggleDataSource = vi.fn();
-const appState = { puzzlesError: null };
+const appState = { puzzlesError: null, isUsingApi: true };
 
 vi.mock('../hooks/useAppState', () => ({
   useAppState: () => ({
     currentPuzzle: ALL_PUZZLES[0],
     useLocalData: false,
-    isUsingApi: true,
+    isUsingApi: appState.isUsingApi,
     isLoading: false,
     healthLoading: false,
     puzzlesError: appState.puzzlesError,
@@ -51,11 +51,14 @@ describe('StudentPage', () => {
     vi.mocked(puzzleService.getAllPuzzles).mockReset().mockResolvedValue({ puzzles: [] });
     toggleDataSource.mockReset();
     appState.puzzlesError = null;
+    appState.isUsingApi = true;
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  it('adds puzzles educators published to the bundled ones while the server is online', async () => {
+  it('adds puzzles educators published to the bundled ones when the server answers', async () => {
     const user = userEvent.setup();
+    // Choosing Bundled turns the API health check off, so the page can't rely on isUsingApi.
+    appState.isUsingApi = false;
     vi.mocked(puzzleService.getAllPuzzles).mockResolvedValue({ puzzles: [{
       id: 'edu_logic_hard', title: '\\text{Educator puzzle}', displayTitle: 'Educator puzzle', statement: 'S',
       category: 'logic', difficulty: 'hard', tags: ['custom-tag'], source: 'educator',
@@ -71,7 +74,7 @@ describe('StudentPage', () => {
 
     // No bundled puzzle is hard logic, so only the educator puzzle matches (by category)
     await waitFor(() => expect(heading()).toHaveTextContent('Educator puzzle'));
-    expect(puzzleService.getAllPuzzles).toHaveBeenCalledWith({ source: 'educator', limit: 200 });
+    expect(puzzleService.getAllPuzzles).toHaveBeenCalledWith({ source: 'educator', limit: 200 }, { timeoutMs: 4000 });
   });
 
   it('still serves the bundled puzzles when educator puzzles cannot be loaded', async () => {
