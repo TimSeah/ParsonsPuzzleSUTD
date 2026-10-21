@@ -113,3 +113,13 @@ test('public puzzle routes never return pending or rejected puzzles', async () =
     assert.deepEqual(model.pipeline[0].$match['review.status'], SERVABLE['review.status']);
   });
 });
+
+test('the puzzle list can be filtered by source, and only by known sources', async () => {
+  const model = fakeModel([]);
+  await withApp(model, async (call) => {
+    assert.equal((await call('/api/puzzles?source=educator')).status, 200);
+    assert.equal(model.findFilter.source, 'educator');
+    assert.equal((await call('/api/puzzles?source=other')).status, 400);
+    assert.equal((await call('/api/puzzles?source[$ne]=local')).status, 400, 'query operators are not passed to MongoDB');
+  });
+});

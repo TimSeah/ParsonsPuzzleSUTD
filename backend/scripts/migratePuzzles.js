@@ -122,6 +122,8 @@ async function migratePuzzles() {
           category,
           difficulty: determineDifficulty(puzzle),
           tags: generateTags(puzzle, category),
+          // Bundled puzzles; not served as educator puzzles
+          source: 'local',
           createdAt: new Date(),
           updatedAt: new Date(),
           isActive: true
