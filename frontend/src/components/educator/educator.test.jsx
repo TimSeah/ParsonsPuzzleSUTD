@@ -169,11 +169,11 @@ describe('PuzzleCreator', () => {
 });
 
 describe('PuzzleSuccessModal', () => {
-  it('tells the educator students can see a server-saved puzzle now', () => {
+  it('tells the educator how students get a server-saved puzzle', () => {
     render(<PuzzleSuccessModal isOpen onClose={() => {}} puzzleTitle="Sum of odds" filename="induction-proofs.json" savedTo="server" />);
 
     const dialog = screen.getByRole('dialog', { name: 'Puzzle published' });
-    expect(dialog).toHaveTextContent('Students can solve it now.');
+    expect(dialog).toHaveTextContent('Students get it from New puzzle, with either Bundled or AI generated selected.');
     expect(dialog).not.toHaveTextContent('induction-proofs.json');
   });
 

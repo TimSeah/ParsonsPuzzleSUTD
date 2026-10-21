@@ -119,15 +119,17 @@ test('stores zero counters when the first attempt succeeds', async () => {
   assert.equal(deps.saved().generation.repairAttemptCount, 0);
 });
 
-test('only serves cached puzzles verified under the current Lean policy', async () => {
+test('only reuses current-policy AI puzzles and educator-published puzzles', async () => {
   const deps = dependencies({
     generatedCandidates: [validCandidate()],
     leanResults: [{ valid: true, status: 'verified', diagnostics: [], axioms: ['propext'] }],
   });
   await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
 
-  assert.deepEqual(deps.cacheFilter()['verification.policyVersion'], { $gte: LEAN_POLICY_VERSION });
-  assert.equal(deps.cacheFilter()['verification.status'], 'verified');
+  assert.deepEqual(deps.cacheFilter().$or, [
+    { 'verification.status': 'verified', 'verification.policyVersion': { $gte: LEAN_POLICY_VERSION } },
+    { source: 'educator' },
+  ], 'reuses current-policy AI puzzles and educator puzzles, nothing else');
   assert.equal(deps.saved().verification.policyVersion, LEAN_POLICY_VERSION);
   assert.deepEqual(deps.saved().verification.axioms, ['propext']);
 });
@@ -246,4 +248,14 @@ test('never reuses a duplicate that was rejected or is awaiting review', async (
   assert.equal(fingerprintLookups[0].isActive, true);
   assert.equal(result.statement, 'A different statement', 'asks the model again instead of serving the duplicate');
   assert.equal(result.review, 'pending');
+});
+
+test('serves an educator-published puzzle without generating', async () => {
+  const educatorPuzzle = { id: 'edu_1', title: 'T', displayTitle: 'Mine', statement: 'S', category: 'logic', difficulty: 'easy', tags: ['logic'], blocks: [], solutionOrder: [], source: 'educator', verification: { status: 'unverified' } };
+  const deps = dependencies({ generatedCandidates: [validCandidate()], leanResults: [], cachedPuzzle: educatorPuzzle });
+  const result = await new GenerationService(deps).generate({ userId: 'u', requestId: 'r', difficulty: 'easy', topics: ['logic'] });
+  assert.equal(result.id, 'edu_1');
+  assert.equal(result.source, 'cache');
+  assert.equal(result.review, 'approved');
+  assert.equal(deps.quotaCalls().length, 0, 'reusing a puzzle does not use the generation quota');
 });
